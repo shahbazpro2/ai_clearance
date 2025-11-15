@@ -2,7 +2,8 @@
 export const ROUTES = {
   // Routes that require authentication
   PROTECTED: [
-    "/"
+    "/",
+    "/create-campaign"
   ],
 
   // Routes that should redirect authenticated users to dashboard

@@ -14,14 +14,11 @@ import { useForm } from "react-hook-form";
 import { useApi } from "use-hook-api";
 import * as z from "zod";
 import { signupApi } from "../../api/auth";
-import countries from "@/data/countries.json";
 
 // Define the form schema using Zod
 const signupSchema = z.object({
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
+    name: z.string().min(1, "Name is required"),
     email: z.string().email("Please enter a valid email address"),
-    country: z.string().min(1, "Please select your country"),
     password: z.string()
         .min(8, "Password must be at least 8 characters")
         .regex(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain uppercase, lowercase, and number"),
@@ -58,23 +55,15 @@ export function SignupScreen() {
             <AuthHeader title="Create Account" />
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-5">
                 {/* First Name & Last Name */}
-                <div className="grid grid-cols-2 gap-4">
+               
                     <FormField
-                        name="firstName"
-                        label="First Name"
-                        placeholder="Enter First Name"
+                        name="name"
+                        label="Name"
+                        placeholder="Enter Name"
                         form={form}
                         required
                     />
-
-                    <FormField
-                        name="lastName"
-                        label="Last Name"
-                        placeholder="Enter Last Name"
-                        form={form}
-                        required
-                    />
-                </div>
+              
 
                 {/* Email Field */}
                 <FormField
@@ -86,30 +75,7 @@ export function SignupScreen() {
                     required
                 />
 
-                {/* Country Field */}
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">
-                        Country <span className="text-red-500">*</span>
-                    </label>
-                    <Select
-                        value={form.watch("country")}
-                        onValueChange={(value) => form.setValue("country", value, { shouldValidate: true })}
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select your country" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
-                            {countries.map((country) => (
-                                <SelectItem key={country} value={country}>
-                                    {country}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {form.formState.errors.country && (
-                        <p className="text-sm text-red-500">{form.formState.errors.country.message}</p>
-                    )}
-                </div>
+            
 
                 {/* Password Field */}
                 <PasswordField
@@ -139,8 +105,8 @@ export function SignupScreen() {
                         "Creating account..."
                     ) : (
                         <>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Start My Collection Journey
+                            Signup
+                            
                         </>
                     )}
                 </Button>
@@ -160,19 +126,7 @@ export function SignupScreen() {
                 </p>
             </div>
 
-            {/* Legal Text */}
-            <div className="text-center pt-1">
-                <p className="text-xs text-gray-500">
-                    By creating an account, you agree to our{" "}
-                    <Button onClick={() => router.push("/terms-and-conditions")} variant="link" className="text-xs p-0 h-auto text-primary hover:text-primary/90 font-medium">
-                        Terms of Service
-                    </Button>{" "}
-                    and{" "}
-                    <Button onClick={() => router.push("/privacy-policy")} variant="link" className="text-xs p-0 h-auto text-primary hover:text-primary/90 font-medium">
-                        Privacy Policy
-                    </Button>
-                </p>
-            </div>
+          
         </AuthLayout>
     );
 }

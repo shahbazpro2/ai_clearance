@@ -4,11 +4,11 @@ import { responseApi } from "use-hook-api";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export const signupApi = (payload: any) => {
-  return responseApi("/signup/email", "post", payload);
+  return responseApi("/auth/signup", "post", payload);
 };
 
 export const verifySignupOtpApi = (payload: any) => {
-  return responseApi("/verify/signup", "post", payload);
+  return responseApi("/auth/verify-otp", "post", payload);
 };
 
 export const loginApi = (payload: any) => {
@@ -20,11 +20,11 @@ export const resetPasswordApi = (payload: {
   otp: string;
   new_password: string;
 }) => {
-  return responseApi("/reset-password", "post", payload);
+    return responseApi("/auth/reset-password", "post", payload);
 };
 
 export const forgotPasswordApi = (payload: { email: string }) => {
-  return responseApi("/forgot-password", "post", payload);
+  return responseApi("/auth/forgot-password", "post", payload);
 };
 
 export const verifyOtpApi = (payload: {
@@ -32,15 +32,15 @@ export const verifyOtpApi = (payload: {
   otp: string;
   new_password: string;
 }) => {
-  return responseApi(`${apiUrl}/verify/reset`, "post", payload);
+  return responseApi(`/auth/resend-otp`, "post", payload);
 };
 
 export const refreshTokenApi = (payload: any) => {
-  return responseApi("/refresh", "post", payload);
+  return responseApi("/auth/token", "post", payload);
 };
 
 export const meApi = () => {
-  return universalApi(`/me`, "get");
+  return universalApi(`/auth/me`, "get");
 };
 
 export const deleteAccountApi = () => {

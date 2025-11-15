@@ -10,37 +10,37 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-    Scan,
-    FolderOpen,
-    Info,
     Settings,
     LogOut,
     ArrowLeft
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { logout } from "@/lib/auth";
-import Image from "next/image";
+import { useMe } from "@/hooks/useMe";
 
 export function DashboardNavbar() {
     const router = useRouter();
     const pathname = usePathname();
+    const userData = useMe();
 
     const handleLogout = () => {
         logout();
     };
 
-    const navigationItems = [
-        { key: "scan", label: "Scan", route: "/dashboard", icon: Scan },
-        { key: "collection", label: "Collection", route: "/dashboard/collection", icon: FolderOpen },
-        { key: "about", label: "About", route: "/dashboard/about", icon: Info },
-        /*   { key: "settings", label: "Settings", route: "/dashboard/settings", icon: Settings } */
-    ];
+    const getUserName = () => {
+        if (!userData) return "User";
+        return userData.name || userData.username || userData.email?.split("@")[0] || "User";
+    };
 
-    const isActiveRoute = (route: string) => {
-        if (route === "/dashboard") {
-            return pathname === "/dashboard";
-        }
-        return pathname.startsWith(route);
+    const getUserInitials = () => {
+        if (!userData) return "U";
+        const name = userData.name || userData.username || userData.email?.split("@")[0] || "User";
+        return name
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
     };
 
     return (
@@ -59,40 +59,41 @@ export function DashboardNavbar() {
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
                         ) : (
-                            <Image
-                                src="/assets/logo.png"
-                                alt="Ai Clerance"
-                                width={150}
-                                height={32}
-                            />
+                            <button
+                                onClick={() => router.push("/")}
+                                className="text-xl font-bold text-gray-900 hover:text-primary transition-colors cursor-pointer"
+                            >
+                                Ai Clearance
+                            </button>
                         )}
                     </div>
 
-                    {/* Desktop Navigation */}
-                    <nav className="hidden md:flex items-center space-x-1 w-[420px]">
-                        {navigationItems.map(({ key, label, route, icon: Icon }) => (
-                            <Button
-                                key={key}
-                                variant={isActiveRoute(route) ? "default" : "ghost"}
-                                size="sm"
-                                className={isActiveRoute(route) ? "bg-blue-gradient text-white hover:bg-blue-gradient/90" : "text-gray-700 hover:bg-gray-100"}
-                                onClick={() => router.push(route)}
-                            >
-                                <Icon className="mr-2 h-4 w-4" />
-                                {label}
-                            </Button>
-                        ))}
-                    </nav>
-
                     {/* User Menu */}
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
+                        {/* User Info */}
+                        <div className="hidden md:flex items-center space-x-2 text-sm text-gray-700">
+                            <span className="font-medium">{getUserName()}</span>
+                        </div>
+                        
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-
-                                <Settings className=" h-6 w-6 text-gray-700 cursor-pointer" />
+                                <button className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={userData?.avatar || userData?.profile_picture} alt={getUserName()} />
+                                        <AvatarFallback className="bg-primary text-primary-foreground">
+                                            {getUserInitials()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <div className="px-2 py-1.5 border-b">
+                                    <p className="text-sm font-medium">{getUserName()}</p>
+                                    {userData?.email && (
+                                        <p className="text-xs text-gray-500 truncate">{userData.email}</p>
+                                    )}
+                                </div>
+                                <DropdownMenuItem onClick={() => router.push("/settings")}>
                                     <Settings className="mr-2 h-4 w-4" />
                                     Settings
                                 </DropdownMenuItem>

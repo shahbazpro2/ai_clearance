@@ -28,7 +28,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginScreen() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const redirectTo = searchParams.get('redirect') || '/dashboard';
+    const redirectTo = searchParams.get('redirect') || '/';
 
     const form = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -46,14 +46,10 @@ export function LoginScreen() {
             Axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.access_token}`;
 
 
-            if (!responseData.is_active) {
-                setIsActive(false);
-                window.location.href = '/plans';
-            } else {
-                setIsActive(true);
+         
                 // User is active, navigate to intended destination or dashboard
                 window.location.href = redirectTo;
-            }
+            
 
         });
     };

@@ -125,3 +125,29 @@
 .bg-blue-gradient {
   background: linear-gradient(90deg, #7c3aed 0%, #9333ea 100%);
 }
+
+/* Shimmer animation for progress bars */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Progress pulse animation */
+@keyframes progressPulse {
+  0%, 100% {
+    width: 60%;
+    opacity: 0.9;
+  }
+  50% {
+    width: 85%;
+    opacity: 1;
+  }
+}
