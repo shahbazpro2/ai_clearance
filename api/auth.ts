@@ -20,7 +20,7 @@ export const resetPasswordApi = (payload: {
   otp: string;
   new_password: string;
 }) => {
-    return responseApi("/auth/reset-password", "post", payload);
+  return responseApi("/auth/reset-password", "post", payload);
 };
 
 export const forgotPasswordApi = (payload: { email: string }) => {
@@ -32,7 +32,7 @@ export const verifyOtpApi = (payload: {
   otp: string;
   new_password: string;
 }) => {
-  return responseApi(`/auth/resend-otp`, "post", payload);
+  return responseApi(`/auth/reset-password`, "post", payload);
 };
 
 export const refreshTokenApi = (payload: any) => {
