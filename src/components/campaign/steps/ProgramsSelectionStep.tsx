@@ -123,8 +123,8 @@ const getProgramName = (program: InsertProgram): string => {
       "name",
       "program_name",
       "title",
-      "channel_name",
       "retailer_name",
+      "channel_name",
     ]) as string | null) ?? "Untitled Program"
   );
 };
