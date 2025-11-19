@@ -8,7 +8,7 @@ import { useApi } from "use-hook-api";
 import { fetchCategoriesApi } from "../../../../api/categories";
 import { setCampaignCategoryApi } from "../../../../api/campaigns";
 import { useAtomValue, useSetAtom } from "jotai";
-import { campaignIdAtom, selectedCategoryAtom } from "@/store/campaign";
+import { campaignIdAtom, selectedCategoryAtom, selectedCategoryLabelAtom } from "@/store/campaign";
 
 interface CategorySelectionStepProps {
   onNext: () => void;
@@ -17,6 +17,7 @@ interface CategorySelectionStepProps {
 export function CategorySelectionStep({ onNext }: CategorySelectionStepProps) {
   const campaignId = useAtomValue(campaignIdAtom);
   const setSelectedCategory = useSetAtom(selectedCategoryAtom);
+  const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   
   const [callFetchCategories, { data: categories, loading: loadingCategories }] = useApi({ errMsg: false });
@@ -29,10 +30,19 @@ export function CategorySelectionStep({ onNext }: CategorySelectionStepProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategoryId(value);
+    const selected = categories?.find(
+      (category: any) => String(category.id ?? category.category) === value
+    );
+    const label = selected?.category ?? selected?.name ?? selected?.label ?? selected?.title ?? "";
+    setSelectedCategoryLabel(label || null);
+  };
+
   const handleNext = () => {
     if (!campaignId || !selectedCategoryId) return;
 
-    // Store the selected category name in Jotai
+    // Store the selected category id for downstream steps
     setSelectedCategory(selectedCategoryId);
 
     callSetCategory(setCampaignCategoryApi({ campaign_id: campaignId, category: selectedCategoryId }), () => {
@@ -51,14 +61,17 @@ export function CategorySelectionStep({ onNext }: CategorySelectionStepProps) {
             <LoadingSpinner size="lg" />
           </div>
         ) : (
-          <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+          <Select value={selectedCategoryId} onValueChange={handleCategoryChange}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose a category" />
             </SelectTrigger>
             <SelectContent>
               {categories?.map((category: any) => (
-                <SelectItem key={category.id} value={category.category}>
-                  {category.category}
+                <SelectItem
+                  key={category.id ?? category.category}
+                  value={String(category.id ?? category.category)}
+                >
+                  {category.category ?? category.name ?? category.label ?? category.title}
                 </SelectItem>
               ))}
             </SelectContent>

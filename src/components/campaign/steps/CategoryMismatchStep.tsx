@@ -7,7 +7,12 @@ import { AlertTriangle } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { acceptPredictedCategoryApi, createManualReviewApi } from "../../../../api/campaigns";
 import { useAtomValue } from "jotai";
-import { campaignIdAtom, classificationResultAtom, selectedCategoryAtom } from "@/store/campaign";
+import {
+  campaignIdAtom,
+  classificationResultAtom,
+  selectedCategoryAtom,
+  selectedCategoryLabelAtom,
+} from "@/store/campaign";
 
 interface CategoryMismatchStepProps {
   onNext: (categoryType: "ai" | "self" | null) => void;
@@ -15,7 +20,8 @@ interface CategoryMismatchStepProps {
 
 export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
   const campaignId = useAtomValue(campaignIdAtom);
-  const selectedCategory = useAtomValue(selectedCategoryAtom);
+  const selectedCategoryId = useAtomValue(selectedCategoryAtom);
+  const selectedCategoryLabel = useAtomValue(selectedCategoryLabelAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
   const [manualReviewRequested, setManualReviewRequested] = useState(false);
 
@@ -112,20 +118,23 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
                 onClick={() => handleProceedWithCategory("self")}
                 className="w-full bg-blue-gradient text-white hover:bg-blue-gradient/90"
               >
-                Go with Selected Category: {selectedCategory || "N/A"}
+                Go with Selected Category: {selectedCategoryLabel || selectedCategoryId || "N/A"}
               </Button>
               <Button
                 onClick={() => handleProceedWithCategory("ai")}
                 variant="outline"
                 className="w-full"
               >
-                Go with AI Predicted Category: {classificationResult?.predicted_category || "N/A"}
+                Go with AI Predicted Category:{" "}
+                {classificationResult?.predicted_category_label ||
+                  classificationResult?.predicted_category ||
+                  "N/A"}
               </Button>
             </div>
           </div>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-xs text-yellow-800">
-              ⚠️ User must need to select category.
+              ⚠️ You cannot proceed with booking (payment and other operations) until the category is verified.
             </p>
           </div>
         </div>

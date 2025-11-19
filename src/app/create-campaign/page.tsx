@@ -16,7 +16,12 @@ import {
 } from "@/components/campaign/steps";
 import { ProgressBar } from "@/components/campaign/ProgressBar";
 import { useAtomValue, useSetAtom } from "jotai";
-import { classificationResultAtom, campaignIdAtom, selectedCategoryAtom } from "@/store/campaign";
+import {
+  classificationResultAtom,
+  campaignIdAtom,
+  selectedCategoryAtom,
+  selectedCategoryLabelAtom,
+} from "@/store/campaign";
 
 const TOTAL_STEPS = 5;
 
@@ -24,10 +29,12 @@ export default function CreateCampaignPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCategoryForProceed, setSelectedCategoryForProceed] = useState<"ai" | "self" | null>(null);
+  const [uploadResetKey, setUploadResetKey] = useState(0);
   const classificationResult = useAtomValue(classificationResultAtom);
   const setCampaignId = useSetAtom(campaignIdAtom);
   const setClassificationResult = useSetAtom(classificationResultAtom);
   const setSelectedCategory = useSetAtom(selectedCategoryAtom);
+  const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
 
   const handleNextFromUpload = () => {
     if (!classificationResult) return;
@@ -46,11 +53,23 @@ export default function CreateCampaignPage() {
     setCurrentStep(5);
   };
 
+  const handleSkipUpload = () => {
+    setSelectedCategoryForProceed("self");
+    setCurrentStep(5);
+  };
+
+  const handleReturnToUpload = () => {
+    setClassificationResult(null);
+    setUploadResetKey((key) => key + 1);
+    setCurrentStep(3);
+  };
+
   const handleComplete = () => {
     // Clear all campaign-related cache data
     setCampaignId(null);
     setClassificationResult(null);
     setSelectedCategory(null);
+    setSelectedCategoryLabel(null);
     // Navigate to home
     router.push("/");
   };
@@ -59,8 +78,8 @@ export default function CreateCampaignPage() {
     <ProtectedRoute>
       <div className="min-h-screen flex flex-col bg-gray-50">
         <DashboardNavbar />
-        
-        <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+
+        <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
           {/* Header */}
           <div className="mb-8">
             <Button
@@ -93,7 +112,11 @@ export default function CreateCampaignPage() {
 
               {/* Step 3: Upload and Classify */}
               {currentStep === 3 && (
-                <UploadAndClassifyStep onNext={handleNextFromUpload} />
+                <UploadAndClassifyStep
+                  key={uploadResetKey}
+                  onNext={handleNextFromUpload}
+                  onSkip={handleSkipUpload}
+                />
               )}
 
               {/* Step 4: Category Mismatch */}
@@ -106,6 +129,7 @@ export default function CreateCampaignPage() {
                 <ProgramsSelectionStep
                   selectedCategoryType={selectedCategoryForProceed}
                   onComplete={handleComplete}
+                  onBackToUpload={handleReturnToUpload}
                 />
               )}
             </CardContent>

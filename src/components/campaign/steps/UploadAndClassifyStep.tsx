@@ -13,9 +13,10 @@ import { campaignIdAtom, classificationResultAtom, ClassificationResult } from "
 
 interface UploadAndClassifyStepProps {
   onNext: () => void;
+  onSkip: () => void;
 }
 
-export function UploadAndClassifyStep({ onNext }: UploadAndClassifyStepProps) {
+export function UploadAndClassifyStep({ onNext, onSkip }: UploadAndClassifyStepProps) {
   const campaignId = useAtomValue(campaignIdAtom);
   const setClassificationResult = useSetAtom(classificationResultAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
@@ -40,8 +41,12 @@ export function UploadAndClassifyStep({ onNext }: UploadAndClassifyStepProps) {
 
     callClassify(classifyCategoryApi(formData), ({ data }: any) => {
       const result: ClassificationResult = {
-        predicted_category: data?.predicted_category || "",
+        predicted_category: data?.predicted_category_id ?? data?.predicted_category ?? "",
+        predicted_category_id: data?.predicted_category_id ?? data?.predicted_category ?? null,
+        predicted_category_label:
+          data?.predicted_category_label ?? data?.predicted_category_name ?? data?.predicted_category ?? null,
         category_matched: data?.category_matched || false,
+        ...data,
       };
       setClassificationResult(result);
     });
@@ -116,8 +121,8 @@ export function UploadAndClassifyStep({ onNext }: UploadAndClassifyStepProps) {
             </div>
           </div>
 
-          {uploadedFile && (
-            <div>
+          <div className="space-y-3">
+            {uploadedFile && (
               <Button
                 onClick={handleClassify}
                 disabled={classifying}
@@ -126,8 +131,20 @@ export function UploadAndClassifyStep({ onNext }: UploadAndClassifyStepProps) {
                 <Sparkles className="mr-2 h-4 w-4" />
                 Classify File
               </Button>
-            </div>
-          )}
+            )}
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full text-gray-600 hover:text-gray-900"
+              onClick={onSkip}
+            >
+              Skip for now (upload later)
+            </Button>
+            <p className="text-xs text-gray-500 text-center">
+              You can return to this step after selecting programs to finish the upload.
+            </p>
+          </div>
         </>
       )}
 

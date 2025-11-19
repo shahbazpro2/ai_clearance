@@ -21,7 +21,10 @@ export const createCampaignApi = (payload: any) => {
  * Campaign Self Declared Category
  * Endpoint: PUT /campaigns/{campaign_id}/category
  */
-export const setCampaignCategoryApi = (payload: { campaign_id: string, category: string }) => {
+export const setCampaignCategoryApi = (payload: {
+  campaign_id: string;
+  category: string;
+}) => {
   return responseApi(`/campaigns/self-declared-category`, "post", payload);
 };
 
@@ -30,7 +33,9 @@ export const setCampaignCategoryApi = (payload: { campaign_id: string, category:
  * Endpoint: PUT /campaigns/{campaign_id}/accept-predicted-category
  */
 export const acceptPredictedCategoryApi = (campaignId: string) => {
-  return responseApi(`/campaigns/accept-predicted-category`, "post", { campaign_id: campaignId });
+  return responseApi(`/campaigns/accept-predicted-category`, "post", {
+    campaign_id: campaignId,
+  });
 };
 
 /**
@@ -43,10 +48,9 @@ export const createManualReviewApi = (payload: { campaign_id: string }) => {
 
 /**
  * Fetch Insert Programs
- * Endpoint: GET /programs?category_id={category_id}
+ * Endpoint: GET /programs/insert-programs?category={category_id}
  */
-export const fetchProgramsApi = (categoryId?: string) => {
-  const url = categoryId ? `/programs?category_id=${categoryId}` : `/programs`;
-  return universalApi(url, "get");
+export const fetchInsertProgramsApi = (category?: string) => {
+  const query = category ? `?category=${encodeURIComponent(category)}` : "";
+  return universalApi(`/programs/insert-programs${query}`, "get");
 };
-
