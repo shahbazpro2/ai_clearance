@@ -25,7 +25,10 @@ export const setCampaignCategoryApi = (payload: {
   campaign_id: string;
   category: string;
 }) => {
-  return responseApi(`/campaigns/self-declared-category`, "post", payload);
+  return responseApi(`/campaigns/self-declared-category`, "post", {
+    campaign_id: payload.campaign_id,
+    category_id: payload.category,
+  });
 };
 
 /**
@@ -51,6 +54,6 @@ export const createManualReviewApi = (payload: { campaign_id: string }) => {
  * Endpoint: GET /programs/insert-programs?category={category_id}
  */
 export const fetchInsertProgramsApi = (category?: string) => {
-  const query = category ? `?category=${encodeURIComponent(category)}` : "";
+  const query = category ? `?category_id=${encodeURIComponent(category)}` : "";
   return universalApi(`/programs/insert-programs${query}`, "get");
 };
