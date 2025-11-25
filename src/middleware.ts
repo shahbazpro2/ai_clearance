@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && accessToken) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

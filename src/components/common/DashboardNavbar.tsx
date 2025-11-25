@@ -49,23 +49,14 @@ export function DashboardNavbar() {
                 <div className="flex items-center justify-between">
                     {/* Logo or Back Button */}
                     <div className="flex items-center space-x-3">
-                        {pathname.includes('/dashboard/detail') ? (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => router.back()}
-                                className="p-2 hover:bg-gray-100"
-                            >
-                                <ArrowLeft className="h-5 w-5" />
-                            </Button>
-                        ) : (
-                            <button
-                                onClick={() => router.push("/")}
-                                className="text-xl font-bold text-gray-900 hover:text-primary transition-colors cursor-pointer"
-                            >
-                                Ai Clearance
-                            </button>
-                        )}
+
+                        <button
+                            onClick={() => router.push("/")}
+                            className="text-xl font-bold text-gray-900 hover:text-primary transition-colors cursor-pointer"
+                        >
+                            Ai Clearance
+                        </button>
+
                     </div>
 
                     {/* User Menu */}
@@ -74,7 +65,7 @@ export function DashboardNavbar() {
                         <div className="hidden md:flex items-center space-x-2 text-sm text-gray-700">
                             <span className="font-medium">{getUserName()}</span>
                         </div>
-                        
+
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <button className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
