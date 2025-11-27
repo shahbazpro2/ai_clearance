@@ -124,13 +124,6 @@ const getFreightForQuantity = (
   return fallbackRange?.value ?? 0;
 };
 
-const SPECIAL_FREIGHT_KEY_RANGES: Record<
-  string,
-  { min: number; max?: number }
-> = {
-  freight_1025k: { min: 0, max: 25000 },
-};
-
 const coerceToNumber = (value: unknown): number | null => {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -158,10 +151,6 @@ const parseQuantityToken = (token?: string): number | null => {
 const interpretFreightKey = (
   key: string
 ): { min: number; max?: number } | null => {
-  if (SPECIAL_FREIGHT_KEY_RANGES[key]) {
-    return SPECIAL_FREIGHT_KEY_RANGES[key];
-  }
-
   if (!key.startsWith("freight_")) return null;
   const payload = key.replace("freight_", "");
   const parts = payload.split("_").filter(Boolean);
@@ -172,6 +161,11 @@ const interpretFreightKey = (
 
   if (lastToken === "plus") {
     return { min };
+  }
+
+  if (parts.length === 1) {
+    // Single-value freight tiers should only match that exact quantity
+    return { min, max: min };
   }
 
   const parsedMax = parts[1] ? parseQuantityToken(parts[1]) : undefined;
@@ -598,32 +592,22 @@ export function AvailabilityReportStep({
     }));
   };
 
-  const calculateMonthlyAmount = (
-    program: AvailabilityProgram,
-    quantity: number | null
-  ): number => {
-    if (!quantity || quantity === 0) return 0;
-
-    // Media Rate = (media_rate / 1000) * quantity
-    const mediaRate = (program.media_rate / 1000) * quantity;
-
-    // Print Rate from matrix
-    const printRate = getPrintRateForQuantity(printMatrix, quantity);
-
-    // Freight
-    const freight = getFreightForQuantity(program, quantity);
-
-    return mediaRate + printRate + freight;
+  const getProgramTotalQuantity = (program: AvailabilityProgram): number => {
+    const bookings = bookingQuantities[program.channel_id] || {};
+    return reportMonths.reduce((sum, month) => {
+      const qty = bookings[month];
+      return sum + (qty ?? 0);
+    }, 0);
   };
 
   const calculateTotalProgramAmount = (
     program: AvailabilityProgram
   ): number => {
-    const bookings = bookingQuantities[program.channel_id] || {};
-    return reportMonths.reduce((sum, month) => {
-      const qty = bookings[month] ?? null;
-      return sum + calculateMonthlyAmount(program, qty);
-    }, 0);
+    return (
+      getMediaRateForProgram(program) +
+      getPrintRateForProgram(program) +
+      getFreightForProgram(program)
+    );
   };
 
   const calculateTotalCampaignAmount = (): number => {
@@ -635,20 +619,14 @@ export function AvailabilityReportStep({
   const getPrintRateForProgram = (
     program: AvailabilityProgram
   ): number => {
-    const bookings = bookingQuantities[program.channel_id] || {};
-    const totalQuantity = reportMonths.reduce((sum, month) => {
-      return sum + (bookings[month] ?? 0);
-    }, 0);
+    const totalQuantity = getProgramTotalQuantity(program);
 
     if (totalQuantity === 0) return 0;
     return getPrintRateForQuantity(printMatrix, totalQuantity);
   };
 
   const getMediaRateForProgram = (program: AvailabilityProgram): number => {
-    const bookings = bookingQuantities[program.channel_id] || {};
-    const totalQuantity = reportMonths.reduce((sum, month) => {
-      return sum + (bookings[month] ?? 0);
-    }, 0);
+    const totalQuantity = getProgramTotalQuantity(program);
 
     if (totalQuantity === 0) return 0;
 
@@ -656,11 +634,7 @@ export function AvailabilityReportStep({
   };
 
   const getFreightForProgram = (program: AvailabilityProgram): number => {
-    const bookings = bookingQuantities[program.channel_id] || {};
-    const totalQuantity = reportMonths.reduce((sum, month) => {
-      return sum + (bookings[month] ?? 0);
-    }, 0);
-
+    const totalQuantity = getProgramTotalQuantity(program);
     if (totalQuantity === 0) return 0;
 
     return getFreightForQuantity(program, totalQuantity);
