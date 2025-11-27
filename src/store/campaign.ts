@@ -13,7 +13,8 @@ export interface ClassificationResult {
 export const classificationResultAtom = atom<ClassificationResult | null>(null);
 export const selectedCategoryAtom = atom<string | null>(null);
 export const selectedCategoryLabelAtom = atom<string | null>(null);
+export const selfSelectedCategoryAtom = atom<string | null>(null);
+export const selfSelectedCategoryLabelAtom = atom<string | null>(null);
 export const selectedProgramsAtom = atom<string[]>([]);
 export const selectedProgramIdsAtom = atom<string[]>([]);
 export const selectedProgramCategoryAtom = atom<string | null>(null);
-

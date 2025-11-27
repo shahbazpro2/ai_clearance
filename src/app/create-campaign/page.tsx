@@ -22,6 +22,8 @@ import {
   campaignIdAtom,
   selectedCategoryAtom,
   selectedCategoryLabelAtom,
+  selfSelectedCategoryAtom,
+  selfSelectedCategoryLabelAtom,
 } from "@/store/campaign";
 
 const TOTAL_STEPS = 6;
@@ -32,10 +34,14 @@ export default function CreateCampaignPage() {
   const [selectedCategoryForProceed, setSelectedCategoryForProceed] = useState<"ai" | "self" | null>(null);
   const [uploadResetKey, setUploadResetKey] = useState(0);
   const classificationResult = useAtomValue(classificationResultAtom);
+  const selfSelectedCategory = useAtomValue(selfSelectedCategoryAtom);
+  const selfSelectedCategoryLabel = useAtomValue(selfSelectedCategoryLabelAtom);
   const setCampaignId = useSetAtom(campaignIdAtom);
   const setClassificationResult = useSetAtom(classificationResultAtom);
   const setSelectedCategory = useSetAtom(selectedCategoryAtom);
   const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
+  const setSelfSelectedCategory = useSetAtom(selfSelectedCategoryAtom);
+  const setSelfSelectedCategoryLabel = useSetAtom(selfSelectedCategoryLabelAtom);
 
   const handleNextFromUpload = () => {
     if (!classificationResult) return;
@@ -55,6 +61,8 @@ export default function CreateCampaignPage() {
   };
 
   const handleSkipUpload = () => {
+    setSelectedCategory(selfSelectedCategory);
+    setSelectedCategoryLabel(selfSelectedCategoryLabel);
     setSelectedCategoryForProceed("self");
     setCurrentStep(5);
   };
@@ -71,6 +79,8 @@ export default function CreateCampaignPage() {
     setClassificationResult(null);
     setSelectedCategory(null);
     setSelectedCategoryLabel(null);
+    setSelfSelectedCategory(null);
+    setSelfSelectedCategoryLabel(null);
     // Navigate to home
     router.push("/");
   };

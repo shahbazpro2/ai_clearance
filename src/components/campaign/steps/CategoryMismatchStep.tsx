@@ -6,12 +6,14 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AlertTriangle } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { acceptPredictedCategoryApi, createManualReviewApi } from "../../../../api/campaigns";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   campaignIdAtom,
   classificationResultAtom,
   selectedCategoryAtom,
   selectedCategoryLabelAtom,
+  selfSelectedCategoryAtom,
+  selfSelectedCategoryLabelAtom,
 } from "@/store/campaign";
 
 interface CategoryMismatchStepProps {
@@ -22,16 +24,43 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
   const campaignId = useAtomValue(campaignIdAtom);
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
   const selectedCategoryLabel = useAtomValue(selectedCategoryLabelAtom);
+  const selfSelectedCategory = useAtomValue(selfSelectedCategoryAtom);
+  const selfSelectedCategoryLabel = useAtomValue(selfSelectedCategoryLabelAtom);
+  const setSelectedCategory = useSetAtom(selectedCategoryAtom);
+  const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
   const [manualReviewRequested, setManualReviewRequested] = useState(false);
 
   const [callAcceptPredicted, { loading: acceptingPredicted }] = useApi({ errMsg: true });
   const [callCreateReview, { loading: creatingReview }] = useApi({ errMsg: true });
 
+  const predictedCategoryId =
+    classificationResult?.predicted_category_id ??
+    classificationResult?.predicted_category ??
+    null;
+  const predictedCategoryLabel =
+    classificationResult?.predicted_category_label ??
+    classificationResult?.predicted_category ??
+    predictedCategoryId ??
+    null;
+
+  const applyPredictedSelection = () => {
+    if (predictedCategoryId) {
+      setSelectedCategory(predictedCategoryId);
+    }
+    setSelectedCategoryLabel(predictedCategoryLabel);
+  };
+
+  const applySelfSelection = () => {
+    setSelectedCategory(selfSelectedCategory);
+    setSelectedCategoryLabel(selfSelectedCategoryLabel);
+  };
+
   const handleAcceptPredicted = () => {
     if (!campaignId) return;
 
     callAcceptPredicted(acceptPredictedCategoryApi(campaignId), () => {
+      applyPredictedSelection();
       onNext("ai");
     });
   };
@@ -45,6 +74,11 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
   };
 
   const handleProceedWithCategory = (categoryType: "ai" | "self") => {
+    if (categoryType === "ai") {
+      applyPredictedSelection();
+    } else {
+      applySelfSelection();
+    }
     onNext(categoryType);
   };
 

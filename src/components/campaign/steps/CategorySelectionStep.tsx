@@ -8,7 +8,13 @@ import { useApi } from "use-hook-api";
 import { fetchCategoriesApi } from "../../../../api/categories";
 import { setCampaignCategoryApi } from "../../../../api/campaigns";
 import { useAtomValue, useSetAtom } from "jotai";
-import { campaignIdAtom, selectedCategoryAtom, selectedCategoryLabelAtom } from "@/store/campaign";
+import {
+  campaignIdAtom,
+  selectedCategoryAtom,
+  selectedCategoryLabelAtom,
+  selfSelectedCategoryAtom,
+  selfSelectedCategoryLabelAtom,
+} from "@/store/campaign";
 
 interface CategorySelectionStepProps {
   onNext: () => void;
@@ -18,6 +24,8 @@ export function CategorySelectionStep({ onNext }: CategorySelectionStepProps) {
   const campaignId = useAtomValue(campaignIdAtom);
   const setSelectedCategory = useSetAtom(selectedCategoryAtom);
   const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
+  const setSelfSelectedCategory = useSetAtom(selfSelectedCategoryAtom);
+  const setSelfSelectedCategoryLabel = useSetAtom(selfSelectedCategoryLabelAtom);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   
   const [callFetchCategories, { data: categories, loading: loadingCategories }] = useApi({ errMsg: false });
@@ -37,6 +45,7 @@ export function CategorySelectionStep({ onNext }: CategorySelectionStepProps) {
     );
     const label = selected?.category ?? selected?.name ?? selected?.label ?? selected?.title ?? "";
     setSelectedCategoryLabel(label || null);
+    setSelfSelectedCategoryLabel(label || null);
   };
 
   const handleNext = () => {
@@ -44,6 +53,7 @@ export function CategorySelectionStep({ onNext }: CategorySelectionStepProps) {
 
     // Store the selected category id for downstream steps
     setSelectedCategory(selectedCategoryId);
+    setSelfSelectedCategory(selectedCategoryId);
 
     callSetCategory(setCampaignCategoryApi({ campaign_id: campaignId, category: selectedCategoryId }), () => {
       onNext();
