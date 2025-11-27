@@ -649,22 +649,46 @@ export function AvailabilityReportStep({
   const isMonthUnavailable = (program: AvailabilityProgram, month: string) =>
     (program.monthlyAvailability[month] ?? 0) <= 0;
 
-  const renderAvailabilityValue = (value: number, reason?: string | null) => {
-    if (value !== 0 || !reason) {
-      return formatNumber(value);
+  const renderAvailabilityValue = (
+    value: number,
+    reason?: string | null,
+    showDurationDisclaimer?: boolean
+  ) => {
+    const baseValue =
+      value !== 0 || !reason ? (
+        <span>{formatNumber(value)}</span>
+      ) : (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger className="cursor-help text-gray-900 underline decoration-dotted">
+              {formatNumber(value)}
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-sm text-gray-900">
+              {reason}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+
+    if (!showDurationDisclaimer) {
+      return baseValue;
     }
 
     return (
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger className="cursor-help text-gray-900 underline decoration-dotted">
-            {formatNumber(value)}
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs text-sm text-gray-900">
-            {reason}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <div className="flex items-center justify-end gap-1">
+        {baseValue}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-sm text-gray-900">
+              Due to the size, this program may take 2-4 months to complete insert
+              distribution.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     );
   };
 
@@ -812,21 +836,6 @@ export function AvailabilityReportStep({
                               ? "Instant"
                               : "Manual"}
                           </Badge>
-                          {program.duration_disclaimer && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    Due to the size, this program may take 2-4
-                                    months to complete insert distribution.
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 font-semibold text-gray-900">
@@ -855,7 +864,8 @@ export function AvailabilityReportStep({
                             <td className="px-4 py-3 text-right text-gray-700">
                               {renderAvailabilityValue(
                                 program.monthlyAvailability[month] ?? 0,
-                                program.monthlyAvailabilityReasons[month]
+                                program.monthlyAvailabilityReasons[month],
+                                program.duration_disclaimer
                               )}
                             </td>
                             <td className="px-4 py-3">

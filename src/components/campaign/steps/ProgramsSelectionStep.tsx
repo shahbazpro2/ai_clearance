@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronsUpDown } from "lucide-react";
 import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom } from "@/store/campaign";
 import { fetchInsertProgramsApi } from "../../../../api/campaigns";
 
@@ -67,8 +74,22 @@ interface InsertProgram {
 }
 
 type SortKey = "name" | "annual_circulation" | "average_order_value" | "average_manual_check_response_time";
-type ResponseTimeFilter = "all" | "fast" | "standard" | "slow";
 type OrderValueFilter = "all" | "under50" | "50to100" | "over100";
+type PercentageFilter = "all" | "under40" | "40to60" | "over60";
+
+const FEMALE_FILTER_OPTIONS: { value: PercentageFilter; label: string }[] = [
+  { value: "all", label: "All female mixes" },
+  { value: "under40", label: "Under 40% female" },
+  { value: "40to60", label: "40% - 60% female" },
+  { value: "over60", label: "60%+ female" },
+];
+
+const MALE_FILTER_OPTIONS: { value: PercentageFilter; label: string }[] = [
+  { value: "all", label: "All male mixes" },
+  { value: "under40", label: "Under 40% male" },
+  { value: "40to60", label: "40% - 60% male" },
+  { value: "over60", label: "60%+ male" },
+];
 
 const PAGE_SIZE = 10;
 
@@ -238,6 +259,39 @@ const formatOrderValue = (program: InsertProgram): string => {
   return currencyFormatter.format(value);
 };
 
+const getProgramAge = (program: InsertProgram): string | null => {
+  const value = getFieldValue(program, ["age", "age_range", "audience_age"]);
+  return value ? String(value) : null;
+};
+
+const getProgramIncome = (program: InsertProgram): string | null => {
+  const value = getFieldValue(program, ["income", "household_income", "average_income"]);
+  return value ? String(value) : null;
+};
+
+const getFemalePercentage = (program: InsertProgram): number | null => {
+  return (
+    parseNumericValue(
+      getFieldValue(program, ["female_percentage", "female_percent", "female_pct"])
+    ) ?? null
+  );
+};
+
+const getMalePercentage = (program: InsertProgram): number | null => {
+  return (
+    parseNumericValue(getFieldValue(program, ["male_percentage", "male_percent", "male_pct"])) ??
+    null
+  );
+};
+
+const matchesPercentageFilter = (value: number | null, filter: PercentageFilter): boolean => {
+  if (filter === "all") return true;
+  if (value === null) return false;
+  if (filter === "under40") return value < 40;
+  if (filter === "40to60") return value >= 40 && value <= 60;
+  return value > 60;
+};
+
 export function ProgramsSelectionStep({
   selectedCategoryType,
   onComplete,
@@ -256,8 +310,11 @@ export function ProgramsSelectionStep({
   ] = useApi({ errMsg: true });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [responseTimeFilter, setResponseTimeFilter] = useState<ResponseTimeFilter>("all");
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [ageFilter, setAgeFilter] = useState("all");
+  const [incomeFilter, setIncomeFilter] = useState("all");
+  const [femaleFilter, setFemaleFilter] = useState<PercentageFilter>("all");
+  const [maleFilter, setMaleFilter] = useState<PercentageFilter>("all");
   const [orderValueFilter, setOrderValueFilter] = useState<OrderValueFilter>("all");
   const [instantOnly, setInstantOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("name");
@@ -343,6 +400,28 @@ export function ProgramsSelectionStep({
     return Array.from(categories).sort((a, b) => a.localeCompare(b));
   }, [programs]);
 
+  const availableAgeOptions = useMemo(() => {
+    const ages = new Set<string>();
+    programs.forEach((program) => {
+      const age = getProgramAge(program);
+      if (age) {
+        ages.add(age);
+      }
+    });
+    return Array.from(ages).sort((a, b) => a.localeCompare(b));
+  }, [programs]);
+
+  const availableIncomeOptions = useMemo(() => {
+    const incomes = new Set<string>();
+    programs.forEach((program) => {
+      const income = getProgramIncome(program);
+      if (income) {
+        incomes.add(income);
+      }
+    });
+    return Array.from(incomes).sort((a, b) => a.localeCompare(b));
+  }, [programs]);
+
   const filteredPrograms = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
 
@@ -352,7 +431,10 @@ export function ProgramsSelectionStep({
       const website = getProgramWebsite(program);
       const availabilityType = getAvailabilityType(program);
       const orderValue = getAverageOrderValue(program);
-      const manualResponseHours = getManualResponseTimeHours(program);
+      const age = getProgramAge(program);
+      const income = getProgramIncome(program);
+      const femalePercentage = getFemalePercentage(program);
+      const malePercentage = getMalePercentage(program);
 
       const matchesSearch =
         !search ||
@@ -362,24 +444,32 @@ export function ProgramsSelectionStep({
 
       if (!matchesSearch) return false;
 
-      if (categoryFilter !== "all" && category !== categoryFilter) {
+      if (categoryFilters.length > 0 && (!category || !categoryFilters.includes(category))) {
+        return false;
+      }
+
+      if (ageFilter !== "all") {
+        if (!age || age !== ageFilter) {
+          return false;
+        }
+      }
+
+      if (incomeFilter !== "all") {
+        if (!income || income !== incomeFilter) {
+          return false;
+        }
+      }
+
+      if (!matchesPercentageFilter(femalePercentage, femaleFilter)) {
+        return false;
+      }
+
+      if (!matchesPercentageFilter(malePercentage, maleFilter)) {
         return false;
       }
 
       if (instantOnly && availabilityType !== "instant") {
         return false;
-      }
-
-      if (responseTimeFilter !== "all") {
-        if (manualResponseHours === null) return false;
-        if (responseTimeFilter === "fast" && manualResponseHours > 24) return false;
-        if (
-          responseTimeFilter === "standard" &&
-          (manualResponseHours <= 24 || manualResponseHours > 72)
-        ) {
-          return false;
-        }
-        if (responseTimeFilter === "slow" && manualResponseHours <= 72) return false;
       }
 
       if (orderValueFilter !== "all") {
@@ -391,7 +481,17 @@ export function ProgramsSelectionStep({
 
       return true;
     });
-  }, [categoryFilter, instantOnly, orderValueFilter, programs, responseTimeFilter, searchTerm]);
+  }, [
+    ageFilter,
+    categoryFilters,
+    femaleFilter,
+    incomeFilter,
+    instantOnly,
+    maleFilter,
+    orderValueFilter,
+    programs,
+    searchTerm,
+  ]);
 
   const sortedPrograms = useMemo(() => {
     const sorted = [...filteredPrograms];
@@ -495,8 +595,11 @@ export function ProgramsSelectionStep({
 
   const handleResetFilters = () => {
     setSearchTerm("");
-    setCategoryFilter("all");
-    setResponseTimeFilter("all");
+    setCategoryFilters([]);
+    setAgeFilter("all");
+    setIncomeFilter("all");
+    setFemaleFilter("all");
+    setMaleFilter("all");
     setOrderValueFilter("all");
     setInstantOnly(false);
     setSortKey("name");
@@ -580,7 +683,7 @@ export function ProgramsSelectionStep({
       </div>
 
       <div className="space-y-4 rounded-xl border bg-white p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Input
             value={searchTerm}
             onChange={(event) => {
@@ -590,43 +693,128 @@ export function ProgramsSelectionStep({
             placeholder="Search by name or website"
           />
           <div className="w-full">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span>
+                    {categoryFilters.length === 0
+                      ? "All categories"
+                      : `${categoryFilters.length} categories selected`}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="max-h-64 w-64 overflow-y-auto">
+                <DropdownMenuCheckboxItem
+                  checked={categoryFilters.length === 0}
+                  onCheckedChange={() => {
+                    setCategoryFilters([]);
+                    setCurrentPage(1);
+                  }}
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  All categories
+                </DropdownMenuCheckboxItem>
+                {availableCategories.map((category) => (
+                  <DropdownMenuCheckboxItem
+                    key={category}
+                    checked={categoryFilters.includes(category)}
+                    onCheckedChange={(checked) => {
+                      setCategoryFilters((prev) => {
+                        if (checked) {
+                          return Array.from(new Set([...prev, category]));
+                        }
+                        return prev.filter((item) => item !== category);
+                      });
+                      setCurrentPage(1);
+                    }}
+                    onSelect={(event) => event.preventDefault()}
+                  >
+                    {category}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="w-full">
             <Select
-              value={categoryFilter}
+              value={ageFilter}
               onValueChange={(value) => {
-                setCategoryFilter(value);
+                setAgeFilter(value);
                 setCurrentPage(1);
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Filter by category" />
+                <SelectValue placeholder="Audience age" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {availableCategories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                <SelectItem value="all">All ages</SelectItem>
+                {availableAgeOptions.map((age) => (
+                  <SelectItem key={age} value={age}>
+                    {age}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-
           </div>
           <div className="w-full">
             <Select
-              value={responseTimeFilter}
+              value={incomeFilter}
               onValueChange={(value) => {
-                setResponseTimeFilter(value as ResponseTimeFilter);
+                setIncomeFilter(value);
                 setCurrentPage(1);
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Avg manual response" />
+                <SelectValue placeholder="Household income" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All response times</SelectItem>
-                <SelectItem value="fast">Under 24 hrs</SelectItem>
-                <SelectItem value="standard">24-72 hrs</SelectItem>
-                <SelectItem value="slow">72+ hrs</SelectItem>
+                <SelectItem value="all">All incomes</SelectItem>
+                {availableIncomeOptions.map((income) => (
+                  <SelectItem key={income} value={income}>
+                    {income}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full">
+            <Select
+              value={femaleFilter}
+              onValueChange={(value) => {
+                setFemaleFilter(value as PercentageFilter);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Female mix" />
+              </SelectTrigger>
+              <SelectContent>
+                {FEMALE_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full">
+            <Select
+              value={maleFilter}
+              onValueChange={(value) => {
+                setMaleFilter(value as PercentageFilter);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Male mix" />
+              </SelectTrigger>
+              <SelectContent>
+                {MALE_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
