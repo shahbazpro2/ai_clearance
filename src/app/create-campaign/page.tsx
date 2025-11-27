@@ -13,6 +13,7 @@ import {
   UploadAndClassifyStep,
   CategoryMismatchStep,
   ProgramsSelectionStep,
+  AvailabilityReportStep,
 } from "@/components/campaign/steps";
 import { ProgressBar } from "@/components/campaign/ProgressBar";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -23,7 +24,7 @@ import {
   selectedCategoryLabelAtom,
 } from "@/store/campaign";
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export default function CreateCampaignPage() {
   const router = useRouter();
@@ -128,8 +129,16 @@ export default function CreateCampaignPage() {
               {currentStep === 5 && (
                 <ProgramsSelectionStep
                   selectedCategoryType={selectedCategoryForProceed}
-                  onComplete={handleComplete}
+                  onComplete={() => setCurrentStep(6)}
                   onBackToUpload={handleReturnToUpload}
+                />
+              )}
+
+              {/* Step 6: Availability Report */}
+              {currentStep === 6 && (
+                <AvailabilityReportStep
+                  onBack={() => setCurrentStep(5)}
+                  onComplete={handleComplete}
                 />
               )}
             </CardContent>

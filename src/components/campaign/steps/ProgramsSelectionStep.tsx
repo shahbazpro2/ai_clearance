@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useApi } from "use-hook-api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom } from "@/store/campaign";
+import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom } from "@/store/campaign";
 import { fetchInsertProgramsApi } from "../../../../api/campaigns";
 
 interface ProgramsSelectionStepProps {
@@ -246,6 +246,9 @@ export function ProgramsSelectionStep({
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
   const selectedCategoryLabel = useAtomValue(selectedCategoryLabelAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
+  const [selectedPrograms, setSelectedPrograms] = useAtom(selectedProgramIdsAtom);
+  const [storedCategory, setStoredCategory] = useAtom(selectedProgramCategoryAtom);
+  const setSelectedChannelIds = useSetAtom(selectedProgramsAtom);
 
   const [
     callFetchPrograms,
@@ -260,7 +263,6 @@ export function ProgramsSelectionStep({
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const effectiveCategoryId = useMemo(() => {
@@ -311,9 +313,15 @@ export function ProgramsSelectionStep({
   }, [callFetchPrograms, effectiveCategoryId]);
 
   useEffect(() => {
+    if (effectiveCategoryId && storedCategory === effectiveCategoryId) {
+      return;
+    }
+    if (effectiveCategoryId) {
+      setStoredCategory(effectiveCategoryId);
+    }
     setSelectedPrograms([]);
     setCurrentPage(1);
-  }, [effectiveCategoryId]);
+  }, [effectiveCategoryId, setSelectedPrograms, setStoredCategory, storedCategory]);
 
   const programs: InsertProgram[] = useMemo(() => {
     const raw =
@@ -500,7 +508,14 @@ export function ProgramsSelectionStep({
     if (selectedPrograms.length === 0) return;
     setSubmitting(true);
     try {
-      // Placeholder for availability request submission when backend endpoint is ready
+      // Store selected program channel_ids in atom
+      const channelIds = selectedPrograms
+        .map((programId) => {
+          const program = programMap.get(programId);
+          return program?.channel_id || program?.id || programId;
+        })
+        .filter(Boolean) as string[];
+      setSelectedChannelIds(channelIds);
       onComplete();
     } finally {
       setSubmitting(false);

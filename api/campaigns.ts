@@ -57,3 +57,30 @@ export const fetchInsertProgramsApi = (category?: string) => {
   const query = category ? `?category_id=${encodeURIComponent(category)}` : "";
   return universalApi(`/programs/insert-programs${query}`, "get");
 };
+
+/**
+ * Get Program Availability
+ * Endpoint: POST /programs/availability
+ */
+export const getProgramAvailabilityApi = (payload: {
+  channel_ids: string[];
+  category_id: string;
+}) => {
+  return responseApi("/programs/availability", "post", payload);
+};
+
+/**
+ * Get Available Insert Print Types
+ * Endpoint: GET /insert-print-types
+ */
+export const getInsertPrintTypesApi = () => {
+  return universalApi(`/insert-print-types`, "get");
+};
+
+/**
+ * Get Print Price Matrix for Selected Format
+ * Endpoint: GET /print-price-matrix/{format}
+ */
+export const getPrintPriceMatrixApi = (format: string) => {
+  return universalApi(`/print-price-matrix/${format}`, "get");
+};
