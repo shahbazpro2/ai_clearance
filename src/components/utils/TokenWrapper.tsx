@@ -36,9 +36,10 @@ const TokenWrapper: React.FC = () => {
                 const exp = decoded.exp;
                 if (exp - now < 30) {
                     const res = await responseApi(
-                        `${API_URL}/refresh`,
+                        `${API_URL}/auth/token`,
                         'post',
                         {
+                            "grant_type": "refresh_token",
                             refresh_token: refresh,
                         },
                     )();
