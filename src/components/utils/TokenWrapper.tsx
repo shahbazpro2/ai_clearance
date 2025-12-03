@@ -14,7 +14,7 @@ const TokenWrapper: React.FC = () => {
 
     useEffect(() => {
         const checkAndRefresh = async () => {
-            if (['/login', '/signup', '/verify-otp', '/'].includes(pathname)) {
+            if (['/login', '/signup', '/verify-otp'].includes(pathname)) {
                 return;
             }
             const access = document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];

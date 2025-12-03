@@ -304,9 +304,35 @@ const getPrintRateForQuantity = (
       matchedTier = smallestTier;
     }
   }
-
   if (!matchedTier) return 0;
   return matchedTier.price_per_unit * quantity;
+};
+
+const getPrintPricePerUnit = (
+  printMatrix: PrintPriceTier[],
+  quantity: number
+): number => {
+  if (!printMatrix || printMatrix.length === 0 || !quantity) return 0;
+
+  let matchedTier: PrintPriceTier | null = null;
+  for (const tier of printMatrix) {
+    if (
+      quantity >= tier.min_quantity &&
+      (tier.max_quantity === undefined || quantity <= tier.max_quantity)
+    ) {
+      matchedTier = tier;
+    }
+  }
+
+  if (!matchedTier) {
+    const smallestTier = printMatrix[0];
+    if (smallestTier && quantity < smallestTier.min_quantity) {
+      matchedTier = smallestTier;
+    }
+  }
+
+  if (!matchedTier) return 0;
+  return matchedTier.price_per_unit;
 };
 
 const normalizePrintMatrixData = (data: any): PrintPriceTier[] => {
@@ -600,6 +626,12 @@ export function AvailabilityReportStep({
     }, 0);
   };
 
+  const getTotalQuantityAcrossAllPrograms = (): number => {
+    return availabilityPrograms.reduce((total, program) => {
+      return total + getProgramTotalQuantity(program);
+    }, 0);
+  };
+
   const calculateTotalProgramAmount = (
     program: AvailabilityProgram
   ): number => {
@@ -619,10 +651,17 @@ export function AvailabilityReportStep({
   const getPrintRateForProgram = (
     program: AvailabilityProgram
   ): number => {
-    const totalQuantity = getProgramTotalQuantity(program);
+    const programQuantity = getProgramTotalQuantity(program);
+    if (programQuantity === 0) return 0;
 
-    if (totalQuantity === 0) return 0;
-    return getPrintRateForQuantity(printMatrix, totalQuantity);
+    // Calculate total quantity across all programs and all months
+    const totalQuantityAcrossAllPrograms = getTotalQuantityAcrossAllPrograms();
+
+    // Get the price per unit based on the total quantity across all programs
+    const pricePerUnit = getPrintPricePerUnit(printMatrix, totalQuantityAcrossAllPrograms);
+
+    // Apply that price per unit to this program's quantity
+    return pricePerUnit * programQuantity;
   };
 
   const getMediaRateForProgram = (program: AvailabilityProgram): number => {
