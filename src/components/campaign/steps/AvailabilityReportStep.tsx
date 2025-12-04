@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import {
   selectedProgramsAtom,
   selectedCategoryAtom,
@@ -685,6 +686,115 @@ export function AvailabilityReportStep({
     );
   }, [quantityErrors]);
 
+  const exportToExcel = () => {
+    if (availabilityPrograms.length === 0) return;
+
+    // Prepare headers
+    const headers = [
+      "Instant vs Manual",
+      "Program Name",
+      "Media Rate",
+      "Print Rate",
+      "Freight",
+      "Total Program Amount",
+    ];
+
+    // Add month columns
+    reportMonths.forEach((month) => {
+      headers.push(`${formatMonthLabel(month)} Availability`);
+      headers.push(`${formatMonthLabel(month)} Booking Qty`);
+    });
+
+    // Prepare data rows
+    const rows = availabilityPrograms.map((program) => {
+      const bookings = bookingQuantities[program.channel_id] || {};
+      const row: any[] = [
+        program.availability_check_type === "instant" ? "Instant" : "Manual",
+        program.program_name,
+        getMediaRateForProgram(program),
+        getPrintRateForProgram(program),
+        getFreightForProgram(program),
+        calculateTotalProgramAmount(program),
+      ];
+
+      // Add month data
+      reportMonths.forEach((month) => {
+        const availability = program.monthlyAvailability[month] ?? 0;
+        const bookingQty = bookings[month] ?? 0;
+        row.push(availability);
+        row.push(bookingQty);
+      });
+
+      return row;
+    });
+
+    // Add total row
+    const totalRow: any[] = [
+      "",
+      "Total Campaign Amount",
+      "",
+      "",
+      "",
+      calculateTotalCampaignAmount(),
+    ];
+    // Add empty cells for month columns
+    reportMonths.forEach(() => {
+      totalRow.push("");
+      totalRow.push("");
+    });
+    rows.push(totalRow);
+
+    // Create workbook and worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+    // Set column widths
+    const columnWidths = [
+      { wch: 18 }, // Instant vs Manual
+      { wch: 30 }, // Program Name
+      { wch: 15 }, // Media Rate
+      { wch: 15 }, // Print Rate
+      { wch: 15 }, // Freight
+      { wch: 20 }, // Total Program Amount
+    ];
+    reportMonths.forEach(() => {
+      columnWidths.push({ wch: 20 }); // Availability
+      columnWidths.push({ wch: 18 }); // Booking Qty
+    });
+    worksheet["!cols"] = columnWidths;
+
+    // Format currency columns
+    const currencyColumns = [2, 3, 4, 5]; // Media Rate, Print Rate, Freight, Total Program Amount
+    const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+    for (let row = 1; row <= range.e.r; row++) {
+      currencyColumns.forEach((col) => {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[cellAddress];
+        if (cell && typeof cell.v === "number") {
+          cell.z = "$#,##0.00";
+        }
+      });
+    }
+
+    // Format total row
+    const totalRowIndex = rows.length;
+    const totalCellAddress = XLSX.utils.encode_cell({ r: totalRowIndex, c: 5 });
+    const totalCell = worksheet[totalCellAddress];
+    if (totalCell && typeof totalCell.v === "number") {
+      totalCell.z = "$#,##0.00";
+    }
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Availability Report");
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split("T")[0];
+    const filename = `availability-report-${timestamp}.xlsx`;
+
+    // Export file
+    XLSX.writeFile(workbook, filename);
+  };
+
   const isMonthUnavailable = (program: AvailabilityProgram, month: string) =>
     (program.monthlyAvailability[month] ?? 0) <= 0;
 
@@ -809,12 +919,26 @@ export function AvailabilityReportStep({
         </div>
       ) : (
         <div className="space-y-4 rounded-xl border bg-white p-4 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Step 2
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Step 2
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">
+                Availability Report Table
+              </h4>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToExcel}
+              disabled={availabilityPrograms.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export to Excel
+            </Button>
           </div>
-          <h4 className="text-base font-semibold text-gray-900">
-            Availability Report Table
-          </h4>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
