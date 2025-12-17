@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useApi } from "use-hook-api";
 import { Badge } from "@/components/ui/badge";
@@ -11,13 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronsUpDown } from "lucide-react";
-import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom } from "@/store/campaign";
+import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom, campaignIdAtom, availabilityReportBookingQuantitiesAtom, availabilityReportInputValuesAtom, availabilityReportQuantityErrorsAtom, availabilityReportBookingTouchedAtom, availabilityReportExcludedProgramsAtom } from "@/store/campaign";
 import { fetchInsertProgramsApi } from "../../../../api/campaigns";
 
 interface ProgramsSelectionStepProps {
@@ -300,9 +308,33 @@ export function ProgramsSelectionStep({
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
   const selectedCategoryLabel = useAtomValue(selectedCategoryLabelAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
+  const campaignId = useAtomValue(campaignIdAtom);
   const [selectedPrograms, setSelectedPrograms] = useAtom(selectedProgramIdsAtom);
   const [storedCategory, setStoredCategory] = useAtom(selectedProgramCategoryAtom);
   const setSelectedChannelIds = useSetAtom(selectedProgramsAtom);
+  const selectedChannelIds = useAtomValue(selectedProgramsAtom);
+  const prevSelectedChannelIdsRef = useRef<string[]>([]);
+  
+  // Cache atoms for checking if data exists
+  const bookingQuantities = useAtomValue(availabilityReportBookingQuantitiesAtom);
+  const bookingInputValues = useAtomValue(availabilityReportInputValuesAtom);
+  const quantityErrors = useAtomValue(availabilityReportQuantityErrorsAtom);
+  const bookingTouched = useAtomValue(availabilityReportBookingTouchedAtom);
+  const excludedPrograms = useAtomValue(availabilityReportExcludedProgramsAtom);
+  
+  // Setters for clearing cache
+  const setBookingQuantities = useSetAtom(availabilityReportBookingQuantitiesAtom);
+  const setBookingInputValues = useSetAtom(availabilityReportInputValuesAtom);
+  const setQuantityErrors = useSetAtom(availabilityReportQuantityErrorsAtom);
+  const setBookingTouched = useSetAtom(availabilityReportBookingTouchedAtom);
+  const setExcludedPrograms = useSetAtom(availabilityReportExcludedProgramsAtom);
+  
+  // State for confirmation modal
+  const [programToUncheck, setProgramToUncheck] = useState<{
+    programId: string;
+    channelId: string;
+    programName: string;
+  } | null>(null);
 
   const [
     callFetchPrograms,
@@ -366,8 +398,8 @@ export function ProgramsSelectionStep({
 
   useEffect(() => {
     if (!effectiveCategoryId) return;
-    callFetchPrograms(fetchInsertProgramsApi(effectiveCategoryId));
-  }, [callFetchPrograms, effectiveCategoryId]);
+    callFetchPrograms(fetchInsertProgramsApi(effectiveCategoryId, campaignId ?? undefined));
+  }, [callFetchPrograms, effectiveCategoryId, campaignId]);
 
   useEffect(() => {
     if (effectiveCategoryId && storedCategory === effectiveCategoryId) {
@@ -388,6 +420,47 @@ export function ProgramsSelectionStep({
       [];
     return Array.isArray(raw) ? raw : [];
   }, [programsResponse]);
+
+  // Sync selectedProgramIdsAtom with selectedProgramsAtom (channel_ids) when coming back from availability report
+  // This ensures checkboxes reflect deletions made in AvailabilityReportStep
+  // Only sync when selectedChannelIds changes (indicating we're returning from availability report)
+  useEffect(() => {
+    if (programs.length === 0) {
+      return;
+    }
+
+    // Only sync if selectedChannelIds actually changed (not on initial mount or during selection)
+    const channelIdsChanged = 
+      prevSelectedChannelIdsRef.current.length > 0 && 
+      JSON.stringify(prevSelectedChannelIdsRef.current) !== JSON.stringify(selectedChannelIds);
+
+    // Update ref for next comparison
+    prevSelectedChannelIdsRef.current = selectedChannelIds;
+
+    // Only proceed if channelIds changed (meaning we're coming back from availability report)
+    if (!channelIdsChanged) {
+      return;
+    }
+
+    // If selectedChannelIds is now empty, clear selections
+    if (selectedChannelIds.length === 0) {
+      if (selectedPrograms.length > 0) {
+        setSelectedPrograms([]);
+      }
+      return;
+    }
+
+    // Filter selectedPrograms to only include programs whose channel_id is in selectedChannelIds
+    setSelectedPrograms((prev) => {
+      const validProgramIds = prev.filter((programId) => {
+        const program = programs.find((p) => getProgramId(p) === programId);
+        if (!program) return false;
+        const channelId = program.channel_id ?? program.id ?? program.program_id;
+        return channelId && selectedChannelIds.includes(String(channelId));
+      });
+      return validProgramIds;
+    });
+  }, [programs, selectedChannelIds, setSelectedPrograms]);
 
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -563,10 +636,83 @@ export function ProgramsSelectionStep({
     return map;
   }, [programs]);
 
+  // Check if program has cached data
+  const hasCachedData = (channelId: string): boolean => {
+    return !!(
+      bookingQuantities[channelId] ||
+      bookingInputValues[channelId] ||
+      quantityErrors[channelId] ||
+      bookingTouched[channelId] ||
+      excludedPrograms.includes(channelId)
+    );
+  };
+
   const handleToggleProgram = (programId: string) => {
+    const program = programMap.get(programId);
+    if (!program) return;
+
+    const isCurrentlySelected = selectedPrograms.includes(programId);
+    
+    // If unchecking, check for cached data
+    if (isCurrentlySelected) {
+      const channelId = program.channel_id ?? program.id ?? program.program_id ?? programId;
+      const programName = getProgramName(program);
+      
+      if (hasCachedData(String(channelId))) {
+        // Show confirmation modal
+        setProgramToUncheck({
+          programId,
+          channelId: String(channelId),
+          programName,
+        });
+        return;
+      }
+    }
+    
+    // If checking or no cached data, proceed normally
     setSelectedPrograms((prev) =>
       prev.includes(programId) ? prev.filter((id) => id !== programId) : [...prev, programId]
     );
+  };
+
+  const confirmUncheckProgram = () => {
+    if (!programToUncheck) return;
+
+    const { programId, channelId } = programToUncheck;
+
+    // Remove from selected programs
+    setSelectedPrograms((prev) => prev.filter((id) => id !== programId));
+
+    // Clear cached data for this program
+    setBookingQuantities((prev) => {
+      const updated = { ...prev };
+      delete updated[channelId];
+      return updated;
+    });
+    
+    setBookingInputValues((prev) => {
+      const updated = { ...prev };
+      delete updated[channelId];
+      return updated;
+    });
+    
+    setQuantityErrors((prev) => {
+      const updated = { ...prev };
+      delete updated[channelId];
+      return updated;
+    });
+    
+    setBookingTouched((prev) => {
+      const updated = { ...prev };
+      delete updated[channelId];
+      return updated;
+    });
+
+    // Remove from excluded programs if present
+    setExcludedPrograms((prev) => prev.filter((id) => id !== channelId));
+
+    // Close modal
+    setProgramToUncheck(null);
   };
 
   const allVisibleSelected =
@@ -1119,6 +1265,36 @@ export function ProgramsSelectionStep({
           Failed to load programs. Please refresh or adjust your filters.
         </div>
       )}
+
+      {/* Uncheck Confirmation Modal */}
+      <Dialog open={!!programToUncheck} onOpenChange={(open) => !open && setProgramToUncheck(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Program</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-gray-900">
+                {programToUncheck?.programName}
+              </span>
+              ? This program has cached booking data that will be permanently deleted. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setProgramToUncheck(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmUncheckProgram}
+            >
+              Remove and Clear Cache
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

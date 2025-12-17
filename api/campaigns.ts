@@ -51,11 +51,24 @@ export const createManualReviewApi = (payload: { campaign_id: string }) => {
 
 /**
  * Fetch Insert Programs
- * Endpoint: GET /programs/insert-programs?category={category_id}
+ * Endpoint: GET /programs/insert-programs?category={category_id}&campaign_id={campaign_id}
  */
-export const fetchInsertProgramsApi = (category?: string) => {
-  const query = category ? `?category_id=${encodeURIComponent(category)}` : "";
-  return universalApi(`/programs/insert-programs${query}`, "get");
+export const fetchInsertProgramsApi = (
+  category?: string,
+  campaignId?: string
+) => {
+  const params = new URLSearchParams();
+  if (category) {
+    params.append("category_id", category);
+  }
+  if (campaignId) {
+    params.append("campaign_id", campaignId);
+  }
+  const query = params.toString();
+  return universalApi(
+    `/programs/insert-programs${query ? `?${query}` : ""}`,
+    "get"
+  );
 };
 
 /**
@@ -65,6 +78,7 @@ export const fetchInsertProgramsApi = (category?: string) => {
 export const getProgramAvailabilityApi = (payload: {
   channel_ids: string[];
   category_id: string;
+  campaign_id?: string;
 }) => {
   return responseApi("/programs/availability", "post", payload);
 };

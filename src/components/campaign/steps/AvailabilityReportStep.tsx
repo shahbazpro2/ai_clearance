@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { useAtomValue } from "jotai";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useAtom, useAtomValue } from "jotai";
 import { useApi } from "use-hook-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertTriangle, Download } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertTriangle, Download, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
   selectedProgramsAtom,
+  selectedProgramIdsAtom,
   selectedCategoryAtom,
   classificationResultAtom,
+  campaignIdAtom,
+  availabilityReportBookingQuantitiesAtom,
+  availabilityReportInputValuesAtom,
+  availabilityReportQuantityErrorsAtom,
+  availabilityReportBookingTouchedAtom,
+  availabilityReportSelectedInsertTypeAtom,
+  availabilityReportExcludedProgramsAtom,
 } from "@/store/campaign";
 import {
   getProgramAvailabilityApi,
@@ -53,6 +69,7 @@ interface FreightRange {
 
 interface AvailabilityProgram {
   channel_id: string;
+  program_id?: string;
   program_name: string;
   availability_check_type: "instant" | "manual";
   media_rate: number;
@@ -265,8 +282,12 @@ const normalizeAvailabilityProgram = (
     coerceToNumber(programData.media_rate) ??
     0;
 
+  // Extract program_id (different from channel_id)
+  const programId = programData.id ?? programData.program_id ?? null;
+
   return {
     channel_id: channelId,
+    program_id: programId ? String(programId) : undefined,
     program_name: programData.program_name ?? programData.name ?? channelId,
     availability_check_type:
       (programData.availability_check_type ??
@@ -408,23 +429,39 @@ export function AvailabilityReportStep({
   onBack,
   onComplete,
 }: AvailabilityReportStepProps) {
-  const selectedPrograms = useAtomValue(selectedProgramsAtom);
+  const [selectedPrograms, setSelectedPrograms] = useAtom(selectedProgramsAtom);
+  const [selectedProgramIds, setSelectedProgramIds] = useAtom(selectedProgramIdsAtom);
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
+  const campaignId = useAtomValue(campaignIdAtom);
 
-  const [selectedInsertType, setSelectedInsertType] = useState<string>("");
-  const [bookingQuantities, setBookingQuantities] = useState<
-    Record<string, BookingQuantity>
-  >({});
-  const [quantityErrors, setQuantityErrors] = useState<
-    Record<string, QuantityErrorBag>
-  >({});
-  const [bookingInputValues, setBookingInputValues] = useState<
-    Record<string, BookingInputValues>
-  >({});
-  const [bookingTouched, setBookingTouched] = useState<
-    Record<string, BookingTouched>
-  >({});
+  // Use cached state from atoms
+  const [selectedInsertType, setSelectedInsertType] = useAtom(
+    availabilityReportSelectedInsertTypeAtom
+  );
+  const [bookingQuantities, setBookingQuantities] = useAtom(
+    availabilityReportBookingQuantitiesAtom
+  );
+  const [quantityErrors, setQuantityErrors] = useAtom(
+    availabilityReportQuantityErrorsAtom
+  );
+  const [bookingInputValues, setBookingInputValues] = useAtom(
+    availabilityReportInputValuesAtom
+  );
+  const [bookingTouched, setBookingTouched] = useAtom(
+    availabilityReportBookingTouchedAtom
+  );
+  const [excludedPrograms, setExcludedPrograms] = useAtom(
+    availabilityReportExcludedProgramsAtom
+  );
+
+  const [programToDelete, setProgramToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  
+  const isDeletingRef = useRef(false);
+  const skipRefetchRef = useRef(false);
 
   const [
     callGetAvailability,
@@ -450,17 +487,35 @@ export function AvailabilityReportStep({
     );
   }, [selectedCategoryId, classificationResult]);
 
-  // Fetch availability data on mount
+  // Remove programs from excluded list if they're re-selected (but not during deletion)
   useEffect(() => {
+    if (isDeletingRef.current) {
+      isDeletingRef.current = false;
+      return;
+    }
+    if (selectedPrograms.length > 0 && excludedPrograms.length > 0) {
+      setExcludedPrograms((prev) =>
+        prev.filter((programId) => !selectedPrograms.includes(programId))
+      );
+    }
+  }, [selectedPrograms, excludedPrograms.length, setExcludedPrograms]);
+
+  // Fetch availability data on mount (but skip if we're deleting to prevent refetch)
+  useEffect(() => {
+    if (skipRefetchRef.current) {
+      skipRefetchRef.current = false;
+      return;
+    }
     if (selectedPrograms.length > 0 && effectiveCategoryId) {
       callGetAvailability(
         getProgramAvailabilityApi({
           channel_ids: selectedPrograms,
           category_id: effectiveCategoryId,
+          campaign_id: campaignId ?? undefined,
         })
       );
     }
-  }, [selectedPrograms, effectiveCategoryId, callGetAvailability]);
+  }, [selectedPrograms, effectiveCategoryId, campaignId, callGetAvailability]);
 
   // Fetch insert print types on mount
   useEffect(() => {
@@ -490,25 +545,29 @@ export function AvailabilityReportStep({
           normalizedPrograms.push(normalized);
         }
       });
-      return normalizedPrograms;
-    }
-
-    if (raw && typeof raw === "object") {
+    } else if (raw && typeof raw === "object") {
       Object.entries(raw).forEach(([channelId, value]) => {
         const normalized = normalizeAvailabilityProgram(value, channelId);
         if (normalized) {
           normalizedPrograms.push(normalized);
         }
       });
-      return normalizedPrograms;
     }
 
     return normalizedPrograms;
   }, [availabilityData]);
 
+  // Filter out excluded programs separately to ensure reactivity
+  const filteredAvailabilityPrograms = useMemo(() => {
+    const excludedSet = new Set(excludedPrograms);
+    return availabilityPrograms.filter(
+      (program) => !excludedSet.has(program.channel_id)
+    );
+  }, [availabilityPrograms, excludedPrograms]);
+
   const reportMonths = useMemo(() => {
     const monthSet = new Set<string>();
-    availabilityPrograms.forEach((program) => {
+    filteredAvailabilityPrograms.forEach((program) => {
       Object.keys(program.monthlyAvailability).forEach((month) => {
         if (month) {
           monthSet.add(month);
@@ -519,15 +578,15 @@ export function AvailabilityReportStep({
     if (months.length === 0) {
       return DEFAULT_REPORT_MONTHS;
     }
-    return months.sort((a, b) => {
-      const orderA = MONTH_ORDER[a] ?? 999;
-      const orderB = MONTH_ORDER[b] ?? 999;
-      if (orderA === orderB) {
-        return a.localeCompare(b);
-      }
-      return orderA - orderB;
-    });
-  }, [availabilityPrograms]);
+      return months.sort((a, b) => {
+        const orderA = MONTH_ORDER[a] ?? 999;
+        const orderB = MONTH_ORDER[b] ?? 999;
+        if (orderA === orderB) {
+          return a.localeCompare(b);
+        }
+        return orderA - orderB;
+      });
+    }, [filteredAvailabilityPrograms]);
 
   const insertPrintTypes: InsertPrintType[] = useMemo(() => {
     const raw =
@@ -537,6 +596,21 @@ export function AvailabilityReportStep({
       [];
     return Array.isArray(raw) ? raw : [];
   }, [printTypesData]);
+
+  // Auto-select first insert format on first visit
+  useEffect(() => {
+    if (insertPrintTypes.length > 0 && !selectedInsertType) {
+      const firstType = insertPrintTypes[0];
+      const firstTypeValue =
+        firstType.id ??
+        firstType.code ??
+        firstType.name ??
+        firstType.label;
+      if (firstTypeValue) {
+        setSelectedInsertType(String(firstTypeValue));
+      }
+    }
+  }, [insertPrintTypes, selectedInsertType, setSelectedInsertType]);
 
   const printMatrix: PrintPriceTier[] = useMemo(() => {
     const raw =
@@ -619,6 +693,72 @@ export function AvailabilityReportStep({
     }));
   };
 
+  const handleDeleteProgram = (programId: string, programName: string) => {
+    // Set program to delete to show confirmation modal
+    setProgramToDelete({ id: programId, name: programName });
+  };
+
+  const confirmDeleteProgram = () => {
+    if (!programToDelete) return;
+
+    const channelId = programToDelete.id;
+    
+    // Find the program to get its program_id
+    const programToRemove = availabilityPrograms.find((p) => p.channel_id === channelId);
+    const programId = programToRemove?.program_id;
+    
+    // Set flags to prevent useEffects from interfering
+    isDeletingRef.current = true;
+    skipRefetchRef.current = true;
+    
+    // Remove from selected programs (channel_ids) so checkbox is unchecked when going back
+    setSelectedPrograms((prev) => prev.filter((id) => id !== channelId));
+    
+    // Remove from selected program IDs if we have the program_id
+    if (programId) {
+      setSelectedProgramIds((prev) => prev.filter((id) => id !== programId));
+    } else {
+      // If program_id not available, try to remove by channel_id (in case they're the same)
+      setSelectedProgramIds((prev) => prev.filter((id) => id !== channelId));
+    }
+    
+    // Add to excluded programs - this will immediately filter the program out
+    setExcludedPrograms((prev) => {
+      if (prev.includes(channelId)) {
+        return prev; // Already excluded
+      }
+      return [...prev, channelId];
+    });
+
+    // Clean up cached data for this program
+    setBookingQuantities((prev) => {
+      const updated = { ...prev };
+      delete updated[programId];
+      return updated;
+    });
+    
+    setBookingInputValues((prev) => {
+      const updated = { ...prev };
+      delete updated[programId];
+      return updated;
+    });
+    
+    setQuantityErrors((prev) => {
+      const updated = { ...prev };
+      delete updated[programId];
+      return updated;
+    });
+    
+    setBookingTouched((prev) => {
+      const updated = { ...prev };
+      delete updated[programId];
+      return updated;
+    });
+
+    // Close modal after state updates
+    setProgramToDelete(null);
+  };
+
   const getProgramTotalQuantity = (program: AvailabilityProgram): number => {
     const bookings = bookingQuantities[program.channel_id] || {};
     return reportMonths.reduce((sum, month) => {
@@ -628,7 +768,7 @@ export function AvailabilityReportStep({
   };
 
   const getTotalQuantityAcrossAllPrograms = (): number => {
-    return availabilityPrograms.reduce((total, program) => {
+    return filteredAvailabilityPrograms.reduce((total, program) => {
       return total + getProgramTotalQuantity(program);
     }, 0);
   };
@@ -644,7 +784,7 @@ export function AvailabilityReportStep({
   };
 
   const calculateTotalCampaignAmount = (): number => {
-    return availabilityPrograms.reduce((total, program) => {
+    return filteredAvailabilityPrograms.reduce((total, program) => {
       return total + calculateTotalProgramAmount(program);
     }, 0);
   };
@@ -687,7 +827,7 @@ export function AvailabilityReportStep({
   }, [quantityErrors]);
 
   const exportToExcel = () => {
-    if (availabilityPrograms.length === 0) return;
+    if (filteredAvailabilityPrograms.length === 0) return;
 
     // Prepare headers
     const headers = [
@@ -706,7 +846,7 @@ export function AvailabilityReportStep({
     });
 
     // Prepare data rows
-    const rows = availabilityPrograms.map((program) => {
+    const rows = filteredAvailabilityPrograms.map((program) => {
       const bookings = bookingQuantities[program.channel_id] || {};
       const row: any[] = [
         program.availability_check_type === "instant" ? "Instant" : "Manual",
@@ -909,7 +1049,7 @@ export function AvailabilityReportStep({
             <p className="text-sm text-gray-600">Loading availability data...</p>
           </div>
         </div>
-      ) : availabilityPrograms.length === 0 ? (
+      ) : filteredAvailabilityPrograms.length === 0 ? (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
           No availability data available. Please go back and select programs.
         </div>
@@ -932,7 +1072,7 @@ export function AvailabilityReportStep({
               variant="outline"
               size="sm"
               onClick={exportToExcel}
-              disabled={availabilityPrograms.length === 0}
+              disabled={filteredAvailabilityPrograms.length === 0}
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
@@ -971,10 +1111,13 @@ export function AvailabilityReportStep({
                       </th>
                     </Fragment>
                   ))}
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-700">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {availabilityPrograms.map((program) => {
+                {filteredAvailabilityPrograms.map((program) => {
                   const bookings = bookingQuantities[program.channel_id] || {};
                   const errors = quantityErrors[program.channel_id] || {};
                   const inputValues = bookingInputValues[program.channel_id] || {};
@@ -1077,6 +1220,22 @@ export function AvailabilityReportStep({
                           </Fragment>
                         );
                       })}
+                      <td className="px-4 py-3 text-center">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteProgram(program.channel_id, program.program_name);
+                          }}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Delete program"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -1102,6 +1261,37 @@ export function AvailabilityReportStep({
           Continue
         </Button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!programToDelete} onOpenChange={(open) => !open && setProgramToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Program</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-gray-900">
+                {programToDelete?.name}
+              </span>
+              ? This will remove the program from the availability report and clear all booking
+              quantities for this program.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setProgramToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteProgram}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

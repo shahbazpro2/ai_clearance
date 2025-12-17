@@ -18,3 +18,16 @@ export const selfSelectedCategoryLabelAtom = atom<string | null>(null);
 export const selectedProgramsAtom = atom<string[]>([]);
 export const selectedProgramIdsAtom = atom<string[]>([]);
 export const selectedProgramCategoryAtom = atom<string | null>(null);
+
+// Cache for availability report state
+export type BookingQuantityCache = Record<string, Record<string, number | null>>;
+export type BookingInputValuesCache = Record<string, Record<string, string>>;
+export type QuantityErrorsCache = Record<string, Record<string, string | undefined>>;
+export type BookingTouchedCache = Record<string, Record<string, boolean | undefined>>;
+
+export const availabilityReportBookingQuantitiesAtom = atom<BookingQuantityCache>({});
+export const availabilityReportInputValuesAtom = atom<BookingInputValuesCache>({});
+export const availabilityReportQuantityErrorsAtom = atom<QuantityErrorsCache>({});
+export const availabilityReportBookingTouchedAtom = atom<BookingTouchedCache>({});
+export const availabilityReportSelectedInsertTypeAtom = atom<string>("");
+export const availabilityReportExcludedProgramsAtom = atom<string[]>([]);
