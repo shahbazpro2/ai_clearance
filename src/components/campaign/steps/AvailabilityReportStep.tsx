@@ -17,7 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Download, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, Trash2, Save, FileCheck } from "lucide-react";
+import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import {
   selectedProgramsAtom,
@@ -36,11 +37,15 @@ import {
   getProgramAvailabilityApi,
   getInsertPrintTypesApi,
   getPrintPriceMatrixApi,
+  saveCampaignProgramsApi,
+  createManualAvailabilityRequestApi,
+  getCampaignProgramsApi,
 } from "../../../../api/campaigns";
 
 interface AvailabilityReportStepProps {
   onBack: () => void;
   onComplete: () => void;
+  useSavedPrograms?: boolean; // If true, use Get Campaign Programs API instead of Availability API
 }
 
 const DEFAULT_REPORT_MONTHS = ["december", "january", "february"];
@@ -79,6 +84,7 @@ interface AvailabilityProgram {
   duration_disclaimer?: boolean;
   category?: string;
   exclusive?: boolean;
+  reviewed_by_agency?: boolean;
 }
 
 interface InsertPrintType {
@@ -301,6 +307,7 @@ const normalizeAvailabilityProgram = (
     duration_disclaimer: Boolean(programData.duration_disclaimer),
     category: programData.category,
     exclusive: programData.exclusive,
+    reviewed_by_agency: Boolean(programData.reviewed_by_agency),
   };
 };
 
@@ -428,6 +435,7 @@ const validateQuantity = (
 export function AvailabilityReportStep({
   onBack,
   onComplete,
+  useSavedPrograms = false,
 }: AvailabilityReportStepProps) {
   const [selectedPrograms, setSelectedPrograms] = useAtom(selectedProgramsAtom);
   const [selectedProgramIds, setSelectedProgramIds] = useAtom(selectedProgramIdsAtom);
@@ -459,7 +467,7 @@ export function AvailabilityReportStep({
     id: string;
     name: string;
   } | null>(null);
-  
+
   const isDeletingRef = useRef(false);
   const skipRefetchRef = useRef(false);
 
@@ -477,6 +485,10 @@ export function AvailabilityReportStep({
     callGetPrintMatrix,
     { data: printMatrixData, loading: loadingPrintMatrix },
   ] = useApi({ errMsg: true });
+
+  const [callSavePrograms, { loading: savingPrograms }] = useApi({ errMsg: true });
+  const [callRequestManualAvailability, { loading: requestingManualAvailability }] = useApi({ errMsg: true });
+  const [callGetCampaignPrograms, { data: campaignProgramsData, loading: loadingCampaignPrograms }] = useApi({ errMsg: true });
 
   const effectiveCategoryId = useMemo(() => {
     return (
@@ -501,12 +513,18 @@ export function AvailabilityReportStep({
   }, [selectedPrograms, excludedPrograms.length, setExcludedPrograms]);
 
   // Fetch availability data on mount (but skip if we're deleting to prevent refetch)
+  // Use Get Campaign Programs if useSavedPrograms is true, otherwise use Availability API
   useEffect(() => {
     if (skipRefetchRef.current) {
       skipRefetchRef.current = false;
       return;
     }
-    if (selectedPrograms.length > 0 && effectiveCategoryId) {
+
+    if (useSavedPrograms && campaignId) {
+      // Use Get Campaign Programs endpoint when directly landing on availability page
+      callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
+    } else if (selectedPrograms.length > 0 && effectiveCategoryId) {
+      // Use Availability API when navigating from Program Selection page
       callGetAvailability(
         getProgramAvailabilityApi({
           channel_ids: selectedPrograms,
@@ -515,11 +533,12 @@ export function AvailabilityReportStep({
         })
       );
     }
-  }, [selectedPrograms, effectiveCategoryId, campaignId, callGetAvailability]);
+  }, [selectedPrograms, effectiveCategoryId, campaignId, callGetAvailability, callGetCampaignPrograms, useSavedPrograms]);
 
   // Fetch insert print types on mount
   useEffect(() => {
     callGetPrintTypes(getInsertPrintTypesApi());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch print price matrix when insert type changes
@@ -527,22 +546,32 @@ export function AvailabilityReportStep({
     if (selectedInsertType) {
       callGetPrintMatrix(getPrintPriceMatrixApi(selectedInsertType));
     }
-  }, [selectedInsertType]);
+  }, [selectedInsertType, callGetPrintMatrix]);
+
+  // Store raw program data for building payload
+  const rawProgramDataMap = useRef<Map<string, any>>(new Map());
 
   const availabilityPrograms: AvailabilityProgram[] = useMemo(() => {
+    // Use campaign programs data if useSavedPrograms is true, otherwise use availability data
+    const dataSource = useSavedPrograms ? campaignProgramsData : availabilityData;
+
     const raw =
-      (availabilityData as any)?.data ??
-      (availabilityData as any)?.programs ??
-      availabilityData ??
+      (dataSource as any)?.data ??
+      (dataSource as any)?.programs ??
+      dataSource ??
       [];
 
     const normalizedPrograms: AvailabilityProgram[] = [];
+    rawProgramDataMap.current.clear();
 
     if (Array.isArray(raw)) {
       raw.forEach((program) => {
         const normalized = normalizeAvailabilityProgram(program);
         if (normalized) {
           normalizedPrograms.push(normalized);
+          // Store raw data for payload building
+          const channelId = normalized.channel_id;
+          rawProgramDataMap.current.set(channelId, program);
         }
       });
     } else if (raw && typeof raw === "object") {
@@ -550,12 +579,14 @@ export function AvailabilityReportStep({
         const normalized = normalizeAvailabilityProgram(value, channelId);
         if (normalized) {
           normalizedPrograms.push(normalized);
+          // Store raw data for payload building
+          rawProgramDataMap.current.set(normalized.channel_id, value);
         }
       });
     }
 
     return normalizedPrograms;
-  }, [availabilityData]);
+  }, [availabilityData, campaignProgramsData, useSavedPrograms]);
 
   // Filter out excluded programs separately to ensure reactivity
   const filteredAvailabilityPrograms = useMemo(() => {
@@ -578,15 +609,15 @@ export function AvailabilityReportStep({
     if (months.length === 0) {
       return DEFAULT_REPORT_MONTHS;
     }
-      return months.sort((a, b) => {
-        const orderA = MONTH_ORDER[a] ?? 999;
-        const orderB = MONTH_ORDER[b] ?? 999;
-        if (orderA === orderB) {
-          return a.localeCompare(b);
-        }
-        return orderA - orderB;
-      });
-    }, [filteredAvailabilityPrograms]);
+    return months.sort((a, b) => {
+      const orderA = MONTH_ORDER[a] ?? 999;
+      const orderB = MONTH_ORDER[b] ?? 999;
+      if (orderA === orderB) {
+        return a.localeCompare(b);
+      }
+      return orderA - orderB;
+    });
+  }, [filteredAvailabilityPrograms]);
 
   const insertPrintTypes: InsertPrintType[] = useMemo(() => {
     const raw =
@@ -702,18 +733,18 @@ export function AvailabilityReportStep({
     if (!programToDelete) return;
 
     const channelId = programToDelete.id;
-    
+
     // Find the program to get its program_id
     const programToRemove = availabilityPrograms.find((p) => p.channel_id === channelId);
     const programId = programToRemove?.program_id;
-    
+
     // Set flags to prevent useEffects from interfering
     isDeletingRef.current = true;
     skipRefetchRef.current = true;
-    
+
     // Remove from selected programs (channel_ids) so checkbox is unchecked when going back
     setSelectedPrograms((prev) => prev.filter((id) => id !== channelId));
-    
+
     // Remove from selected program IDs if we have the program_id
     if (programId) {
       setSelectedProgramIds((prev) => prev.filter((id) => id !== programId));
@@ -721,7 +752,7 @@ export function AvailabilityReportStep({
       // If program_id not available, try to remove by channel_id (in case they're the same)
       setSelectedProgramIds((prev) => prev.filter((id) => id !== channelId));
     }
-    
+
     // Add to excluded programs - this will immediately filter the program out
     setExcludedPrograms((prev) => {
       if (prev.includes(channelId)) {
@@ -731,27 +762,38 @@ export function AvailabilityReportStep({
     });
 
     // Clean up cached data for this program
+    // Use channelId as fallback if programId is not available
+    const idToUse = programId || channelId;
+
     setBookingQuantities((prev) => {
       const updated = { ...prev };
-      delete updated[programId];
+      if (idToUse) {
+        delete updated[idToUse];
+      }
       return updated;
     });
-    
+
     setBookingInputValues((prev) => {
       const updated = { ...prev };
-      delete updated[programId];
+      if (idToUse) {
+        delete updated[idToUse];
+      }
       return updated;
     });
-    
+
     setQuantityErrors((prev) => {
       const updated = { ...prev };
-      delete updated[programId];
+      if (idToUse) {
+        delete updated[idToUse];
+      }
       return updated;
     });
-    
+
     setBookingTouched((prev) => {
       const updated = { ...prev };
-      delete updated[programId];
+      if (idToUse) {
+        delete updated[idToUse];
+      }
       return updated;
     });
 
@@ -935,6 +977,172 @@ export function AvailabilityReportStep({
     XLSX.writeFile(workbook, filename);
   };
 
+  // Build payload for saving campaign programs
+  const buildSaveProgramsPayload = () => {
+    if (!campaignId || !effectiveCategoryId || !selectedInsertType) {
+      return null;
+    }
+
+    const programsPayload: Record<string, any> = {};
+
+    filteredAvailabilityPrograms.forEach((program) => {
+      const channelId = program.channel_id;
+      const programQuantities = bookingQuantities[channelId] || {};
+      const programInputValues = bookingInputValues[channelId] || {};
+
+      // Build availability array
+      const availability: Array<{
+        available: number;
+        order_qty: number;
+        month: string;
+      }> = [];
+
+      reportMonths.forEach((month) => {
+        const available = program.monthlyAvailability[month] || 0;
+        const orderQty = programQuantities[month] || programInputValues[month] || 0;
+        const numericOrderQty = typeof orderQty === "string" ? parseFloat(orderQty) || 0 : orderQty;
+
+        availability.push({
+          available,
+          order_qty: numericOrderQty,
+          month: month.charAt(0).toUpperCase() + month.slice(1),
+        });
+      });
+
+      // Build freight object - use original keys from raw data if available
+      const freight: Record<string, number> = {};
+      const rawProgramData = rawProgramDataMap.current.get(channelId);
+      const rawMetrics = rawProgramData?.metrics || {};
+
+      // Extract freight keys from raw metrics
+      Object.entries(rawMetrics).forEach(([key, value]) => {
+        if (key.startsWith("freight_") && typeof value === "number") {
+          freight[key] = value;
+        }
+      });
+
+      // Fallback: if no freight in raw data, use ranges
+      if (Object.keys(freight).length === 0) {
+        program.freightRanges.forEach((range) => {
+          // Format with k suffix for thousands
+          const formatK = (val: number) => {
+            if (val >= 1000) return `${val / 1000}k`;
+            return String(val);
+          };
+          const minStr = formatK(range.min);
+          const maxStr = range.max ? formatK(range.max) : "";
+          const key = `freight_${minStr}${maxStr ? `_${maxStr}` : ""}`;
+          freight[key] = range.value;
+        });
+      }
+
+      // Get selected freight based on total quantity
+      const totalQuantity = Object.values(programQuantities).reduce<number>(
+        (sum, qty) => {
+          const numQty = typeof qty === "number" ? qty : parseFloat(String(qty)) || 0;
+          return sum + numQty;
+        },
+        0
+      );
+      const selectedFreight = getFreightForQuantity(program, totalQuantity);
+
+      // Get print rate
+      const totalQuantityAcrossAllPrograms = getTotalQuantityAcrossAllPrograms();
+      const printRate = getPrintPricePerUnit(printMatrix, totalQuantityAcrossAllPrograms);
+
+      programsPayload[channelId] = {
+        availability,
+        exclusive: program.exclusive || false,
+        instant_availability_check: program.availability_check_type,
+        reviewed_by_agency: program.reviewed_by_agency || false,
+        metrics: {
+          freight: {
+            ...freight,
+            selected_freight: selectedFreight,
+          },
+          media_rate: program.media_rate,
+          print_rate: printRate,
+        },
+        program_name: program.program_name,
+        ...(program.duration_disclaimer && { duration_disclaimer: true }),
+      };
+    });
+
+    return {
+      campaign_id: campaignId,
+      category_id: effectiveCategoryId,
+      insert_format_id: selectedInsertType,
+      programs: programsPayload,
+    };
+  };
+
+  // Save programs
+  const handleSavePrograms = () => {
+    const payload = buildSaveProgramsPayload();
+    if (!payload) {
+      toast.error("Missing required data to save programs");
+      return;
+    }
+
+    callSavePrograms(saveCampaignProgramsApi(payload), () => {
+      toast.success("Your programs have been saved successfully");
+      // Clear unsaved changes flag (if parent component tracks it)
+      // This will be handled by parent component if needed
+    });
+  };
+
+  // Check if manual availability request button should be shown
+  const shouldShowManualAvailabilityButton = useMemo(() => {
+    const manualPrograms = filteredAvailabilityPrograms.filter(
+      (p) => p.availability_check_type === "manual"
+    );
+
+    if (manualPrograms.length === 0) {
+      console.log("Manual availability button: No manual programs found");
+      return false;
+    }
+
+    // Check if at least one manual program has reviewed_by_agency = false
+    const hasUnreviewedManual = manualPrograms.some((p) => p.reviewed_by_agency === false);
+
+    console.log("Manual availability button check:", {
+      manualProgramsCount: manualPrograms.length,
+      manualPrograms: manualPrograms.map(p => ({
+        name: p.program_name,
+        reviewed_by_agency: p.reviewed_by_agency,
+        availability_check_type: p.availability_check_type
+      })),
+      shouldShow: hasUnreviewedManual
+    });
+
+    return hasUnreviewedManual;
+  }, [filteredAvailabilityPrograms]);
+
+  // Request manual availability check
+  const handleRequestManualAvailability = () => {
+    if (!campaignId) {
+      toast.error("Campaign ID is missing");
+      return;
+    }
+
+    // First save programs
+    const payload = buildSaveProgramsPayload();
+    if (!payload) {
+      toast.error("Missing required data to save programs");
+      return;
+    }
+
+    callSavePrograms(saveCampaignProgramsApi(payload), () => {
+      // Then request manual availability
+      callRequestManualAvailability(
+        createManualAvailabilityRequestApi({ campaign_id: campaignId }),
+        () => {
+          toast.success("Manual availability check request submitted successfully");
+        }
+      );
+    });
+  };
+
   const isMonthUnavailable = (program: AvailabilityProgram, month: string) =>
     (program.monthlyAvailability[month] ?? 0) <= 0;
 
@@ -1042,7 +1250,7 @@ export function AvailabilityReportStep({
       </div>
 
       {/* Step 2: Availability Report Table */}
-      {loadingAvailability ? (
+      {(loadingAvailability || loadingCampaignPrograms) ? (
         <div className="flex items-center justify-center rounded-xl border bg-white p-8">
           <div className="flex flex-col items-center gap-3">
             <LoadingSpinner size="md" />
@@ -1068,16 +1276,58 @@ export function AvailabilityReportStep({
                 Availability Report Table
               </h4>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportToExcel}
-              disabled={filteredAvailabilityPrograms.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Export to Excel
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSavePrograms}
+                disabled={filteredAvailabilityPrograms.length === 0 || savingPrograms || !campaignId || !effectiveCategoryId || !selectedInsertType}
+                className="flex items-center gap-2"
+              >
+                {savingPrograms ? (
+                  <>
+                    <LoadingSpinner size="sm" className="h-4 w-4" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Programs
+                  </>
+                )}
+              </Button>
+              {shouldShowManualAvailabilityButton && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleRequestManualAvailability}
+                  disabled={requestingManualAvailability || savingPrograms || !campaignId}
+                  className="bg-blue-gradient text-white hover:bg-blue-gradient/90 flex items-center gap-2"
+                >
+                  {requestingManualAvailability || savingPrograms ? (
+                    <>
+                      <LoadingSpinner size="sm" className="h-4 w-4" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <FileCheck className="h-4 w-4" />
+                      Request Manual Availability Check
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToExcel}
+                disabled={filteredAvailabilityPrograms.length === 0}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export to Excel
+              </Button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">

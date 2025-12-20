@@ -98,3 +98,48 @@ export const getInsertPrintTypesApi = () => {
 export const getPrintPriceMatrixApi = (format: string) => {
   return universalApi(`/print-price-matrix/${format}`, "get");
 };
+
+/**
+ * Fetch Campaign Details
+ * Endpoint: GET /campaigns/details?campaign_id={campaign_id}
+ */
+export const fetchCampaignDetailsApi = (campaignId: string) => {
+  return universalApi(`/campaigns/details?campaign_id=${campaignId}`, "get");
+};
+
+/**
+ * Save Campaign Programs
+ * Endpoint: POST /programs/campaign-programs
+ */
+export const saveCampaignProgramsApi = (payload: any) => {
+  return responseApi("/programs/campaign-programs", "post", payload);
+};
+
+/**
+ * Create Manual Availability Check Request
+ * Endpoint: POST /manual-availability/request
+ */
+export const createManualAvailabilityRequestApi = (payload: {
+  campaign_id: string;
+}) => {
+  return responseApi("/manual-availability/request", "post", payload);
+};
+
+/**
+ * Get Campaign Programs
+ * Endpoint: GET /programs/campaign-programs/{campaign_id}
+ */
+export const getCampaignProgramsApi = (campaignId: string) => {
+  return universalApi(`/programs/campaign-programs/${campaignId}`, "get");
+};
+
+/**
+ * Reset Campaign Programs
+ * Endpoint: DELETE /programs/campaign-programs/{campaign_id}/reset
+ */
+export const resetCampaignProgramsApi = (campaignId: string) => {
+  return responseApi(
+    `/programs/campaign-programs/${campaignId}/reset`,
+    "delete"
+  );
+};
