@@ -314,21 +314,21 @@ export function ProgramsSelectionStep({
   const setSelectedChannelIds = useSetAtom(selectedProgramsAtom);
   const selectedChannelIds = useAtomValue(selectedProgramsAtom);
   const prevSelectedChannelIdsRef = useRef<string[]>([]);
-  
+
   // Cache atoms for checking if data exists
   const bookingQuantities = useAtomValue(availabilityReportBookingQuantitiesAtom);
   const bookingInputValues = useAtomValue(availabilityReportInputValuesAtom);
   const quantityErrors = useAtomValue(availabilityReportQuantityErrorsAtom);
   const bookingTouched = useAtomValue(availabilityReportBookingTouchedAtom);
   const excludedPrograms = useAtomValue(availabilityReportExcludedProgramsAtom);
-  
+
   // Setters for clearing cache
   const setBookingQuantities = useSetAtom(availabilityReportBookingQuantitiesAtom);
   const setBookingInputValues = useSetAtom(availabilityReportInputValuesAtom);
   const setQuantityErrors = useSetAtom(availabilityReportQuantityErrorsAtom);
   const setBookingTouched = useSetAtom(availabilityReportBookingTouchedAtom);
   const setExcludedPrograms = useSetAtom(availabilityReportExcludedProgramsAtom);
-  
+
   // State for confirmation modal
   const [programToUncheck, setProgramToUncheck] = useState<{
     programId: string;
@@ -430,8 +430,8 @@ export function ProgramsSelectionStep({
     }
 
     // Only sync if selectedChannelIds actually changed (not on initial mount or during selection)
-    const channelIdsChanged = 
-      prevSelectedChannelIdsRef.current.length > 0 && 
+    const channelIdsChanged =
+      prevSelectedChannelIdsRef.current.length > 0 &&
       JSON.stringify(prevSelectedChannelIdsRef.current) !== JSON.stringify(selectedChannelIds);
 
     // Update ref for next comparison
@@ -460,6 +460,7 @@ export function ProgramsSelectionStep({
       });
       return validProgramIds;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs, selectedChannelIds, setSelectedPrograms]);
 
   const availableCategories = useMemo(() => {
@@ -652,12 +653,12 @@ export function ProgramsSelectionStep({
     if (!program) return;
 
     const isCurrentlySelected = selectedPrograms.includes(programId);
-    
+
     // If unchecking, check for cached data
     if (isCurrentlySelected) {
       const channelId = program.channel_id ?? program.id ?? program.program_id ?? programId;
       const programName = getProgramName(program);
-      
+
       if (hasCachedData(String(channelId))) {
         // Show confirmation modal
         setProgramToUncheck({
@@ -668,7 +669,7 @@ export function ProgramsSelectionStep({
         return;
       }
     }
-    
+
     // If checking or no cached data, proceed normally
     setSelectedPrograms((prev) =>
       prev.includes(programId) ? prev.filter((id) => id !== programId) : [...prev, programId]
@@ -689,19 +690,19 @@ export function ProgramsSelectionStep({
       delete updated[channelId];
       return updated;
     });
-    
+
     setBookingInputValues((prev) => {
       const updated = { ...prev };
       delete updated[channelId];
       return updated;
     });
-    
+
     setQuantityErrors((prev) => {
       const updated = { ...prev };
       delete updated[channelId];
       return updated;
     });
-    
+
     setBookingTouched((prev) => {
       const updated = { ...prev };
       delete updated[channelId];

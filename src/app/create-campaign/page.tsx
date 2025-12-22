@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { DashboardNavbar } from "@/components/common/DashboardNavbar";
@@ -34,13 +34,13 @@ import { RotateCcw } from "lucide-react";
 
 const TOTAL_STEPS = 6;
 
-export default function CreateCampaignPage() {
+function CreateCampaignPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const campaignIdFromQuery = searchParams?.get("campaign_id");
   const stepFromQuery = searchParams?.get("step");
   const isEditMode = !!campaignIdFromQuery;
-  
+
   const [currentStep, setCurrentStep] = useState(() => {
     if (stepFromQuery) {
       const step = parseInt(stepFromQuery, 10);
@@ -60,7 +60,7 @@ export default function CreateCampaignPage() {
   const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
   const setSelfSelectedCategory = useSetAtom(selfSelectedCategoryAtom);
   const setSelfSelectedCategoryLabel = useSetAtom(selfSelectedCategoryLabelAtom);
-  
+
   const [callCampaignDetails, { loading: loadingDetails }] = useApi({ errMsg: false });
   const [callFetchCategories, { loading: loadingCategories }] = useApi({ errMsg: false });
   const [callResetCampaign, { loading: resettingCampaign }] = useApi({ errMsg: true });
@@ -103,24 +103,24 @@ export default function CreateCampaignPage() {
   const determineStepFromStage = (campaign: any): number => {
     const currentStage = campaign.current_stage;
     const category = campaign.category || {};
-    
+
     // Stage mapping
     if (currentStage === "category_verification" || currentStage === "category_selection") {
       // 1. Check self_declared_category
       if (!category.self_declared_category || category.self_declared_category === "None") {
         return 2; // Category Selection Step
       }
-      
+
       // 2. Check ai_predicted_category
       if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None") {
         return 3; // Upload and Classify Step
       }
-      
+
       // 3. Check confirmed_category_id
       if (category.confirmed_category_id && category.confirmed_category_id !== "None") {
         return 5; // Programs Selection Step
       }
-      
+
       // 4. Check manual_category_review
       const reviewStatus = category.review_status || category.manual_category_review;
       if (!reviewStatus || reviewStatus === "None") {
@@ -129,18 +129,18 @@ export default function CreateCampaignPage() {
         return 4; // Category Mismatch Step (select AI or self declared)
       }
     }
-    
+
     if (currentStage === "program_selection" || currentStage === "programs_selection") {
       // 1. Check confirmed_category_id
       if (category.confirmed_category_id && category.confirmed_category_id !== "None") {
         return 5; // Programs Selection Step
       }
-      
+
       // 2. Check ai_predicted_category
       if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None") {
         return 3; // Upload and Classify Step
       }
-      
+
       // 3. Check manual_category_review
       const reviewStatus = category.review_status || category.manual_category_review;
       if (!reviewStatus || reviewStatus === "None") {
@@ -149,17 +149,17 @@ export default function CreateCampaignPage() {
         return 4; // Category Mismatch Step (select AI or self declared)
       }
     }
-    
+
     if (currentStage === "availability_planning") {
       return 6; // Availability Report Step
     }
-    
+
     // Default: use step from query or start from beginning
     if (stepFromQuery) {
       const step = parseInt(stepFromQuery, 10);
       return step >= 1 && step <= TOTAL_STEPS ? step : 1;
     }
-    
+
     return 1;
   };
 
@@ -168,34 +168,34 @@ export default function CreateCampaignPage() {
     if (campaignIdFromQuery && isEditMode) {
       setCampaignId(campaignIdFromQuery);
       setLoadingCampaignData(true);
-      
+
       // Load campaign details to populate form fields and atoms
       callCampaignDetails(fetchCampaignDetailsApi(campaignIdFromQuery), ({ data }: any) => {
         if (data?.campaign) {
           const campaign = data.campaign;
-          
+
           // Determine correct step based on stage
           const determinedStep = determineStepFromStage(campaign);
           setCurrentStep(determinedStep);
-          
+
           // Determine which category to use
-          const categoryId = campaign.category?.confirmed_category_id 
-            || campaign.category?.self_declared_category 
+          const categoryId = campaign.category?.confirmed_category_id
+            || campaign.category?.self_declared_category
             || campaign.category?.ai_predicted_category_id
             || null;
-          
+
           // Determine category type for ProgramsSelectionStep
           if (campaign.category?.predicted_category_accepted && campaign.category?.ai_predicted_category_id) {
             setSelectedCategoryForProceed("ai");
           } else if (campaign.category?.self_declared_category) {
             setSelectedCategoryForProceed("self");
           }
-          
+
           // Set category IDs in atoms
           if (categoryId) {
             setSelectedCategory(categoryId);
             setSelfSelectedCategory(categoryId);
-            
+
             // Fetch category label
             callFetchCategories(fetchCategoriesApi(), ({ data: categoriesData }: any) => {
               const categories = categoriesData?.categories || categoriesData || [];
@@ -265,11 +265,11 @@ export default function CreateCampaignPage() {
 
   const handleResetCampaign = () => {
     if (!campaignIdFromQuery) return;
-    
+
     const confirmed = window.confirm(
       "Are you sure you want to reset this campaign? This will delete all saved programs and availability records. You will be redirected to the Program Selection page."
     );
-    
+
     if (!confirmed) return;
 
     callResetCampaign(resetCampaignProgramsApi(campaignIdFromQuery), () => {
@@ -309,8 +309,8 @@ export default function CreateCampaignPage() {
                   {isEditMode ? "Edit Campaign" : "Create Campaign"}
                 </h1>
                 <p className="text-gray-600">
-                  {isEditMode 
-                    ? "Continue editing your campaign from where you left off" 
+                  {isEditMode
+                    ? "Continue editing your campaign from where you left off"
                     : "Follow the steps to create your campaign"}
                 </p>
               </div>
@@ -410,5 +410,24 @@ export default function CreateCampaignPage() {
         </main>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function CreateCampaignPage() {
+  return (
+    <Suspense fallback={
+      <ProtectedRoute>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+          <DashboardNavbar />
+          <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="lg" />
+            </div>
+          </main>
+        </div>
+      </ProtectedRoute>
+    }>
+      <CreateCampaignPageContent />
+    </Suspense>
   );
 }

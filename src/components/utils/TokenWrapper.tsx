@@ -64,7 +64,7 @@ const TokenWrapper: React.FC = () => {
         // Check every 10 seconds
         const interval = setInterval(checkAndRefresh, 1000);
         return () => { clearInterval(interval) };
-    }, []);
+    }, [pathname]);
 
     return <></>;
 };
