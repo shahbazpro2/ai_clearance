@@ -3,6 +3,7 @@
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { DashboardNavbar } from "@/components/common/DashboardNavbar";
 import { useMe } from "@/hooks/useMe";
+import { useCategories } from "@/hooks/useCategories";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -11,7 +12,6 @@ import { useApi } from "use-hook-api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCampaignsApi, fetchCampaignDetailsApi } from "../../api/campaigns";
-import { fetchCategoriesApi } from "../../api/categories";
 
 interface Campaign {
   id: string;
@@ -25,6 +25,7 @@ interface Campaign {
   updated?: string;
   user_id?: string;
   current_stage?: string;
+  locked?: boolean;
   category?: {
     confirmed_category_id?: string | null;
     self_declared_category?: string | null;
@@ -54,35 +55,20 @@ export default function Home() {
   const userData = useMe();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
-  const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
-  const [callCampaignsApi, { loading: campaignsLoading }] = useApi({ errMsg: false });
-  const [callCampaignDetails, { loading: loadingDetails }] = useApi({ errMsg: true });
-  const [callFetchCategories] = useApi({ errMsg: false });
+  const { categoryNames } = useCategories();
+  const [callCampaignsApi, { data: campaignsData, loading: campaignsLoading }] = useApi({ errMsg: false, cache: 'campaigns' });
+  const [callCampaignDetails, { loading: loadingDetails }] = useApi({ cache: 'campaignDetails' });
+
+  useEffect(() => {
+    if (campaignsData) {
+      const campaignsList = campaignsData && Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns && Array.isArray(campaignsData.campaigns) ? campaignsData.campaigns : []);
+      setCampaigns(campaignsList);
+    }
+  }, [campaignsData]);
 
   useEffect(() => {
     // Fetch campaigns when user data is available
-    callCampaignsApi(fetchCampaignsApi(), ({ data }: any) => {
-      const campaignsList = data && Array.isArray(data) ? data : (data?.campaigns && Array.isArray(data.campaigns) ? data.campaigns : []);
-      setCampaigns(campaignsList);
-
-      // Fetch categories to get category names
-      if (campaignsList.length > 0) {
-        callFetchCategories(fetchCategoriesApi(), ({ data: categoriesData }: any) => {
-          const categories = categoriesData?.categories || categoriesData || [];
-          const categoryMap: Record<string, string> = {};
-
-          categories.forEach((cat: any) => {
-            const catId = String(cat.id || cat.category || "");
-            const catName = cat.category || cat.name || cat.label || cat.title || catId;
-            if (catId) {
-              categoryMap[catId] = catName;
-            }
-          });
-
-          setCategoryNames(categoryMap);
-        });
-      }
-    });
+    callCampaignsApi(fetchCampaignsApi());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -258,25 +244,27 @@ export default function Home() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-                            onClick={(e) => handleEditCampaign(campaign.id, e)}
-                            disabled={editingCampaignId === campaign.id || loadingDetails}
-                          >
-                            {editingCampaignId === campaign.id && loadingDetails ? (
-                              <>
-                                <LoadingSpinner size="sm" className="mr-2 h-4 w-4" />
-                                Loading...
-                              </>
-                            ) : (
-                              <>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </>
-                            )}
-                          </Button>
+                          {!campaign.locked && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+                              onClick={(e) => handleEditCampaign(campaign.id, e)}
+                              disabled={editingCampaignId === campaign.id || loadingDetails}
+                            >
+                              {editingCampaignId === campaign.id && loadingDetails ? (
+                                <>
+                                  <LoadingSpinner size="sm" className="mr-2 h-4 w-4" />
+                                  Loading...
+                                </>
+                              ) : (
+                                <>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>

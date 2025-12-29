@@ -16,7 +16,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Upload, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { createCampaignApi, setCampaignCategoryApi, acceptPredictedCategoryApi, createManualReviewApi } from "../../../api/campaigns";
-import { fetchCategoriesApi, classifyCategoryApi } from "../../../api/categories";
+import { classifyCategoryApi } from "../../../api/categories";
+import { useCategories } from "@/hooks/useCategories";
 
 interface CreateCampaignModalProps {
   isOpen: boolean;
@@ -42,14 +43,13 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
   const [currentStep, setCurrentStep] = useState(1);
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
-  const [categories, setCategories] = useState<Category[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [classificationResult, setClassificationResult] = useState<ClassificationResult | null>(null);
   const [selectedCategoryForProceed, setSelectedCategoryForProceed] = useState<"ai" | "self" | null>(null);
   const [manualReviewRequested, setManualReviewRequested] = useState(false);
 
+  const { categories, loading: loadingCategories } = useCategories();
   const [callCreateCampaign, { loading: creatingCampaign }] = useApi({ errMsg: true });
-  const [callFetchCategories, { loading: loadingCategories }] = useApi({ errMsg: false });
   const [callSetCategory, { loading: settingCategory }] = useApi({ errMsg: true });
   const [callClassify, { loading: classifying }] = useApi({ errMsg: true });
   const [callAcceptPredicted, { loading: acceptingPredicted }] = useApi({ errMsg: true });
@@ -67,19 +67,6 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
       setManualReviewRequested(false);
     }
   }, [isOpen]);
-
-  // Fetch categories when step 2 is reached
-  useEffect(() => {
-    if (isOpen && currentStep === 2 && categories.length === 0) {
-      callFetchCategories(fetchCategoriesApi(), ({ data }: any) => {
-        if (data && Array.isArray(data)) {
-          setCategories(data);
-        } else if (data?.categories && Array.isArray(data.categories)) {
-          setCategories(data.categories);
-        }
-      });
-    }
-  }, [isOpen, currentStep]);
 
   // Step 1: Create Campaign
   const handleCreateCampaign = () => {

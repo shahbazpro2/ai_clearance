@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronsUpDown } from "lucide-react";
 import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom, campaignIdAtom, availabilityReportBookingQuantitiesAtom, availabilityReportInputValuesAtom, availabilityReportQuantityErrorsAtom, availabilityReportBookingTouchedAtom, availabilityReportExcludedProgramsAtom } from "@/store/campaign";
-import { fetchInsertProgramsApi } from "../../../../api/campaigns";
+import { fetchInsertProgramsApi, fetchCampaignDetailsApi } from "../../../../api/campaigns";
 
 interface ProgramsSelectionStepProps {
   selectedCategoryType: "ai" | "self" | null;
@@ -314,6 +314,7 @@ export function ProgramsSelectionStep({
   const setSelectedChannelIds = useSetAtom(selectedProgramsAtom);
   const selectedChannelIds = useAtomValue(selectedProgramsAtom);
   const prevSelectedChannelIdsRef = useRef<string[]>([]);
+  const initializedFromCampaignRef = useRef(false);
 
   // Cache atoms for checking if data exists
   const bookingQuantities = useAtomValue(availabilityReportBookingQuantitiesAtom);
@@ -340,6 +341,12 @@ export function ProgramsSelectionStep({
     callFetchPrograms,
     { data: programsResponse, loading: loadingPrograms, error: programsError },
   ] = useApi({ errMsg: true });
+
+  // Access campaign details for edit mode
+  const [callCampaignDetails, { data: campaignDetailsData }] = useApi({
+    errMsg: false,
+    cache: 'campaignDetails',
+  });
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
@@ -401,6 +408,32 @@ export function ProgramsSelectionStep({
     callFetchPrograms(fetchInsertProgramsApi(effectiveCategoryId, campaignId ?? undefined));
   }, [callFetchPrograms, effectiveCategoryId, campaignId]);
 
+  // Fetch campaign details if in edit mode (only if not already cached)
+  // Since parent component uses same cache key, this will use cached data if available
+  const hasFetchedCampaignDetailsRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!campaignId) {
+      hasFetchedCampaignDetailsRef.current = null;
+      return;
+    }
+    
+    // Skip if we already fetched for this campaign
+    if (hasFetchedCampaignDetailsRef.current === campaignId) {
+      return;
+    }
+    
+    // Check if we already have data for this campaign (from cache)
+    if (campaignDetailsData?.campaign?.id === campaignId) {
+      hasFetchedCampaignDetailsRef.current = campaignId;
+      return;
+    }
+    
+    // Only fetch if we don't have data yet
+    hasFetchedCampaignDetailsRef.current = campaignId;
+    callCampaignDetails(fetchCampaignDetailsApi(campaignId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId, campaignDetailsData?.campaign?.id]);
+
   useEffect(() => {
     if (effectiveCategoryId && storedCategory === effectiveCategoryId) {
       return;
@@ -408,6 +441,8 @@ export function ProgramsSelectionStep({
     if (effectiveCategoryId) {
       setStoredCategory(effectiveCategoryId);
     }
+    // Reset initialization flag when category changes
+    initializedFromCampaignRef.current = false;
     setSelectedPrograms([]);
     setCurrentPage(1);
   }, [effectiveCategoryId, setSelectedPrograms, setStoredCategory, storedCategory]);
@@ -420,6 +455,79 @@ export function ProgramsSelectionStep({
       [];
     return Array.isArray(raw) ? raw : [];
   }, [programsResponse]);
+
+  // Reset initialization flag when campaignId changes
+  const prevCampaignIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevCampaignIdRef.current !== campaignId) {
+      initializedFromCampaignRef.current = false;
+      prevCampaignIdRef.current = campaignId ?? null;
+    }
+  }, [campaignId]);
+
+  // Initialize selectedProgramIdsAtom from campaign programs when in edit mode and coming back from availability_planning
+  // This handles both cases:
+  // 1. When selectedChannelIds is already populated from AvailabilityReportStep
+  // 2. When we need to initialize from campaign programs directly
+  useEffect(() => {
+    // Only initialize once per mount or when programs change from empty to populated
+    if (programs.length === 0 || initializedFromCampaignRef.current) {
+      return;
+    }
+
+    // Case 1: If selectedChannelIds is already populated but selectedPrograms is empty, initialize from selectedChannelIds
+    if (selectedChannelIds.length > 0 && selectedPrograms.length === 0) {
+      const programIdsToSelect: string[] = [];
+      programs.forEach((program) => {
+        const programId = getProgramId(program);
+        const channelId = String(program.channel_id ?? program.id ?? program.program_id ?? "");
+        if (channelId && selectedChannelIds.includes(channelId)) {
+          programIdsToSelect.push(programId);
+        }
+      });
+
+      if (programIdsToSelect.length > 0) {
+        setSelectedPrograms(programIdsToSelect);
+        // Update ref to prevent the sync effect from triggering unnecessarily
+        prevSelectedChannelIdsRef.current = selectedChannelIds;
+        initializedFromCampaignRef.current = true;
+      }
+      return;
+    }
+
+    // Case 2: If we have campaign data but no selections, initialize from campaign programs
+    if (campaignId && campaignDetailsData?.campaign && selectedPrograms.length === 0 && selectedChannelIds.length === 0) {
+      const campaign = campaignDetailsData.campaign;
+      const campaignPrograms = campaign.programs || [];
+      
+      if (campaignPrograms.length > 0) {
+        // Extract channel_ids from campaign programs
+        const campaignChannelIds = campaignPrograms.map((p: any) => {
+          return String(p.channel_id ?? p.id ?? p.program_id ?? "");
+        }).filter(Boolean);
+
+        // Map channel_ids to program IDs from the fetched programs list
+        const programIdsToSelect: string[] = [];
+        programs.forEach((program) => {
+          const programId = getProgramId(program);
+          const channelId = String(program.channel_id ?? program.id ?? program.program_id ?? "");
+          if (channelId && campaignChannelIds.includes(channelId)) {
+            programIdsToSelect.push(programId);
+          }
+        });
+
+        if (programIdsToSelect.length > 0) {
+          setSelectedPrograms(programIdsToSelect);
+          // Also update selectedChannelIds to keep them in sync
+          setSelectedChannelIds(campaignChannelIds);
+          // Update ref to prevent the sync effect from triggering unnecessarily
+          prevSelectedChannelIdsRef.current = campaignChannelIds;
+          initializedFromCampaignRef.current = true;
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programs.length, campaignId, campaignDetailsData?.campaign?.id]);
 
   // Sync selectedProgramIdsAtom with selectedProgramsAtom (channel_ids) when coming back from availability report
   // This ensures checkboxes reflect deletions made in AvailabilityReportStep

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { DashboardNavbar } from "@/components/common/DashboardNavbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { UnsavedChangesDialog, type UnsavedChangesDialogRef } from "@/components/ui/unsaved-changes-dialog";
 import { ArrowLeft } from "lucide-react";
 import {
   CreateCampaignStep,
@@ -15,6 +16,7 @@ import {
   CategoryMismatchStep,
   ProgramsSelectionStep,
   AvailabilityReportStep,
+  type AvailabilityReportStepRef,
 } from "@/components/campaign/steps";
 import { ProgressBar } from "@/components/campaign/ProgressBar";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -25,10 +27,12 @@ import {
   selectedCategoryLabelAtom,
   selfSelectedCategoryAtom,
   selfSelectedCategoryLabelAtom,
+  selectedProgramIdsAtom,
+  availabilityReportBookingQuantitiesAtom,
 } from "@/store/campaign";
-import { fetchCampaignDetailsApi, resetCampaignProgramsApi } from "../../../api/campaigns";
-import { fetchCategoriesApi } from "../../../api/categories";
+import { fetchCampaignDetailsApi, resetCampaignProgramsApi, saveCampaignProgramsApi } from "../../../api/campaigns";
 import { useApi } from "use-hook-api";
+import { useCategories } from "@/hooks/useCategories";
 import { toast } from "react-toastify";
 import { RotateCcw } from "lucide-react";
 
@@ -61,96 +65,110 @@ function CreateCampaignPageContent() {
   const setSelfSelectedCategory = useSetAtom(selfSelectedCategoryAtom);
   const setSelfSelectedCategoryLabel = useSetAtom(selfSelectedCategoryLabelAtom);
 
-  const [callCampaignDetails, { loading: loadingDetails }] = useApi({ errMsg: false });
-  const [callFetchCategories, { loading: loadingCategories }] = useApi({ errMsg: false });
+  const { categories, categoryNames } = useCategories();
+  const [callCampaignDetails, { data: campaignDetailsData, loading: loadingDetails }] = useApi({
+    errMsg: false,
+    cache: 'campaignDetails',
+  });
   const [callResetCampaign, { loading: resettingCampaign }] = useApi({ errMsg: true });
+  const selectedPrograms = useAtomValue(selectedProgramIdsAtom);
+  const bookingQuantities = useAtomValue(availabilityReportBookingQuantitiesAtom);
+  const availabilityReportStepRef = useRef<AvailabilityReportStepRef | null>(null);
+  const unsavedChangesDialogRef = useRef<UnsavedChangesDialogRef | null>(null);
+
+  // Track unsaved changes based on user interactions
+  // Note: We only track changes that haven't been saved yet
+  // For step 5: track if programs are selected but not yet submitted
+  // For step 6: track if booking quantities have been modified
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Warn user before leaving if there are unsaved changes
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "Do you want to save changes or close without saving?";
-        return e.returnValue;
+    let hasChanges = false;
+
+    if (currentStep === 5) {
+      // In step 5, we consider changes if programs are selected
+      // This will be cleared when user submits or navigates away after saving
+      hasChanges = selectedPrograms.length > 0;
+    } else if (currentStep === 6) {
+      // In step 6, we consider changes if booking quantities exist
+      // This will be cleared when user saves
+      hasChanges = Object.keys(bookingQuantities).length > 0;
+    }
+
+    setHasUnsavedChanges(hasChanges);
+  }, [currentStep, selectedPrograms, bookingQuantities]);
+
+  // Wrap router.push to intercept navigation using dialog's handler
+  const safeRouterPush = useCallback((path: string, e?: React.MouseEvent) => {
+    if (unsavedChangesDialogRef.current) {
+      if (!unsavedChangesDialogRef.current.handleNavigationAttempt(path, e)) {
+        return;
       }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [hasUnsavedChanges]);
-
-  // Track unsaved changes when navigating away
-  useEffect(() => {
-    const handleRouteChange = () => {
-      if (hasUnsavedChanges) {
-        const shouldLeave = window.confirm(
-          "Do you want to save changes or close without saving?\n\nClick OK to leave without saving, or Cancel to stay."
-        );
-        if (!shouldLeave) {
-          router.push(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=${currentStep}`);
-        }
-      }
-    };
-
-    // Note: Next.js router events are handled differently
-    // This is a basic implementation
-  }, [hasUnsavedChanges, currentStep, campaignIdFromQuery, router]);
+    }
+    router.push(path);
+  }, [router]);
 
   // Determine correct step based on current_stage and campaign details
   const determineStepFromStage = (campaign: any): number => {
     const currentStage = campaign.current_stage;
     const category = campaign.category || {};
 
-    // Stage mapping
-    if (currentStage === "category_verification" || currentStage === "category_selection") {
-      // 1. Check self_declared_category
-      if (!category.self_declared_category || category.self_declared_category === "None") {
+    // 1. If Current Stage = Category Verification or Category Assignment
+    if (currentStage === "category_verification" || currentStage === "category_assignment" || currentStage === "category_selection") {
+      // Check if self_declared_category is None, then redirect to category selection page
+      if (!category.self_declared_category || category.self_declared_category === "None" || category.self_declared_category === null) {
         return 2; // Category Selection Step
       }
 
-      // 2. Check ai_predicted_category
-      if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None") {
+      // If self_declared_category is available, check ai_predicted_category
+      if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None" || category.ai_predicted_category_id === null) {
         return 3; // Upload and Classify Step
       }
 
-      // 3. Check confirmed_category_id
-      if (category.confirmed_category_id && category.confirmed_category_id !== "None") {
+      // If ai_predicted_category is available, check confirmed_category_id
+      if (category.confirmed_category_id && category.confirmed_category_id !== "None" && category.confirmed_category_id !== null) {
         return 5; // Programs Selection Step
       }
 
-      // 4. Check manual_category_review
+      // If confirmed_category_id is None, verify review_status
       const reviewStatus = category.review_status || category.manual_category_review;
-      if (!reviewStatus || reviewStatus === "None") {
+      if (!reviewStatus || reviewStatus === "None" || reviewStatus === null) {
         return 4; // Category Mismatch Step (accept AI or submit manual review)
       } else {
-        return 4; // Category Mismatch Step (select AI or self declared)
+        return 4; // Category Mismatch Step (select AI or self declared category)
       }
     }
 
+    // 2. If Current Stage = Program Selection
     if (currentStage === "program_selection" || currentStage === "programs_selection") {
-      // 1. Check confirmed_category_id
-      if (category.confirmed_category_id && category.confirmed_category_id !== "None") {
+      // Check whether confirmed_category_id is None or not None
+      if (category.confirmed_category_id && category.confirmed_category_id !== "None" && category.confirmed_category_id !== null) {
         return 5; // Programs Selection Step
       }
 
-      // 2. Check ai_predicted_category
-      if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None") {
+      // If confirmed_category_id is None, check ai_predicted_category
+      if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None" || category.ai_predicted_category_id === null) {
         return 3; // Upload and Classify Step
       }
 
-      // 3. Check manual_category_review
+      // If ai_predicted_category is available, verify review_status
       const reviewStatus = category.review_status || category.manual_category_review;
-      if (!reviewStatus || reviewStatus === "None") {
-        return 4; // Category Mismatch Step (accept AI or submit manual review)
+      if (reviewStatus && reviewStatus !== "None" && reviewStatus !== null) {
+        // review_status is not None (i.e., Pending), redirect to category mismatch page
+        return 4; // Category Mismatch Step (select AI or self declared category)
       } else {
-        return 4; // Category Mismatch Step (select AI or self declared)
+        // review_status is None, redirect to category mismatch page for accepting AI or submitting manual review
+        return 4; // Category Mismatch Step (accept AI or submit manual review)
       }
     }
 
+    // 3. If Current Stage = Availability Planning
     if (currentStage === "availability_planning") {
+      // If programs array is empty, show program selection page
+      const programs = campaign.programs || [];
+      if (!programs || programs.length === 0) {
+        return 5; // Programs Selection Step
+      }
       return 6; // Availability Report Step
     }
 
@@ -163,65 +181,85 @@ function CreateCampaignPageContent() {
     return 1;
   };
 
+  // Process campaign details data (from cache or API response)
+  useEffect(() => {
+    if (campaignDetailsData?.campaign && campaignIdFromQuery && isEditMode) {
+      const campaign = campaignDetailsData.campaign;
+
+      // Verify cached data matches current campaign ID
+      if (campaign.id !== campaignIdFromQuery) {
+        return; // Cached data is for a different campaign, skip processing
+      }
+
+      // Determine correct step based on stage
+      const determinedStep = determineStepFromStage(campaign);
+      const queryStep = stepFromQuery ? parseInt(stepFromQuery, 10) : null;
+
+      // Only update step if determined step differs from query step
+      if (determinedStep !== queryStep) {
+        setCurrentStep(determinedStep);
+        // Update URL to reflect the determined step
+        router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=${determinedStep}`);
+      } else {
+        setCurrentStep(determinedStep);
+      }
+
+      // Determine which category to use
+      const categoryId = campaign.category?.confirmed_category_id
+        || campaign.category?.self_declared_category
+        || campaign.category?.ai_predicted_category_id
+        || null;
+
+      // Determine category type for ProgramsSelectionStep
+      if (campaign.category?.predicted_category_accepted && campaign.category?.ai_predicted_category_id) {
+        setSelectedCategoryForProceed("ai");
+      } else if (campaign.category?.self_declared_category) {
+        setSelectedCategoryForProceed("self");
+      }
+
+      // Set category IDs in atoms
+      if (categoryId) {
+        setSelectedCategory(categoryId);
+        setSelfSelectedCategory(categoryId);
+
+        // Get category label from categoryNames map
+        const label = categoryNames[categoryId] || "";
+        if (label) {
+          setSelectedCategoryLabel(label);
+          setSelfSelectedCategoryLabel(label);
+        }
+      }
+      setLoadingCampaignData(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignDetailsData, campaignIdFromQuery, isEditMode, categoryNames]);
+
   // Initialize campaign ID and load campaign details if editing
   useEffect(() => {
     if (campaignIdFromQuery && isEditMode) {
       setCampaignId(campaignIdFromQuery);
       setLoadingCampaignData(true);
 
-      // Load campaign details to populate form fields and atoms
-      callCampaignDetails(fetchCampaignDetailsApi(campaignIdFromQuery), ({ data }: any) => {
-        if (data?.campaign) {
-          const campaign = data.campaign;
-
-          // Determine correct step based on stage
-          const determinedStep = determineStepFromStage(campaign);
-          setCurrentStep(determinedStep);
-
-          // Determine which category to use
-          const categoryId = campaign.category?.confirmed_category_id
-            || campaign.category?.self_declared_category
-            || campaign.category?.ai_predicted_category_id
-            || null;
-
-          // Determine category type for ProgramsSelectionStep
-          if (campaign.category?.predicted_category_accepted && campaign.category?.ai_predicted_category_id) {
-            setSelectedCategoryForProceed("ai");
-          } else if (campaign.category?.self_declared_category) {
-            setSelectedCategoryForProceed("self");
-          }
-
-          // Set category IDs in atoms
-          if (categoryId) {
-            setSelectedCategory(categoryId);
-            setSelfSelectedCategory(categoryId);
-
-            // Fetch category label
-            callFetchCategories(fetchCategoriesApi(), ({ data: categoriesData }: any) => {
-              const categories = categoriesData?.categories || categoriesData || [];
-              const category = categories.find(
-                (cat: any) => String(cat.id || cat.category) === String(categoryId)
-              );
-              if (category) {
-                const label = category.category || category.name || category.label || category.title || "";
-                setSelectedCategoryLabel(label);
-                setSelfSelectedCategoryLabel(label);
-              }
-              setLoadingCampaignData(false);
-            });
-          } else {
-            setLoadingCampaignData(false);
-          }
-        } else {
+      // Check if cached data exists and matches current campaign
+      const cachedCampaign = campaignDetailsData?.campaign;
+      if (cachedCampaign && cachedCampaign.id === campaignIdFromQuery) {
+        // Use cached data, processing will happen in the other useEffect
+        setLoadingCampaignData(false);
+      } else {
+        // Fetch campaign details (will be cached automatically by useApi)
+        callCampaignDetails(fetchCampaignDetailsApi(campaignIdFromQuery), () => {
           setLoadingCampaignData(false);
-        }
-      });
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignIdFromQuery, isEditMode]);
 
   const handleNextFromUpload = () => {
     if (!classificationResult) return;
+
+    // Clear unsaved changes when moving to next step
+    setHasUnsavedChanges(false);
 
     if (classificationResult.category_matched) {
       // Skip to programs selection
@@ -234,6 +272,8 @@ function CreateCampaignPageContent() {
 
   const handleProceedWithCategory = (categoryType: "ai" | "self" | null) => {
     setSelectedCategoryForProceed(categoryType);
+    // Clear unsaved changes when moving to next step
+    setHasUnsavedChanges(false);
     setCurrentStep(5);
   };
 
@@ -241,12 +281,16 @@ function CreateCampaignPageContent() {
     setSelectedCategory(selfSelectedCategory);
     setSelectedCategoryLabel(selfSelectedCategoryLabel);
     setSelectedCategoryForProceed("self");
+    // Clear unsaved changes when moving to next step
+    setHasUnsavedChanges(false);
     setCurrentStep(5);
   };
 
   const handleReturnToUpload = () => {
     setClassificationResult(null);
     setUploadResetKey((key) => key + 1);
+    // Clear unsaved changes when going back
+    setHasUnsavedChanges(false);
     setCurrentStep(3);
   };
 
@@ -283,8 +327,16 @@ function CreateCampaignPageContent() {
   };
 
   const handleProceedToBooking = () => {
-    // TODO: Implement booking functionality when backend is ready
-    toast.info("Proceed to booking feature is coming soon");
+    // Clear all campaign-related cache data before redirecting
+    setCampaignId(null);
+    setClassificationResult(null);
+    setSelectedCategory(null);
+    setSelectedCategoryLabel(null);
+    setSelfSelectedCategory(null);
+    setSelfSelectedCategoryLabel(null);
+    setHasUnsavedChanges(false);
+    // Redirect to home
+    router.push(`/`);
   };
 
   return (
@@ -297,7 +349,7 @@ function CreateCampaignPageContent() {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => router.push("/")}
+              onClick={() => safeRouterPush("/")}
               className="mb-4"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -314,37 +366,6 @@ function CreateCampaignPageContent() {
                     : "Follow the steps to create your campaign"}
                 </p>
               </div>
-              {isEditMode && (currentStep === 5 || currentStep === 6) && (
-                <div className="flex items-center gap-2">
-                  {currentStep === 6 && (
-                    <Button
-                      variant="default"
-                      onClick={handleProceedToBooking}
-                      className="bg-green-600 text-white hover:bg-green-700"
-                    >
-                      Proceed to Booking
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={handleResetCampaign}
-                    disabled={resettingCampaign}
-                    className="flex items-center gap-2"
-                  >
-                    {resettingCampaign ? (
-                      <>
-                        <LoadingSpinner size="sm" className="h-4 w-4" />
-                        Resetting...
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw className="h-4 w-4" />
-                        Reset Campaign
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -390,7 +411,11 @@ function CreateCampaignPageContent() {
                   {currentStep === 5 && (
                     <ProgramsSelectionStep
                       selectedCategoryType={selectedCategoryForProceed}
-                      onComplete={() => setCurrentStep(6)}
+                      onComplete={() => {
+                        // Clear unsaved changes when completing step 5
+                        setHasUnsavedChanges(false);
+                        setCurrentStep(6);
+                      }}
                       onBackToUpload={handleReturnToUpload}
                     />
                   )}
@@ -398,9 +423,14 @@ function CreateCampaignPageContent() {
                   {/* Step 6: Availability Report */}
                   {currentStep === 6 && (
                     <AvailabilityReportStep
+                      ref={availabilityReportStepRef}
                       onBack={() => setCurrentStep(5)}
                       onComplete={handleComplete}
                       useSavedPrograms={isEditMode && campaignIdFromQuery ? true : false}
+                      isEditMode={isEditMode}
+                      onProceedToBooking={isEditMode ? handleProceedToBooking : undefined}
+                      onResetCampaign={isEditMode ? handleResetCampaign : undefined}
+                      resettingCampaign={resettingCampaign}
                     />
                   )}
                 </>
@@ -408,6 +438,21 @@ function CreateCampaignPageContent() {
             </CardContent>
           </Card>
         </main>
+
+        {/* Unsaved Changes Dialog - self-contained with all state management */}
+        <UnsavedChangesDialog
+          ref={unsavedChangesDialogRef}
+          hasUnsavedChanges={hasUnsavedChanges}
+          onSave={async () => {
+            if (currentStep === 6 && availabilityReportStepRef.current) {
+              await availabilityReportStepRef.current.savePrograms();
+              toast.success("Changes saved successfully");
+              setHasUnsavedChanges(false);
+            } else {
+              setHasUnsavedChanges(false);
+            }
+          }}
+        />
       </div>
     </ProtectedRoute>
   );

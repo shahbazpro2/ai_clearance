@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useApi } from "use-hook-api";
-import { fetchCategoriesApi } from "../../../../api/categories";
 import { setCampaignCategoryApi } from "../../../../api/campaigns";
+import { useCategories } from "@/hooks/useCategories";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   campaignIdAtom,
@@ -27,16 +27,8 @@ export function CategorySelectionStep({ onNext }: CategorySelectionStepProps) {
   const setSelfSelectedCategory = useSetAtom(selfSelectedCategoryAtom);
   const setSelfSelectedCategoryLabel = useSetAtom(selfSelectedCategoryLabelAtom);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
-  
-  const [callFetchCategories, { data: categories, loading: loadingCategories }] = useApi({ errMsg: false });
+  const { categories, loading: loadingCategories } = useCategories();
   const [callSetCategory, { loading: settingCategory }] = useApi({});
-
-  useEffect(() => {
-    if (!categories || categories.length === 0) {
-      callFetchCategories(fetchCategoriesApi());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategoryId(value);

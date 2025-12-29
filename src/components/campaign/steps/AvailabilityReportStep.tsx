@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { useApi } from "use-hook-api";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Download, Trash2, Save, FileCheck } from "lucide-react";
+import { AlertTriangle, Download, Trash2, Save, FileCheck, RotateCcw } from "lucide-react";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import {
@@ -46,6 +46,11 @@ interface AvailabilityReportStepProps {
   onBack: () => void;
   onComplete: () => void;
   useSavedPrograms?: boolean; // If true, use Get Campaign Programs API instead of Availability API
+  isEditMode?: boolean; // If true, show Proceed to Booking and Reset Campaign buttons instead of Continue
+  onProceedToBooking?: () => void;
+  onResetCampaign?: () => void;
+  resettingCampaign?: boolean;
+  onSaveAndProceed?: (onSuccess: () => void) => void; // Callback to save programs before proceeding
 }
 
 const DEFAULT_REPORT_MONTHS = ["december", "january", "february"];
@@ -225,9 +230,11 @@ const buildMonthlyAvailability = (
 ): {
   quantities: Record<string, number>;
   reasons: Record<string, string | null>;
+  orderQuantities: Record<string, number>;
 } => {
   const quantities: Record<string, number> = {};
   const reasons: Record<string, string | null> = {};
+  const orderQuantities: Record<string, number> = {};
 
   entries.forEach((entry) => {
     const monthName =
@@ -246,6 +253,15 @@ const buildMonthlyAvailability = (
       value = entry.max_slot;
     }
 
+    // Extract order_qty from Get Campaign Programs API response
+    let orderQty = 0;
+    if (typeof entry?.order_qty === "number") {
+      orderQty = entry.order_qty;
+    } else if (typeof entry?.order_qty === "string") {
+      const parsed = parseInt(entry.order_qty, 10);
+      orderQty = Number.isNaN(parsed) ? 0 : parsed;
+    }
+
     const reason =
       value === 0
         ? typeof entry?.reason === "string"
@@ -257,9 +273,12 @@ const buildMonthlyAvailability = (
 
     quantities[monthName] = value;
     reasons[monthName] = reason;
+    if (orderQty > 0) {
+      orderQuantities[monthName] = orderQty;
+    }
   });
 
-  return { quantities, reasons };
+  return { quantities, reasons, orderQuantities };
 };
 
 const normalizeAvailabilityProgram = (
@@ -267,13 +286,24 @@ const normalizeAvailabilityProgram = (
   fallbackChannelId?: string
 ): AvailabilityProgram | null => {
   if (!programData || typeof programData !== "object") return null;
+
+  // Try multiple possible field names for channel_id
   const channelId =
     programData.channel_id ??
+    programData.channelId ??
     programData.program_id ??
+    programData.programId ??
     fallbackChannelId ??
-    programData.id;
+    programData.id ??
+    programData._id;
 
-  if (!channelId) return null;
+  if (!channelId) {
+    // Debug: Log when channelId cannot be found
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Cannot find channelId in program data:', programData);
+    }
+    return null;
+  }
 
   const availabilityEntries = Array.isArray(programData.availability)
     ? programData.availability
@@ -432,11 +462,19 @@ const validateQuantity = (
   return { valid: true, numericValue: numValue };
 };
 
-export function AvailabilityReportStep({
+export interface AvailabilityReportStepRef {
+  savePrograms: () => Promise<void>;
+}
+
+export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, AvailabilityReportStepProps>(({
   onBack,
   onComplete,
   useSavedPrograms = false,
-}: AvailabilityReportStepProps) {
+  isEditMode = false,
+  onProceedToBooking,
+  onResetCampaign,
+  resettingCampaign = false,
+}, ref) => {
   const [selectedPrograms, setSelectedPrograms] = useAtom(selectedProgramsAtom);
   const [selectedProgramIds, setSelectedProgramIds] = useAtom(selectedProgramIdsAtom);
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
@@ -513,18 +551,16 @@ export function AvailabilityReportStep({
   }, [selectedPrograms, excludedPrograms.length, setExcludedPrograms]);
 
   // Fetch availability data on mount (but skip if we're deleting to prevent refetch)
-  // Use Get Campaign Programs if useSavedPrograms is true, otherwise use Availability API
+  // Use Get Campaign Programs if useSavedPrograms is true AND no programs are selected, otherwise use Availability API
   useEffect(() => {
     if (skipRefetchRef.current) {
       skipRefetchRef.current = false;
       return;
     }
 
-    if (useSavedPrograms && campaignId) {
-      // Use Get Campaign Programs endpoint when directly landing on availability page
-      callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
-    } else if (selectedPrograms.length > 0 && effectiveCategoryId) {
-      // Use Availability API when navigating from Program Selection page
+    // If programs are selected from Program Selection page, always use Availability API
+    if (selectedPrograms.length > 0 && effectiveCategoryId) {
+      // Use Availability API when navigating from Program Selection page or when programs are selected
       callGetAvailability(
         getProgramAvailabilityApi({
           channel_ids: selectedPrograms,
@@ -532,6 +568,13 @@ export function AvailabilityReportStep({
           campaign_id: campaignId ?? undefined,
         })
       );
+    } else if (useSavedPrograms && campaignId) {
+      // Use Get Campaign Programs endpoint when directly landing on availability page with no selected programs
+      // This happens in edit mode when user lands directly on availability page
+      callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
+    } else if (!useSavedPrograms && selectedPrograms.length === 0 && effectiveCategoryId && campaignId) {
+      // Fallback: If no programs selected but we have category and campaign, try to get saved programs
+      callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
     }
   }, [selectedPrograms, effectiveCategoryId, campaignId, callGetAvailability, callGetCampaignPrograms, useSavedPrograms]);
 
@@ -550,43 +593,183 @@ export function AvailabilityReportStep({
 
   // Store raw program data for building payload
   const rawProgramDataMap = useRef<Map<string, any>>(new Map());
+  const orderQuantitiesMap = useRef<Map<string, Record<string, number>>>(new Map());
 
   const availabilityPrograms: AvailabilityProgram[] = useMemo(() => {
-    // Use campaign programs data if useSavedPrograms is true, otherwise use availability data
-    const dataSource = useSavedPrograms ? campaignProgramsData : availabilityData;
+    // Use campaign programs data if useSavedPrograms is true AND we have campaign programs data
+    // Otherwise, fall back to availability data if available
+    // This ensures we show data even if one source is empty
+    let dataSource: any = null;
+    if (useSavedPrograms && campaignProgramsData) {
+      dataSource = campaignProgramsData;
+    } else if (availabilityData) {
+      dataSource = availabilityData;
+    } else if (useSavedPrograms && !campaignProgramsData && !availabilityData) {
+      // In edit mode, if no data yet, return empty array (will show loading)
+      return [];
+    } else {
+      // No data available
+      return [];
+    }
 
-    const raw =
-      (dataSource as any)?.data ??
-      (dataSource as any)?.programs ??
-      dataSource ??
-      [];
+    // Handle different response structures from availability API
+    let raw: any = null;
+
+    if (dataSource) {
+      // Try different possible response structures
+      if (Array.isArray(dataSource)) {
+        raw = dataSource;
+      } else if (Array.isArray((dataSource as any)?.data)) {
+        raw = (dataSource as any).data;
+      } else if (Array.isArray((dataSource as any)?.programs)) {
+        raw = (dataSource as any).programs;
+      } else if (Array.isArray((dataSource as any)?.results)) {
+        raw = (dataSource as any).results;
+      } else if (typeof (dataSource as any)?.data === "object" && (dataSource as any).data !== null) {
+        // If data is an object (not array), try to extract programs from it
+        const dataObj = (dataSource as any).data;
+        if (Array.isArray(dataObj.programs)) {
+          raw = dataObj.programs;
+        } else if (Array.isArray(dataObj.results)) {
+          raw = dataObj.results;
+        } else {
+          // Try treating the object itself as a collection
+          raw = dataObj;
+        }
+      } else if (typeof dataSource === "object" && dataSource !== null) {
+        // If the response itself is an object, check if it's a key-value map
+        raw = dataSource;
+      }
+    }
+
+    // Default to empty array if nothing found
+    if (!raw) {
+      raw = [];
+    }
+
+    // Debug: Log data source info in development
+    if (process.env.NODE_ENV === 'development' && dataSource) {
+      console.log('Availability Data Source:', {
+        useSavedPrograms,
+        hasCampaignProgramsData: !!campaignProgramsData,
+        hasAvailabilityData: !!availabilityData,
+        dataSourceType: typeof dataSource,
+        rawType: typeof raw,
+        rawIsArray: Array.isArray(raw),
+        rawLength: Array.isArray(raw) ? raw.length : Object.keys(raw || {}).length,
+        sampleData: Array.isArray(raw) && raw.length > 0 ? raw[0] : (typeof raw === 'object' ? Object.keys(raw).slice(0, 3) : null)
+      });
+    }
 
     const normalizedPrograms: AvailabilityProgram[] = [];
     rawProgramDataMap.current.clear();
+    orderQuantitiesMap.current.clear();
 
     if (Array.isArray(raw)) {
-      raw.forEach((program) => {
+      raw.forEach((program, index) => {
         const normalized = normalizeAvailabilityProgram(program);
         if (normalized) {
           normalizedPrograms.push(normalized);
           // Store raw data for payload building
           const channelId = normalized.channel_id;
           rawProgramDataMap.current.set(channelId, program);
+
+          // Extract order quantities from availability entries
+          const availabilityEntries = Array.isArray(program.availability) ? program.availability : [];
+          const orderQuantities: Record<string, number> = {};
+          availabilityEntries.forEach((entry: any) => {
+            const monthName = typeof entry?.month === "string" ? entry.month.toLowerCase() : "";
+            if (monthName && typeof entry?.order_qty === "number" && entry.order_qty > 0) {
+              orderQuantities[monthName] = entry.order_qty;
+            }
+          });
+          if (Object.keys(orderQuantities).length > 0) {
+            orderQuantitiesMap.current.set(channelId, orderQuantities);
+          }
+        } else if (process.env.NODE_ENV === 'development') {
+          // Debug: Log when normalization fails
+          console.warn(`Failed to normalize program at index ${index}:`, program);
         }
       });
-    } else if (raw && typeof raw === "object") {
+    } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      // Handle object/Map structure where keys are channel_ids
       Object.entries(raw).forEach(([channelId, value]) => {
         const normalized = normalizeAvailabilityProgram(value, channelId);
         if (normalized) {
           normalizedPrograms.push(normalized);
           // Store raw data for payload building
           rawProgramDataMap.current.set(normalized.channel_id, value);
+
+          // Extract order quantities from availability entries
+          const programData = value as any;
+          const availabilityEntries = Array.isArray(programData.availability) ? programData.availability : [];
+          const orderQuantities: Record<string, number> = {};
+          availabilityEntries.forEach((entry: any) => {
+            const monthName = typeof entry?.month === "string" ? entry.month.toLowerCase() : "";
+            if (monthName && typeof entry?.order_qty === "number" && entry.order_qty > 0) {
+              orderQuantities[monthName] = entry.order_qty;
+            }
+          });
+          if (Object.keys(orderQuantities).length > 0) {
+            orderQuantitiesMap.current.set(normalized.channel_id, orderQuantities);
+          }
         }
       });
     }
 
     return normalizedPrograms;
   }, [availabilityData, campaignProgramsData, useSavedPrograms]);
+
+  // Populate selectedPrograms from campaign programs data when in edit mode
+  useEffect(() => {
+    if (useSavedPrograms && campaignProgramsData && availabilityPrograms.length > 0 && selectedPrograms.length === 0) {
+      // Extract channel_ids from the normalized programs
+      const channelIds = availabilityPrograms.map(program => program.channel_id);
+      if (channelIds.length > 0) {
+        setSelectedPrograms(channelIds);
+      }
+    }
+  }, [useSavedPrograms, campaignProgramsData, availabilityPrograms, selectedPrograms.length, setSelectedPrograms]);
+
+  // Initialize booking quantities from order_qty when using Get Campaign Programs API
+  useEffect(() => {
+    if (useSavedPrograms && orderQuantitiesMap.current.size > 0) {
+      const newQuantities: Record<string, Record<string, number>> = {};
+      orderQuantitiesMap.current.forEach((orderQuantities, channelId) => {
+        newQuantities[channelId] = { ...orderQuantities };
+      });
+
+      // Only set if there are new quantities and current quantities are empty for those programs
+      setBookingQuantities((prev) => {
+        const updated = { ...prev };
+        let hasChanges = false;
+        orderQuantitiesMap.current.forEach((orderQuantities, channelId) => {
+          if (!updated[channelId] || Object.keys(updated[channelId]).length === 0) {
+            updated[channelId] = { ...orderQuantities };
+            hasChanges = true;
+          }
+        });
+        return hasChanges ? updated : prev;
+      });
+
+      // Also set input values for display
+      setBookingInputValues((prev) => {
+        const updated = { ...prev };
+        let hasChanges = false;
+        orderQuantitiesMap.current.forEach((orderQuantities, channelId) => {
+          if (!updated[channelId] || Object.keys(updated[channelId]).length === 0) {
+            const inputValues: Record<string, string> = {};
+            Object.entries(orderQuantities).forEach(([month, qty]) => {
+              inputValues[month] = qty.toString();
+            });
+            updated[channelId] = inputValues;
+            hasChanges = true;
+          }
+        });
+        return hasChanges ? updated : prev;
+      });
+    }
+  }, [useSavedPrograms, campaignProgramsData, setBookingQuantities, setBookingInputValues]);
 
   // Filter out excluded programs separately to ensure reactivity
   const filteredAvailabilityPrograms = useMemo(() => {
@@ -1077,7 +1260,7 @@ export function AvailabilityReportStep({
   };
 
   // Save programs
-  const handleSavePrograms = () => {
+  const handleSavePrograms = (onSuccess?: () => void) => {
     const payload = buildSaveProgramsPayload();
     if (!payload) {
       toast.error("Missing required data to save programs");
@@ -1086,8 +1269,42 @@ export function AvailabilityReportStep({
 
     callSavePrograms(saveCampaignProgramsApi(payload), () => {
       toast.success("Your programs have been saved successfully");
-      // Clear unsaved changes flag (if parent component tracks it)
-      // This will be handled by parent component if needed
+      // Call success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    });
+  };
+
+  // Expose save function via ref
+  useImperativeHandle(ref, () => ({
+    savePrograms: async () => {
+      return new Promise<void>((resolve, reject) => {
+        const payload = buildSaveProgramsPayload();
+        if (!payload) {
+          reject(new Error("Missing required data to save programs"));
+          return;
+        }
+
+        callSavePrograms(saveCampaignProgramsApi(payload), () => {
+          resolve();
+        });
+      });
+    },
+  }));
+
+  // Handle save button click (for the Save Programs button)
+  const handleSaveProgramsClick = () => {
+    handleSavePrograms();
+  };
+
+  // Handle proceed to booking - save programs first, then proceed
+  const handleProceedToBookingClick = () => {
+    if (!onProceedToBooking) return;
+
+    // Save programs first, then call the proceed callback
+    handleSavePrograms(() => {
+      onProceedToBooking();
     });
   };
 
@@ -1280,7 +1497,7 @@ export function AvailabilityReportStep({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleSavePrograms}
+                onClick={handleSaveProgramsClick}
                 disabled={filteredAvailabilityPrograms.length === 0 || savingPrograms || !campaignId || !effectiveCategoryId || !selectedInsertType}
                 className="flex items-center gap-2"
               >
@@ -1502,14 +1719,57 @@ export function AvailabilityReportStep({
       )}
 
       {/* Next Steps */}
-      <div className="flex items-center justify-end border-t pt-4">
-        <Button
-          className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-          onClick={onComplete}
-          disabled={hasErrors || !selectedInsertType}
-        >
-          Continue
-        </Button>
+      <div className="flex items-center justify-end gap-2 border-t pt-4">
+        {isEditMode ? (
+          <>
+            {onResetCampaign && (
+              <Button
+                variant="outline"
+                onClick={onResetCampaign}
+                disabled={resettingCampaign}
+                className="flex items-center gap-2"
+              >
+                {resettingCampaign ? (
+                  <>
+                    <LoadingSpinner size="sm" className="h-4 w-4" />
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-4 w-4" />
+                    Reset Campaign
+                  </>
+                )}
+              </Button>
+            )}
+            {onProceedToBooking && (
+              <Button
+                variant="default"
+                onClick={handleProceedToBookingClick}
+                disabled={savingPrograms || hasErrors || !selectedInsertType}
+                className="bg-green-600 text-white hover:bg-green-700"
+              >
+                {savingPrograms ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2 h-4 w-4" />
+                    Saving...
+                  </>
+                ) : (
+                  "Proceed to Booking"
+                )}
+              </Button>
+            )}
+
+          </>
+        ) : (
+          <Button
+            className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+            onClick={onComplete}
+            disabled={hasErrors || !selectedInsertType}
+          >
+            Continue
+          </Button>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -1544,5 +1804,7 @@ export function AvailabilityReportStep({
       </Dialog>
     </div>
   );
-}
+});
+
+AvailabilityReportStep.displayName = "AvailabilityReportStep";
 

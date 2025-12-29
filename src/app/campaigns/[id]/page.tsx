@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Edit, Calendar, User, Tag, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { fetchCampaignDetailsApi } from "../../../../api/campaigns";
-import { fetchCategoriesApi } from "../../../../api/categories";
+import { useCategories } from "@/hooks/useCategories";
 
 interface CampaignDetails {
   campaign: {
@@ -22,6 +22,7 @@ interface CampaignDetails {
     created: string;
     updated: string;
     user_id: string;
+    locked?: boolean;
     locked_target_months: string[] | null;
     category: {
       ai_predicted_category_id: string | null;
@@ -60,29 +61,15 @@ export default function CampaignDetailPage() {
   const router = useRouter();
   const campaignId = params?.id as string;
   const [campaignDetails, setCampaignDetails] = useState<CampaignDetails | null>(null);
-  const [categoryName, setCategoryName] = useState<string | null>(null);
-  
+  const { categoryNames } = useCategories();
+
   const [callCampaignDetails, { loading: loadingDetails }] = useApi({ errMsg: true });
-  const [callFetchCategories, { loading: loadingCategories }] = useApi({ errMsg: false });
 
   useEffect(() => {
     if (campaignId) {
       callCampaignDetails(fetchCampaignDetailsApi(campaignId), ({ data }: any) => {
         if (data?.campaign) {
           setCampaignDetails(data);
-          
-          // Fetch category name if self_declared_category exists
-          if (data.campaign.category?.self_declared_category) {
-            callFetchCategories(fetchCategoriesApi(), ({ data: categoriesData }: any) => {
-              const categories = categoriesData?.categories || categoriesData || [];
-              const category = categories.find(
-                (cat: any) => String(cat.id || cat.category) === String(data.campaign.category.self_declared_category)
-              );
-              if (category) {
-                setCategoryName(category.category || category.name || category.label || category.title || "Unknown");
-              }
-            });
-          }
         }
       });
     }
@@ -167,7 +154,7 @@ export default function CampaignDetailPage() {
     <ProtectedRoute>
       <div className="min-h-screen flex flex-col bg-gray-50">
         <DashboardNavbar />
-        
+
         <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
           {/* Header */}
           <div className="mb-8">
@@ -184,10 +171,12 @@ export default function CampaignDetailPage() {
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{campaign.name}</h1>
                 <p className="text-gray-600">Campaign ID: {campaign.id}</p>
               </div>
-              <Button onClick={handleEdit} className="bg-blue-gradient text-white hover:bg-blue-gradient/90">
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Campaign
-              </Button>
+              {!campaign.locked && (
+                <Button onClick={handleEdit} className="bg-blue-gradient text-white hover:bg-blue-gradient/90">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Campaign
+                </Button>
+              )}
             </div>
           </div>
 
@@ -254,7 +243,7 @@ export default function CampaignDetailPage() {
                   {campaign.category.self_declared_category ? (
                     <div>
                       <p className="text-sm text-gray-900 mb-1">
-                        {categoryName || campaign.category.self_declared_category}
+                        {categoryNames[campaign.category.self_declared_category] || campaign.category.self_declared_category}
                       </p>
                       <p className="text-xs text-gray-500">ID: {campaign.category.self_declared_category}</p>
                     </div>
@@ -265,7 +254,9 @@ export default function CampaignDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">AI Predicted Category</p>
                   {campaign.category.ai_predicted_category_id ? (
-                    <p className="text-sm text-gray-900">{campaign.category.ai_predicted_category_id}</p>
+                    <p className="text-sm text-gray-900">{
+                      categoryNames[campaign.category.ai_predicted_category_id] || campaign.category.ai_predicted_category_id}
+                    </p>
                   ) : (
                     <p className="text-sm text-gray-400">Not available</p>
                   )}
