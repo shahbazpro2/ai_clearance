@@ -38,20 +38,31 @@ export function LoginScreen() {
     const [callApi, { loading: isLoading }] = useApi({ both: true, resSuccessMsg: 'Login successful' });
 
     const onSubmit = async (data: LoginFormData) => {
-        callApi(loginApi(data), async ({ data: responseData }: any) => {
-            console.log('Login successful:', responseData);
-            // Set authentication tokens using utility functions
-            setAccessToken(responseData.access_token);
-            setRefreshToken(responseData.refresh_token);
-            Axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.access_token}`;
+        callApi(
+            loginApi(data),
+            async ({ data: responseData }: any) => {
+                console.log('Login successful:', responseData);
+                // Set authentication tokens using utility functions
+                setAccessToken(responseData.access_token);
+                setRefreshToken(responseData.refresh_token);
+                Axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.access_token}`;
 
-
-         
-                // User is active, navigate to intended destination or dashboard
+                // User is verified, navigate to intended destination or dashboard
                 window.location.href = redirectTo;
-            
+            },
+            (errorData: any) => {
+                // Check if error message indicates email not verified
+                const errorMessage = errorData?.message || errorData?.error || errorData?.data?.message || '';
 
-        });
+                if (errorMessage.includes('Your email has not been verified yet. Please verify it to continue.') ||
+                    errorMessage.includes('email has not been verified') ||
+                    errorMessage.includes('not been verified')) {
+                    // Redirect to verification page and request OTP resend
+                    router.push(`/verify-otp?email=${encodeURIComponent(data.email)}&resend=true`);
+                }
+                // Other errors will be handled by useApi's default error handling
+            }
+        );
     };
 
 
@@ -108,7 +119,7 @@ export function LoginScreen() {
                         "Signing in..."
                     ) : (
                         <>
-                           
+
                             Sign In
                         </>
                     )}

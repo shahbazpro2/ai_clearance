@@ -11,6 +11,10 @@ export const verifySignupOtpApi = (payload: any) => {
   return responseApi("/auth/verify-otp", "post", payload);
 };
 
+export const resendOtpApi = (payload: { email: string }) => {
+  return responseApi("/auth/resend-otp", "post", payload);
+};
+
 export const loginApi = (payload: any) => {
   return responseApi("/auth/login", "post", payload);
 };

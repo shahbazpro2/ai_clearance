@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { useApi } from "use-hook-api";
+import { useCampaignCache } from "@/hooks/useCampaignCache";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -475,6 +476,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
   onResetCampaign,
   resettingCampaign = false,
 }, ref) => {
+  const { handleBackToHome } = useCampaignCache();
   const [selectedPrograms, setSelectedPrograms] = useAtom(selectedProgramsAtom);
   const [selectedProgramIds, setSelectedProgramIds] = useAtom(selectedProgramIdsAtom);
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
@@ -1355,6 +1357,8 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
         createManualAvailabilityRequestApi({ campaign_id: campaignId }),
         () => {
           toast.success("Manual availability check request submitted successfully");
+          // Redirect to home page after successful API response
+          handleBackToHome();
         }
       );
     });

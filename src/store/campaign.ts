@@ -31,3 +31,5 @@ export const availabilityReportQuantityErrorsAtom = atom<QuantityErrorsCache>({}
 export const availabilityReportBookingTouchedAtom = atom<BookingTouchedCache>({});
 export const availabilityReportSelectedInsertTypeAtom = atom<string>("");
 export const availabilityReportExcludedProgramsAtom = atom<string[]>([]);
+// Flag to track if cache was cleared - prevents restoring programs after cache clear
+export const cacheClearedAtom = atom<boolean>(false);

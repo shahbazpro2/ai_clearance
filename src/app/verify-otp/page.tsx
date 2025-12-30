@@ -2,8 +2,10 @@
 
 import { OtpVerificationScreen } from "@/components/OtpVerificationScreen";
 
-export default async function VerifyOtpPage({ searchParams }: { searchParams: Promise<{ email: string }> }) {
-    const email = (await searchParams).email;
+export default async function VerifyOtpPage({ searchParams }: { searchParams: Promise<{ email: string; resend?: string }> }) {
+    const params = await searchParams;
+    const email = params.email;
+    const shouldResend = params.resend === 'true';
 
     if (!email) {
         return (
@@ -16,5 +18,5 @@ export default async function VerifyOtpPage({ searchParams }: { searchParams: Pr
         );
     }
 
-    return <OtpVerificationScreen email={email} />;
+    return <OtpVerificationScreen email={email} shouldResendOtp={shouldResend} />;
 }

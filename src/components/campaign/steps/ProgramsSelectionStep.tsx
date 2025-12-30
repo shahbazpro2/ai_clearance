@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronsUpDown } from "lucide-react";
-import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom, campaignIdAtom, availabilityReportBookingQuantitiesAtom, availabilityReportInputValuesAtom, availabilityReportQuantityErrorsAtom, availabilityReportBookingTouchedAtom, availabilityReportExcludedProgramsAtom } from "@/store/campaign";
+import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom, campaignIdAtom, availabilityReportBookingQuantitiesAtom, availabilityReportInputValuesAtom, availabilityReportQuantityErrorsAtom, availabilityReportBookingTouchedAtom, availabilityReportExcludedProgramsAtom, cacheClearedAtom } from "@/store/campaign";
 import { fetchInsertProgramsApi, fetchCampaignDetailsApi } from "../../../../api/campaigns";
 
 interface ProgramsSelectionStepProps {
@@ -315,6 +315,8 @@ export function ProgramsSelectionStep({
   const selectedChannelIds = useAtomValue(selectedProgramsAtom);
   const prevSelectedChannelIdsRef = useRef<string[]>([]);
   const initializedFromCampaignRef = useRef(false);
+  const cacheCleared = useAtomValue(cacheClearedAtom);
+  const setCacheCleared = useSetAtom(cacheClearedAtom);
 
   // Cache atoms for checking if data exists
   const bookingQuantities = useAtomValue(availabilityReportBookingQuantitiesAtom);
@@ -362,6 +364,13 @@ export function ProgramsSelectionStep({
   const [submitting, setSubmitting] = useState(false);
 
   const effectiveCategoryId = useMemo(() => {
+    // Always prioritize selectedCategoryId first (it contains confirmed_category_id when set)
+    // This ensures that when confirmed_category_id exists, it's used for fetching programs
+    if (selectedCategoryId) {
+      return selectedCategoryId;
+    }
+    
+    // If selectedCategoryType is "ai", use classification result
     if (selectedCategoryType === "ai") {
       return (
         classificationResult?.predicted_category_id ??
@@ -369,8 +378,9 @@ export function ProgramsSelectionStep({
         null
       );
     }
+    
+    // Fallback to classification result if available
     return (
-      selectedCategoryId ??
       classificationResult?.predicted_category_id ??
       classificationResult?.predicted_category ??
       null
@@ -404,9 +414,17 @@ export function ProgramsSelectionStep({
   ]);
 
   useEffect(() => {
-    if (!effectiveCategoryId) return;
+    if (!effectiveCategoryId) {
+      console.log("ProgramsSelectionStep: effectiveCategoryId is null, skipping API call", {
+        selectedCategoryId,
+        selectedCategoryType,
+        classificationResult: classificationResult?.predicted_category_id,
+      });
+      return;
+    }
+    console.log("ProgramsSelectionStep: Fetching programs with categoryId:", effectiveCategoryId, "campaignId:", campaignId);
     callFetchPrograms(fetchInsertProgramsApi(effectiveCategoryId, campaignId ?? undefined));
-  }, [callFetchPrograms, effectiveCategoryId, campaignId]);
+  }, [callFetchPrograms, effectiveCategoryId, campaignId, selectedCategoryId, selectedCategoryType, classificationResult]);
 
   // Fetch campaign details if in edit mode (only if not already cached)
   // Since parent component uses same cache key, this will use cached data if available
@@ -496,7 +514,8 @@ export function ProgramsSelectionStep({
     }
 
     // Case 2: If we have campaign data but no selections, initialize from campaign programs
-    if (campaignId && campaignDetailsData?.campaign && selectedPrograms.length === 0 && selectedChannelIds.length === 0) {
+    // BUT: Don't restore if cache was cleared (user went back to home without saving)
+    if (campaignId && campaignDetailsData?.campaign && selectedPrograms.length === 0 && selectedChannelIds.length === 0 && !cacheCleared) {
       const campaign = campaignDetailsData.campaign;
       const campaignPrograms = campaign.programs || [];
       
@@ -525,6 +544,11 @@ export function ProgramsSelectionStep({
           initializedFromCampaignRef.current = true;
         }
       }
+    }
+    
+    // Reset cache cleared flag after checking (so it doesn't persist forever)
+    if (cacheCleared) {
+      setCacheCleared(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs.length, campaignId, campaignDetailsData?.campaign?.id]);

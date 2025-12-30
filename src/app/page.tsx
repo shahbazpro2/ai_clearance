@@ -4,6 +4,7 @@ import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { DashboardNavbar } from "@/components/common/DashboardNavbar";
 import { useMe } from "@/hooks/useMe";
 import { useCategories } from "@/hooks/useCategories";
+import { useCampaignCache } from "@/hooks/useCampaignCache";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -58,6 +59,12 @@ export default function Home() {
   const { categoryNames } = useCategories();
   const [callCampaignsApi, { data: campaignsData, loading: campaignsLoading }] = useApi({ errMsg: false, cache: 'campaigns' });
   const [callCampaignDetails, { loading: loadingDetails }] = useApi({ cache: 'campaignDetails' });
+  const { clearAllCampaignCache } = useCampaignCache();
+
+  // Clear campaign cache when home page mounts to ensure clean state
+  useEffect(() => {
+    clearAllCampaignCache();
+  }, [clearAllCampaignCache]);
 
   useEffect(() => {
     if (campaignsData) {

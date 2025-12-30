@@ -30,6 +30,7 @@ import {
   selectedProgramIdsAtom,
   availabilityReportBookingQuantitiesAtom,
 } from "@/store/campaign";
+import { useCampaignCache } from "@/hooks/useCampaignCache";
 import { fetchCampaignDetailsApi, resetCampaignProgramsApi, saveCampaignProgramsApi } from "../../../api/campaigns";
 import { useApi } from "use-hook-api";
 import { useCategories } from "@/hooks/useCategories";
@@ -64,6 +65,17 @@ function CreateCampaignPageContent() {
   const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
   const setSelfSelectedCategory = useSetAtom(selfSelectedCategoryAtom);
   const setSelfSelectedCategoryLabel = useSetAtom(selfSelectedCategoryLabelAtom);
+
+  // Use custom hook for cache management
+  const { clearAllCampaignCache, handleBackToHome } = useCampaignCache();
+
+  // Clear cache when starting a new campaign (not edit mode)
+  useEffect(() => {
+    if (!isEditMode && !campaignIdFromQuery) {
+      // Clear cache when starting fresh campaign creation
+      clearAllCampaignCache();
+    }
+  }, [isEditMode, campaignIdFromQuery, clearAllCampaignCache]);
 
   const { categories, categoryNames } = useCategories();
   const [callCampaignDetails, { data: campaignDetailsData, loading: loadingDetails }] = useApi({
@@ -115,6 +127,16 @@ function CreateCampaignPageContent() {
 
     // 1. If Current Stage = Category Verification or Category Assignment
     if (currentStage === "category_verification" || currentStage === "category_assignment" || currentStage === "category_selection") {
+      // Special handling for category_assignment stage: if review_status is not None, redirect to category mismatch page
+      if (currentStage === "category_assignment") {
+        const reviewStatus = category.review_status || category.manual_category_review;
+        if (reviewStatus && reviewStatus !== "None" && reviewStatus !== null && reviewStatus !== "") {
+          // review_status is not None (i.e., Pending), redirect to category mismatch page
+          // User can select AI predicted category or self declared category to continue
+          return 4; // Category Mismatch Step (select AI or self declared category)
+        }
+      }
+
       // Check if self_declared_category is None, then redirect to category selection page
       if (!category.self_declared_category || category.self_declared_category === "None" || category.self_declared_category === null) {
         return 2; // Category Selection Step
@@ -126,8 +148,10 @@ function CreateCampaignPageContent() {
       }
 
       // If ai_predicted_category is available, check confirmed_category_id
+      // If confirmed_category_id is not None, redirect to program selection page
+      // User will view all programs filtered by confirmed_category_id
       if (category.confirmed_category_id && category.confirmed_category_id !== "None" && category.confirmed_category_id !== null) {
-        return 5; // Programs Selection Step
+        return 5; // Programs Selection Step - shows programs by confirmed_category_id
       }
 
       // If confirmed_category_id is None, verify review_status
@@ -141,25 +165,31 @@ function CreateCampaignPageContent() {
 
     // 2. If Current Stage = Program Selection
     if (currentStage === "program_selection" || currentStage === "programs_selection") {
-      // Check whether confirmed_category_id is None or not None
+      // If confirmed_category_id is not None, redirect to program selection page
+      // User will view all programs filtered by confirmed_category_id
       if (category.confirmed_category_id && category.confirmed_category_id !== "None" && category.confirmed_category_id !== null) {
-        return 5; // Programs Selection Step
+        return 5; // Programs Selection Step - shows programs by confirmed_category_id
       }
 
-      // If confirmed_category_id is None, check ai_predicted_category
-      if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None" || category.ai_predicted_category_id === null) {
-        return 3; // Upload and Classify Step
+      // If confirmed_category_id is None, check if ai_predicted_category is available
+      const hasAiPredictedCategory = category.ai_predicted_category_id &&
+        category.ai_predicted_category_id !== "None" &&
+        category.ai_predicted_category_id !== null;
+
+      if (hasAiPredictedCategory) {
+        // If ai_predicted_category is available, verify review_status
+        const reviewStatus = category.review_status || category.manual_category_review;
+        if (reviewStatus && reviewStatus !== "None" && reviewStatus !== null && reviewStatus !== "") {
+          // review_status is not None (i.e., Pending), redirect to category mismatch page
+          return 4; // Category Mismatch Step (select AI or self declared category)
+        } else {
+          // review_status is None, redirect to category mismatch page for accepting AI or submitting manual review
+          return 4; // Category Mismatch Step (accept AI or submit manual review)
+        }
       }
 
-      // If ai_predicted_category is available, verify review_status
-      const reviewStatus = category.review_status || category.manual_category_review;
-      if (reviewStatus && reviewStatus !== "None" && reviewStatus !== null) {
-        // review_status is not None (i.e., Pending), redirect to category mismatch page
-        return 4; // Category Mismatch Step (select AI or self declared category)
-      } else {
-        // review_status is None, redirect to category mismatch page for accepting AI or submitting manual review
-        return 4; // Category Mismatch Step (accept AI or submit manual review)
-      }
+      // If ai_predicted_category is not available, redirect to upload and classify step
+      return 3; // Upload and Classify Step
     }
 
     // 3. If Current Stage = Availability Planning
@@ -204,21 +234,37 @@ function CreateCampaignPageContent() {
         setCurrentStep(determinedStep);
       }
 
-      // Determine which category to use
+      // Determine which category to use - prioritize confirmed_category_id
       const categoryId = campaign.category?.confirmed_category_id
         || campaign.category?.self_declared_category
         || campaign.category?.ai_predicted_category_id
         || null;
 
       // Determine category type for ProgramsSelectionStep
-      if (campaign.category?.predicted_category_accepted && campaign.category?.ai_predicted_category_id) {
+      // If confirmed_category_id exists, use it (no need to set selectedCategoryForProceed as it will use confirmed category)
+      if (campaign.category?.confirmed_category_id && campaign.category?.confirmed_category_id !== "None" && campaign.category?.confirmed_category_id !== null) {
+        // When confirmed_category_id exists, ProgramsSelectionStep will use it via selectedCategoryId atom
+        // Check if it was originally from AI prediction or self-declared
+        if (campaign.category?.predicted_category_accepted && campaign.category?.ai_predicted_category_id) {
+          setSelectedCategoryForProceed("ai");
+        } else if (campaign.category?.self_declared_category) {
+          setSelectedCategoryForProceed("self");
+        }
+      } else if (campaign.category?.predicted_category_accepted && campaign.category?.ai_predicted_category_id) {
         setSelectedCategoryForProceed("ai");
       } else if (campaign.category?.self_declared_category) {
         setSelectedCategoryForProceed("self");
       }
 
-      // Set category IDs in atoms
+      // Set category IDs in atoms - confirmed_category_id takes priority
       if (categoryId) {
+        console.log("Setting category in atoms:", {
+          categoryId,
+          confirmed_category_id: campaign.category?.confirmed_category_id,
+          self_declared_category: campaign.category?.self_declared_category,
+          ai_predicted_category_id: campaign.category?.ai_predicted_category_id,
+          determinedStep,
+        });
         setSelectedCategory(categoryId);
         setSelfSelectedCategory(categoryId);
 
@@ -228,6 +274,8 @@ function CreateCampaignPageContent() {
           setSelectedCategoryLabel(label);
           setSelfSelectedCategoryLabel(label);
         }
+      } else {
+        console.warn("No categoryId found for campaign:", campaign.id);
       }
       setLoadingCampaignData(false);
     }
@@ -295,15 +343,10 @@ function CreateCampaignPageContent() {
   };
 
   const handleComplete = () => {
-    // Clear all campaign-related cache data
-    setCampaignId(null);
-    setClassificationResult(null);
-    setSelectedCategory(null);
-    setSelectedCategoryLabel(null);
-    setSelfSelectedCategory(null);
-    setSelfSelectedCategoryLabel(null);
+    // Clear all campaign-related cache data and navigate to home
+    clearAllCampaignCache();
     setHasUnsavedChanges(false);
-    // Navigate to home
+    setSelectedCategoryForProceed(null);
     router.push("/");
   };
 
@@ -327,15 +370,10 @@ function CreateCampaignPageContent() {
   };
 
   const handleProceedToBooking = () => {
-    // Clear all campaign-related cache data before redirecting
-    setCampaignId(null);
-    setClassificationResult(null);
-    setSelectedCategory(null);
-    setSelectedCategoryLabel(null);
-    setSelfSelectedCategory(null);
-    setSelfSelectedCategoryLabel(null);
+    // Clear all campaign-related cache data and navigate to home
+    clearAllCampaignCache();
     setHasUnsavedChanges(false);
-    // Redirect to home
+    setSelectedCategoryForProceed(null);
     router.push(`/`);
   };
 
@@ -349,7 +387,17 @@ function CreateCampaignPageContent() {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => safeRouterPush("/")}
+              onClick={() => {
+                // Check for unsaved changes first
+                if (unsavedChangesDialogRef.current) {
+                  // If there are unsaved changes, dialog will handle it
+                  if (!unsavedChangesDialogRef.current.handleNavigationAttempt("/")) {
+                    return; // Dialog will handle navigation after save/close
+                  }
+                }
+                // No unsaved changes, clear cache and navigate to home
+                handleBackToHome();
+              }}
               className="mb-4"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -447,9 +495,24 @@ function CreateCampaignPageContent() {
             if (currentStep === 6 && availabilityReportStepRef.current) {
               await availabilityReportStepRef.current.savePrograms();
               toast.success("Changes saved successfully");
-              setHasUnsavedChanges(false);
+            }
+            // Clear all cache after saving
+            clearAllCampaignCache();
+            setHasUnsavedChanges(false);
+            setSelectedCategoryForProceed(null);
+          }}
+          onClearCache={() => {
+            // Clear cache when closing without saving
+            clearAllCampaignCache();
+            setHasUnsavedChanges(false);
+            setSelectedCategoryForProceed(null);
+          }}
+          onNavigate={(path) => {
+            // If navigating to home, use handleBackToHome to ensure cache is cleared
+            if (path === "/") {
+              handleBackToHome();
             } else {
-              setHasUnsavedChanges(false);
+              router.push(path);
             }
           }}
         />

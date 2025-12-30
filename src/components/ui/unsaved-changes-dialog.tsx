@@ -16,6 +16,8 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 interface UnsavedChangesDialogProps {
     hasUnsavedChanges: boolean;
     onSave?: () => Promise<void>;
+    onNavigate?: (path: string) => void;
+    onClearCache?: () => void;
     enabled?: boolean;
 }
 
@@ -24,7 +26,7 @@ export interface UnsavedChangesDialogRef {
 }
 
 export const UnsavedChangesDialog = forwardRef<UnsavedChangesDialogRef, UnsavedChangesDialogProps>(
-    ({ hasUnsavedChanges, onSave, enabled = true }, ref) => {
+    ({ hasUnsavedChanges, onSave, onNavigate, onClearCache, enabled = true }, ref) => {
         const [isSaving, setIsSaving] = useState(false);
         const {
             showDialog,
@@ -44,6 +46,8 @@ export const UnsavedChangesDialog = forwardRef<UnsavedChangesDialogRef, UnsavedC
                     }
                 }
             },
+            onNavigate,
+            onClearCache,
             enabled,
         });
 

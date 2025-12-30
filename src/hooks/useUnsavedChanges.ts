@@ -4,6 +4,8 @@ import { useRouter, usePathname } from "next/navigation";
 interface UseUnsavedChangesOptions {
   hasUnsavedChanges: boolean;
   onSave?: () => Promise<void>;
+  onNavigate?: (path: string) => void;
+  onClearCache?: () => void;
   enabled?: boolean;
 }
 
@@ -19,6 +21,8 @@ interface UseUnsavedChangesReturn {
 export function useUnsavedChanges({
   hasUnsavedChanges,
   onSave,
+  onNavigate,
+  onClearCache,
   enabled = true,
 }: UseUnsavedChangesOptions): UseUnsavedChangesReturn {
   const router = useRouter();
@@ -93,7 +97,12 @@ export function useUnsavedChanges({
       }
       setShowDialog(false);
       if (pendingNavigation) {
-        router.push(pendingNavigation);
+        // Use custom navigation handler if provided, otherwise use default router.push
+        if (onNavigate) {
+          onNavigate(pendingNavigation);
+        } else {
+          router.push(pendingNavigation);
+        }
         setPendingNavigation(null);
       }
     } catch (error) {
@@ -102,16 +111,25 @@ export function useUnsavedChanges({
     } finally {
       isSavingRef.current = false;
     }
-  }, [onSave, pendingNavigation, router]);
+  }, [onSave, onNavigate, pendingNavigation, router]);
 
   // Handle close without saving
   const handleCloseWithoutSaving = useCallback(() => {
     setShowDialog(false);
     if (pendingNavigation) {
-      router.push(pendingNavigation);
+      // Clear cache before navigating if handler provided
+      if (onClearCache) {
+        onClearCache();
+      }
+      // Use custom navigation handler if provided, otherwise use default router.push
+      if (onNavigate) {
+        onNavigate(pendingNavigation);
+      } else {
+        router.push(pendingNavigation);
+      }
       setPendingNavigation(null);
     }
-  }, [pendingNavigation, router]);
+  }, [onClearCache, onNavigate, pendingNavigation, router]);
 
   return {
     showDialog,

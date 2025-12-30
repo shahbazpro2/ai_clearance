@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Axios, useApi } from "use-hook-api";
 import * as z from "zod";
-import { verifySignupOtpApi } from "../../api/auth";
+import { verifySignupOtpApi, resendOtpApi } from "../../api/auth";
 import { setAccessToken, setRefreshToken } from "@/lib/auth";
 
 // Define the OTP form schema using Zod
@@ -27,20 +27,41 @@ type OtpFormData = z.infer<typeof otpSchema>;
 interface OtpVerificationScreenProps {
     email: string;
     onBack?: () => void;
+    shouldResendOtp?: boolean; // If true, automatically resend OTP on mount (e.g., when redirected from login)
 }
 
-export function OtpVerificationScreen({ email, onBack }: OtpVerificationScreenProps) {
+export function OtpVerificationScreen({ email, onBack, shouldResendOtp = false }: OtpVerificationScreenProps) {
     const [callApi, { loading: isLoading }] = useApi({ both: true, resSuccessMsg: 'OTP verified successfully' });
     const router = useRouter();
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
     const [canResend, setCanResend] = useState(false);
     const [isResending, setIsResending] = useState(false);
+    const [hasRequestedOtp, setHasRequestedOtp] = useState(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     const form = useForm<OtpFormData>({
         resolver: zodResolver(otpSchema),
         mode: "onChange"
     });
+
+    // Request OTP on mount only if shouldResendOtp is true (e.g., when redirected from login)
+    useEffect(() => {
+        if (shouldResendOtp && email && !hasRequestedOtp) {
+            setIsResending(true);
+            callApi(
+                resendOtpApi({ email }),
+                () => {
+                    setTimeLeft(300);
+                    setCanResend(false);
+                    setHasRequestedOtp(true);
+                    setIsResending(false);
+                },
+                () => {
+                    setIsResending(false);
+                }
+            );
+        }
+    }, [shouldResendOtp, email, hasRequestedOtp, callApi]);
 
     // Countdown timer
     useEffect(() => {
@@ -107,9 +128,10 @@ export function OtpVerificationScreen({ email, onBack }: OtpVerificationScreenPr
         setIsResending(true);
         try {
             // Call resend OTP API
-            await callApi(verifySignupOtpApi({ email }), () => {
+            await callApi(resendOtpApi({ email }), () => {
                 setTimeLeft(300);
                 setCanResend(false);
+                setHasRequestedOtp(true);
             });
         } catch (error) {
             console.error("Failed to resend OTP:", error);
@@ -119,13 +141,14 @@ export function OtpVerificationScreen({ email, onBack }: OtpVerificationScreenPr
     };
 
     const onSubmit = async (data: OtpFormData) => {
-        callApi(verifySignupOtpApi({ email, otp: data.otp }), ({data}: any) => {
-            if(data?.access_token){
+        callApi(verifySignupOtpApi({ email, otp: data.otp }), ({ data }: any) => {
+            if (data?.access_token) {
                 setAccessToken(data.access_token);
                 setRefreshToken(data.refresh_token);
                 Axios.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
-            }else
-            router.push("/login");
+                window.location.href = "/";
+            } else
+                window.location.href = "/login";
         });
     };
 
@@ -194,7 +217,7 @@ export function OtpVerificationScreen({ email, onBack }: OtpVerificationScreenPr
                     </div>
 
                     {/* Timer and Resend */}
-                    {/*    <div className="space-y-4">
+                    <div className="space-y-4">
                         {!canResend ? (
                             <div className="flex items-center justify-center text-sm text-gray-500">
                                 <Clock className="h-4 w-4 mr-2" />
@@ -211,7 +234,7 @@ export function OtpVerificationScreen({ email, onBack }: OtpVerificationScreenPr
                                 {isResending ? "Sending..." : "Resend code"}
                             </Button>
                         )}
-                    </div> */}
+                    </div>
 
                     {/* Submit Button */}
                     <Button
