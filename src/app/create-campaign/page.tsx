@@ -125,18 +125,39 @@ function CreateCampaignPageContent() {
     const currentStage = campaign.current_stage;
     const category = campaign.category || {};
 
-    // 1. If Current Stage = Category Verification or Category Assignment
-    if (currentStage === "category_verification" || currentStage === "category_assignment" || currentStage === "category_selection") {
-      // Special handling for category_assignment stage: if review_status is not None, redirect to category mismatch page
-      if (currentStage === "category_assignment") {
-        const reviewStatus = category.review_status || category.manual_category_review;
-        if (reviewStatus && reviewStatus !== "None" && reviewStatus !== null && reviewStatus !== "") {
-          // review_status is not None (i.e., Pending), redirect to category mismatch page
-          // User can select AI predicted category or self declared category to continue
-          return 4; // Category Mismatch Step (select AI or self declared category)
-        }
+    // 1. If Current Stage = Category Assignment
+    if (currentStage === "category_assignment") {
+      // Step 1: Check if self_declared_category is None, then redirect to self declare category page
+      if (!category.self_declared_category || category.self_declared_category === "None" || category.self_declared_category === null) {
+        return 2; // Category Selection Step (self declare category page)
       }
 
+      // Step 2: If self_declared_category is available, check ai_predicted_category
+      // If ai_predicted_category is None, then redirect to upload insert for category classification page
+      if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None" || category.ai_predicted_category_id === null) {
+        return 3; // Upload and Classify Step
+      }
+
+      // Step 3: If ai_predicted_category is available, check confirmed_category_id
+      // If confirmed_category_id is not None, then redirect to Programs Selection Page
+      // Fetch programs using confirmed_category_id and continue from there
+      if (category.confirmed_category_id && category.confirmed_category_id !== "None" && category.confirmed_category_id !== null) {
+        return 5; // Programs Selection Step - shows programs by confirmed_category_id
+      }
+
+      // Step 4: If confirmed_category_id is None, verify review_status
+      const reviewStatus = category.review_status || category.manual_category_review;
+      if (!reviewStatus || reviewStatus === "None" || reviewStatus === null || reviewStatus === "") {
+        // If review_status is None, redirect user to the page where user can either accept AI predicted category or submit manual review
+        return 4; // Category Mismatch Step (accept AI or submit manual review)
+      } else {
+        // If review_status is not None, redirect user to the page where user can either select AI predicted category or self declared category
+        return 4; // Category Mismatch Step (select AI or self declared category to continue for programs selection)
+      }
+    }
+
+    // 2. If Current Stage = Category Verification or Category Selection
+    if (currentStage === "category_verification" || currentStage === "category_selection") {
       // Check if self_declared_category is None, then redirect to category selection page
       if (!category.self_declared_category || category.self_declared_category === "None" || category.self_declared_category === null) {
         return 2; // Category Selection Step
@@ -165,31 +186,27 @@ function CreateCampaignPageContent() {
 
     // 2. If Current Stage = Program Selection
     if (currentStage === "program_selection" || currentStage === "programs_selection") {
-      // If confirmed_category_id is not None, redirect to program selection page
-      // User will view all programs filtered by confirmed_category_id
+      // Step 1: Check whether confirmed_category_id is None or not None
+      // If confirmed_category_id is not None, the user is redirected to the program selection page to view all programs by confirmed_category_id
       if (category.confirmed_category_id && category.confirmed_category_id !== "None" && category.confirmed_category_id !== null) {
         return 5; // Programs Selection Step - shows programs by confirmed_category_id
       }
 
-      // If confirmed_category_id is None, check if ai_predicted_category is available
-      const hasAiPredictedCategory = category.ai_predicted_category_id &&
-        category.ai_predicted_category_id !== "None" &&
-        category.ai_predicted_category_id !== null;
-
-      if (hasAiPredictedCategory) {
-        // If ai_predicted_category is available, verify review_status
-        const reviewStatus = category.review_status || category.manual_category_review;
-        if (reviewStatus && reviewStatus !== "None" && reviewStatus !== null && reviewStatus !== "") {
-          // review_status is not None (i.e., Pending), redirect to category mismatch page
-          return 4; // Category Mismatch Step (select AI or self declared category)
-        } else {
-          // review_status is None, redirect to category mismatch page for accepting AI or submitting manual review
-          return 4; // Category Mismatch Step (accept AI or submit manual review)
-        }
+      // Step 2: If confirmed_category_id is None, check ai_predicted_category
+      // If ai_predicted_category is None, then redirect to the upload insert for category classification page
+      if (!category.ai_predicted_category_id || category.ai_predicted_category_id === "None" || category.ai_predicted_category_id === null) {
+        return 3; // Upload and Classify Step
       }
 
-      // If ai_predicted_category is not available, redirect to upload and classify step
-      return 3; // Upload and Classify Step
+      // Step 3: If ai_predicted_category is available, verify review_status
+      const reviewStatus = category.review_status || category.manual_category_review;
+      if (!reviewStatus || reviewStatus === "None" || reviewStatus === null || reviewStatus === "") {
+        // If review_status is None, redirect user to the page where user can either Accept AI Predicted Category or Request For Manual Review
+        return 4; // Category Mismatch Step (Accept AI or Request Manual Review)
+      } else {
+        // If review_status is not None (i.e. Pending), redirect user to the page where user can either select AI predicted category or self declared category
+        return 4; // Category Mismatch Step (select AI predicted category or self declared category to continue for programs selection)
+      }
     }
 
     // 3. If Current Stage = Availability Planning
@@ -277,6 +294,26 @@ function CreateCampaignPageContent() {
       } else {
         console.warn("No categoryId found for campaign:", campaign.id);
       }
+
+      // Populate classificationResultAtom if ai_predicted_category_id is available
+      // This is needed for CategoryMismatchStep to display the AI predicted category label
+      if (campaign.category?.ai_predicted_category_id &&
+        campaign.category.ai_predicted_category_id !== "None" &&
+        campaign.category.ai_predicted_category_id !== null) {
+        const aiPredictedCategoryId = campaign.category.ai_predicted_category_id;
+        const aiPredictedCategoryLabel = categoryNames[aiPredictedCategoryId] || aiPredictedCategoryId;
+
+        // Only set if classificationResult is not already set (to avoid overwriting fresh classification results)
+        if (!classificationResult) {
+          setClassificationResult({
+            predicted_category: aiPredictedCategoryId,
+            predicted_category_id: aiPredictedCategoryId,
+            predicted_category_label: aiPredictedCategoryLabel,
+            category_matched: campaign.category?.category_matched || false,
+          });
+        }
+      }
+
       setLoadingCampaignData(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -451,9 +488,22 @@ function CreateCampaignPageContent() {
                   )}
 
                   {/* Step 4: Category Mismatch */}
-                  {currentStep === 4 && (
-                    <CategoryMismatchStep onNext={handleProceedWithCategory} />
-                  )}
+                  {currentStep === 4 && (() => {
+                    const category = campaignDetailsData?.campaign?.category;
+                    const reviewStatus = category?.review_status || category?.manual_category_review;
+                    const reviewStatusPending = isEditMode &&
+                      reviewStatus &&
+                      reviewStatus !== "None" &&
+                      reviewStatus !== null &&
+                      reviewStatus !== "";
+
+                    return (
+                      <CategoryMismatchStep
+                        onNext={handleProceedWithCategory}
+                        reviewStatusPending={reviewStatusPending}
+                      />
+                    );
+                  })()}
 
                   {/* Step 5: Programs Selection */}
                   {currentStep === 5 && (

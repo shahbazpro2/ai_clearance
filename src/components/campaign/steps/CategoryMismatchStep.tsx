@@ -15,12 +15,14 @@ import {
   selfSelectedCategoryAtom,
   selfSelectedCategoryLabelAtom,
 } from "@/store/campaign";
+import { useCategories } from "@/hooks/useCategories";
 
 interface CategoryMismatchStepProps {
   onNext: (categoryType: "ai" | "self" | null) => void;
+  reviewStatusPending?: boolean; // If true, a review is already pending, show "select AI or self declared" UI
 }
 
-export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
+export function CategoryMismatchStep({ onNext, reviewStatusPending = false }: CategoryMismatchStepProps) {
   const campaignId = useAtomValue(campaignIdAtom);
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
   const selectedCategoryLabel = useAtomValue(selectedCategoryLabelAtom);
@@ -30,6 +32,10 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
   const setSelectedCategoryLabel = useSetAtom(selectedCategoryLabelAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
   const [manualReviewRequested, setManualReviewRequested] = useState(false);
+  const { categoryNames } = useCategories();
+
+  // If review is already pending, treat it as if manual review was requested
+  const showSelectCategoryUI = manualReviewRequested || reviewStatusPending;
 
   const [callAcceptPredicted, { loading: acceptingPredicted }] = useApi({ errMsg: true });
   const [callCreateReview, { loading: creatingReview }] = useApi({ errMsg: true });
@@ -38,7 +44,10 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
     classificationResult?.predicted_category_id ??
     classificationResult?.predicted_category ??
     null;
+
+  // Get predicted category label - prioritize classificationResult label, then use categoryNames map, then fallback to ID
   const predictedCategoryLabel =
+    (predictedCategoryId ? categoryNames[predictedCategoryId] : null) ??
     classificationResult?.predicted_category_label ??
     classificationResult?.predicted_category ??
     predictedCategoryId ??
@@ -84,7 +93,7 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
 
   return (
     <div className="space-y-6">
-      {!manualReviewRequested && (
+      {!showSelectCategoryUI && (
         <>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -138,14 +147,16 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
         </>
       )}
 
-      {manualReviewRequested && (
+      {showSelectCategoryUI && (
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <p className="text-sm font-medium text-green-800 mb-1">
-              Manual Review Requested Successfully
+              {reviewStatusPending ? "Manual Review Pending" : "Manual Review Requested Successfully"}
             </p>
             <p className="text-sm text-green-700 mb-4">
-              You can proceed with campaign creation while your review is pending. Choose which category to continue with:
+              {reviewStatusPending
+                ? "A manual review is already pending for this campaign. Choose which category to continue with:"
+                : "You can proceed with campaign creation while your review is pending. Choose which category to continue with:"}
             </p>
             <div className="space-y-2">
               <Button
@@ -159,10 +170,7 @@ export function CategoryMismatchStep({ onNext }: CategoryMismatchStepProps) {
                 variant="outline"
                 className="w-full"
               >
-                Go with AI Predicted Category:{" "}
-                {classificationResult?.predicted_category_label ||
-                  classificationResult?.predicted_category ||
-                  "N/A"}
+                Go with AI Predicted Category: {predictedCategoryLabel || "N/A"}
               </Button>
             </div>
           </div>

@@ -7,7 +7,7 @@ import { fetchCategoriesApi } from "../../api/categories";
  * @param enabled - Whether to fetch categories (default: true). Set to false to skip fetching.
  * @returns Object containing categories array, categoryNames map, and loading state
  */
-export const useCategories = (enabled: boolean = true) => {
+export const useCategories = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>(
     {}
@@ -37,11 +37,11 @@ export const useCategories = (enabled: boolean = true) => {
   }, [data]);
 
   useEffect(() => {
-    if (enabled) {
+    if (!data) {
       callFetchCategories(fetchCategoriesApi());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled]);
+  }, [data]);
 
   return { categories, categoryNames, loading };
 };
