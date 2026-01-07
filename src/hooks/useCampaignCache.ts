@@ -175,6 +175,109 @@ export function useCampaignCache() {
   ]);
 
   /**
+   * Clears only program-related cache and state
+   * This includes:
+   * - Program selection atoms
+   * - Availability report atoms
+   * - Program-related localStorage and sessionStorage cache entries
+   * Does NOT clear:
+   * - Category-related atoms (selectedCategoryAtom, selectedCategoryLabelAtom, etc.)
+   * - Classification result
+   * - Campaign ID
+   */
+  const clearProgramsCache = useCallback(() => {
+    console.log("Clearing programs cache...");
+
+    // Clear program selection atoms
+    setSelectedPrograms([]);
+    setSelectedProgramIds([]);
+    setSelectedProgramCategory(null);
+
+    // Clear availability report atoms
+    setBookingQuantities({});
+    setBookingInputValues({});
+    setQuantityErrors({});
+    setBookingTouched({});
+    setSelectedInsertType("");
+    setExcludedPrograms([]);
+
+    // Force clear program atoms again after a microtask to ensure they're cleared
+    setTimeout(() => {
+      setSelectedPrograms([]);
+      setSelectedProgramIds([]);
+      setSelectedProgramCategory(null);
+    }, 0);
+
+    // Clear only program-related API cache from localStorage and sessionStorage
+    try {
+      if (typeof window !== "undefined") {
+        // Clear localStorage - only program-related keys
+        const localStorageKeysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (
+            key &&
+            (key.toLowerCase().includes("program") ||
+              key.toLowerCase().includes("availability"))
+          ) {
+            // Don't remove campaignDetails or campaigns keys - keep those
+            if (
+              !key.includes("campaignDetails") &&
+              !key.includes("campaigns")
+            ) {
+              localStorageKeysToRemove.push(key);
+            }
+          }
+        }
+        localStorageKeysToRemove.forEach((key) => {
+          localStorage.removeItem(key);
+          console.log("Removed localStorage key:", key);
+        });
+
+        // Clear sessionStorage - only program-related keys
+        const sessionStorageKeysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (
+            key &&
+            (key.toLowerCase().includes("program") ||
+              key.toLowerCase().includes("availability"))
+          ) {
+            // Don't remove campaignDetails or campaigns keys - keep those
+            if (
+              !key.includes("campaignDetails") &&
+              !key.includes("campaigns")
+            ) {
+              sessionStorageKeysToRemove.push(key);
+            }
+          }
+        }
+        sessionStorageKeysToRemove.forEach((key) => {
+          sessionStorage.removeItem(key);
+          console.log("Removed sessionStorage key:", key);
+        });
+
+        console.log("Programs cache clearing complete. Removed:", {
+          localStorage: localStorageKeysToRemove.length,
+          sessionStorage: sessionStorageKeysToRemove.length,
+        });
+      }
+    } catch (error) {
+      console.warn("Failed to clear programs cache:", error);
+    }
+  }, [
+    setSelectedPrograms,
+    setSelectedProgramIds,
+    setSelectedProgramCategory,
+    setBookingQuantities,
+    setBookingInputValues,
+    setQuantityErrors,
+    setBookingTouched,
+    setSelectedInsertType,
+    setExcludedPrograms,
+  ]);
+
+  /**
    * Clears all campaign cache and navigates to home page
    * Use this when user clicks "Back to Home" button
    */
@@ -205,6 +308,7 @@ export function useCampaignCache() {
 
   return {
     clearAllCampaignCache,
+    clearProgramsCache,
     handleBackToHome,
   };
 }

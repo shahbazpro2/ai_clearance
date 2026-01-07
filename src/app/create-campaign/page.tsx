@@ -56,6 +56,7 @@ function CreateCampaignPageContent() {
   const [selectedCategoryForProceed, setSelectedCategoryForProceed] = useState<"ai" | "self" | null>(null);
   const [uploadResetKey, setUploadResetKey] = useState(0);
   const [loadingCampaignData, setLoadingCampaignData] = useState(false);
+  const justResetRef = useRef(false);
   const classificationResult = useAtomValue(classificationResultAtom);
   const selfSelectedCategory = useAtomValue(selfSelectedCategoryAtom);
   const selfSelectedCategoryLabel = useAtomValue(selfSelectedCategoryLabelAtom);
@@ -67,7 +68,7 @@ function CreateCampaignPageContent() {
   const setSelfSelectedCategoryLabel = useSetAtom(selfSelectedCategoryLabelAtom);
 
   // Use custom hook for cache management
-  const { clearAllCampaignCache, handleBackToHome } = useCampaignCache();
+  const { clearAllCampaignCache, clearProgramsCache, handleBackToHome } = useCampaignCache();
 
   // Clear cache when starting a new campaign (not edit mode)
   useEffect(() => {
@@ -238,6 +239,57 @@ function CreateCampaignPageContent() {
         return; // Cached data is for a different campaign, skip processing
       }
 
+      // If we just reset, handle reset-specific logic
+      if (justResetRef.current) {
+        justResetRef.current = false;
+
+        const category = campaign.category || {};
+
+        // Use confirmed_category_id or fallback to the category ID that was used previously
+        const categoryId = category.confirmed_category_id
+          || category.self_declared_category
+          || category.ai_predicted_category_id
+          || null;
+
+        if (categoryId && categoryId !== "None" && categoryId !== null) {
+          // Set category atoms based on confirmed_category_id
+          setSelectedCategory(categoryId);
+          setSelfSelectedCategory(categoryId);
+
+          // Get category label from categoryNames map
+          const label = categoryNames[categoryId] || "";
+          if (label) {
+            setSelectedCategoryLabel(label);
+            setSelfSelectedCategoryLabel(label);
+          }
+
+          // Determine selectedCategoryForProceed based on which category was used
+          if (category.confirmed_category_id && category.confirmed_category_id !== "None" && category.confirmed_category_id !== null) {
+            // Check if it was originally from AI prediction or self-declared
+            if (category.predicted_category_accepted && category.ai_predicted_category_id) {
+              setSelectedCategoryForProceed("ai");
+            } else if (category.self_declared_category) {
+              setSelectedCategoryForProceed("self");
+            }
+          } else if (category.predicted_category_accepted && category.ai_predicted_category_id) {
+            setSelectedCategoryForProceed("ai");
+          } else if (category.self_declared_category) {
+            setSelectedCategoryForProceed("self");
+          }
+        }
+
+        // Clear only program-related cache (keep categories)
+        clearProgramsCache();
+
+        // Redirect to Program Selection page (step 5)
+        setCurrentStep(5);
+        setHasUnsavedChanges(false);
+
+        // Update URL to reflect step 5
+        router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=5`);
+        return;
+      }
+
       // Determine correct step based on stage
       const determinedStep = determineStepFromStage(campaign);
       const queryStep = stepFromQuery ? parseInt(stepFromQuery, 10) : null;
@@ -398,11 +450,13 @@ function CreateCampaignPageContent() {
 
     callResetCampaign(resetCampaignProgramsApi(campaignIdFromQuery), () => {
       toast.success("Campaign programs have been reset successfully");
-      // Redirect to Program Selection page
-      setCurrentStep(5);
-      setHasUnsavedChanges(false);
-      // Clear program-related state
-      setSelectedCategoryForProceed(null);
+
+      // Set flag to indicate we just reset - this will trigger processing in useEffect
+      justResetRef.current = true;
+
+      // Fetch campaign details to get updated confirmed_category_id
+      // The useEffect will process the data when it arrives
+      callCampaignDetails(fetchCampaignDetailsApi(campaignIdFromQuery));
     });
   };
 

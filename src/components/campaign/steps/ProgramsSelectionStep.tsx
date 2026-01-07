@@ -27,6 +27,7 @@ import {
 import { ChevronsUpDown } from "lucide-react";
 import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom, campaignIdAtom, availabilityReportBookingQuantitiesAtom, availabilityReportInputValuesAtom, availabilityReportQuantityErrorsAtom, availabilityReportBookingTouchedAtom, availabilityReportExcludedProgramsAtom, cacheClearedAtom } from "@/store/campaign";
 import { fetchInsertProgramsApi, fetchCampaignDetailsApi } from "../../../../api/campaigns";
+import { useCategories } from "@/hooks/useCategories";
 
 interface ProgramsSelectionStepProps {
   selectedCategoryType: "ai" | "self" | null;
@@ -317,6 +318,7 @@ export function ProgramsSelectionStep({
   const initializedFromCampaignRef = useRef(false);
   const cacheCleared = useAtomValue(cacheClearedAtom);
   const setCacheCleared = useSetAtom(cacheClearedAtom);
+  const { categoryNames } = useCategories();
 
   // Cache atoms for checking if data exists
   const bookingQuantities = useAtomValue(availabilityReportBookingQuantitiesAtom);
@@ -369,7 +371,7 @@ export function ProgramsSelectionStep({
     if (selectedCategoryId) {
       return selectedCategoryId;
     }
-    
+
     // If selectedCategoryType is "ai", use classification result
     if (selectedCategoryType === "ai") {
       return (
@@ -378,7 +380,7 @@ export function ProgramsSelectionStep({
         null
       );
     }
-    
+
     // Fallback to classification result if available
     return (
       classificationResult?.predicted_category_id ??
@@ -413,6 +415,17 @@ export function ProgramsSelectionStep({
     selectedCategoryType,
   ]);
 
+  const displayCategoryName = useMemo(() => {
+    if (!effectiveCategoryId) return null;
+    // First try to get category name from categoryNames map
+    const categoryNameFromMap = categoryNames[String(effectiveCategoryId)];
+    if (categoryNameFromMap) {
+      return categoryNameFromMap;
+    }
+    // Fall back to effectiveCategoryLabel or effectiveCategoryId
+    return effectiveCategoryLabel ?? effectiveCategoryId;
+  }, [effectiveCategoryId, effectiveCategoryLabel, categoryNames]);
+
   useEffect(() => {
     if (!effectiveCategoryId) {
       console.log("ProgramsSelectionStep: effectiveCategoryId is null, skipping API call", {
@@ -434,18 +447,18 @@ export function ProgramsSelectionStep({
       hasFetchedCampaignDetailsRef.current = null;
       return;
     }
-    
+
     // Skip if we already fetched for this campaign
     if (hasFetchedCampaignDetailsRef.current === campaignId) {
       return;
     }
-    
+
     // Check if we already have data for this campaign (from cache)
     if (campaignDetailsData?.campaign?.id === campaignId) {
       hasFetchedCampaignDetailsRef.current = campaignId;
       return;
     }
-    
+
     // Only fetch if we don't have data yet
     hasFetchedCampaignDetailsRef.current = campaignId;
     callCampaignDetails(fetchCampaignDetailsApi(campaignId));
@@ -518,7 +531,7 @@ export function ProgramsSelectionStep({
     if (campaignId && campaignDetailsData?.campaign && selectedPrograms.length === 0 && selectedChannelIds.length === 0 && !cacheCleared) {
       const campaign = campaignDetailsData.campaign;
       const campaignPrograms = campaign.programs || [];
-      
+
       if (campaignPrograms.length > 0) {
         // Extract channel_ids from campaign programs
         const campaignChannelIds = campaignPrograms.map((p: any) => {
@@ -545,7 +558,7 @@ export function ProgramsSelectionStep({
         }
       }
     }
-    
+
     // Reset cache cleared flag after checking (so it doesn't persist forever)
     if (cacheCleared) {
       setCacheCleared(false);
@@ -948,7 +961,7 @@ export function ProgramsSelectionStep({
           <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
             Showing programs that support{" "}
             <span className="font-semibold">
-              {effectiveCategoryLabel ?? effectiveCategoryId}
+              {displayCategoryName ?? effectiveCategoryId}
             </span>
             . Use filters to narrow down
             the list or focus on instant availability.
