@@ -510,6 +510,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
 
   const isDeletingRef = useRef(false);
   const skipRefetchRef = useRef(false);
+  const prevSelectedProgramsLengthRef = useRef(selectedPrograms.length);
 
   const [
     callGetAvailability,
@@ -542,7 +543,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
   // Remove programs from excluded list if they're re-selected (but not during deletion)
   useEffect(() => {
     if (isDeletingRef.current) {
-      isDeletingRef.current = false;
+      // Don't reset the flag here - let the main useEffect handle it
       return;
     }
     if (selectedPrograms.length > 0 && excludedPrograms.length > 0) {
@@ -555,11 +556,28 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
   // Fetch availability data on mount (but skip if we're deleting to prevent refetch)
   // Use Get Campaign Programs if useSavedPrograms is true AND no programs are selected, otherwise use Availability API
   useEffect(() => {
-    if (skipRefetchRef.current) {
-      skipRefetchRef.current = false;
-      return;
+    const prevLength = prevSelectedProgramsLengthRef.current;
+    const currentLength = selectedPrograms.length;
+
+    // Detect if we just deleted a program: selectedPrograms went from > 0 to 0
+    const justDeleted = prevLength > 0 && currentLength === 0;
+
+    // Update ref for next comparison
+    prevSelectedProgramsLengthRef.current = currentLength;
+
+    // FIRST: Check if we're in the middle of deleting a program - don't reset flags yet
+    if (skipRefetchRef.current || isDeletingRef.current) {
+      return; // Exit early, don't reset flags or make API calls
     }
 
+    // SECOND: Don't refetch if we just deleted (selectedPrograms went to 0) OR if selectedPrograms is empty and we have excluded programs
+    // This prevents refetching when deleting the last record
+    // This check must happen before any API calls
+    if (justDeleted || (selectedPrograms.length === 0 && excludedPrograms.length > 0)) {
+      return; // Exit early, don't make API calls
+    }
+
+    // THIRD: Now we can safely make API calls
     // If programs are selected from Program Selection page, always use Availability API
     if (selectedPrograms.length > 0 && effectiveCategoryId) {
       // Use Availability API when navigating from Program Selection page or when programs are selected
@@ -573,12 +591,39 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
     } else if (useSavedPrograms && campaignId) {
       // Use Get Campaign Programs endpoint when directly landing on availability page with no selected programs
       // This happens in edit mode when user lands directly on availability page
-      callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
+      // But only if we don't have excluded programs (which would indicate we just deleted)
+      if (excludedPrograms.length === 0) {
+        callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
+      }
     } else if (!useSavedPrograms && selectedPrograms.length === 0 && effectiveCategoryId && campaignId) {
       // Fallback: If no programs selected but we have category and campaign, try to get saved programs
-      callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
+      // But only if we don't have excluded programs (which would indicate we just deleted)
+      if (excludedPrograms.length === 0) {
+        callGetCampaignPrograms(getCampaignProgramsApi(campaignId));
+      }
     }
-  }, [selectedPrograms, effectiveCategoryId, campaignId, callGetAvailability, callGetCampaignPrograms, useSavedPrograms]);
+  }, [selectedPrograms, effectiveCategoryId, campaignId, callGetAvailability, callGetCampaignPrograms, useSavedPrograms, excludedPrograms.length]);
+
+  // Reset deletion flags after excluded programs change (deletion complete)
+  // Use a ref to track previous excluded programs length to detect when deletion completes
+  const prevExcludedProgramsLengthRef = useRef(excludedPrograms.length);
+  useEffect(() => {
+    const prevLength = prevExcludedProgramsLengthRef.current;
+    const currentLength = excludedPrograms.length;
+
+    // If excluded programs increased (deletion happened), reset flags after React processes all updates
+    if (currentLength > prevLength) {
+      // Reset flags after a delay to ensure all useEffects have run
+      const timer = setTimeout(() => {
+        isDeletingRef.current = false;
+        skipRefetchRef.current = false;
+      }, 200);
+      prevExcludedProgramsLengthRef.current = currentLength;
+      return () => clearTimeout(timer);
+    }
+
+    prevExcludedProgramsLengthRef.current = currentLength;
+  }, [excludedPrograms]);
 
   // Fetch insert print types on mount
   useEffect(() => {
@@ -1771,7 +1816,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
             onClick={onComplete}
             disabled={hasErrors || !selectedInsertType}
           >
-            Continue
+            Proceed to Booking
           </Button>
         )}
       </div>
