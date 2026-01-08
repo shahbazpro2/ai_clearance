@@ -60,18 +60,13 @@ export default function CampaignDetailPage() {
   const params = useParams();
   const router = useRouter();
   const campaignId = params?.id as string;
-  const [campaignDetails, setCampaignDetails] = useState<CampaignDetails | null>(null);
   const { categoryNames } = useCategories();
 
-  const [callCampaignDetails, { loading: loadingDetails }] = useApi({ errMsg: true });
+  const [callCampaignDetails, { data: campaignDetails, loading: loadingDetails }] = useApi({ errMsg: true, cache: 'campaignDetails' });
 
   useEffect(() => {
     if (campaignId) {
-      callCampaignDetails(fetchCampaignDetailsApi(campaignId), ({ data }: any) => {
-        if (data?.campaign) {
-          setCampaignDetails(data);
-        }
-      });
+      callCampaignDetails(fetchCampaignDetailsApi(campaignId));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
@@ -218,7 +213,7 @@ export default function CampaignDetailPage() {
                   <div>
                     <p className="text-sm font-medium text-gray-500 mb-1">Locked Target Months</p>
                     <div className="flex flex-wrap gap-2">
-                      {campaign.locked_target_months.map((month, idx) => (
+                      {campaign.locked_target_months.map((month: string, idx: number) => (
                         <Badge key={idx} variant="outline" className="capitalize">
                           {month}
                         </Badge>
