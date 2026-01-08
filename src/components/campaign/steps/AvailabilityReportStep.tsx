@@ -41,6 +41,7 @@ import {
   saveCampaignProgramsApi,
   createManualAvailabilityRequestApi,
   getCampaignProgramsApi,
+  verifyCampaignApi,
 } from "../../../../api/campaigns";
 
 interface AvailabilityReportStepProps {
@@ -508,6 +509,12 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
     name: string;
   } | null>(null);
 
+  // State for verification error modal
+  const [verificationError, setVerificationError] = useState<{
+    message: string;
+    hasDaysDifference: boolean;
+  } | null>(null);
+
   const isDeletingRef = useRef(false);
   const skipRefetchRef = useRef(false);
   const prevSelectedProgramsLengthRef = useRef(selectedPrograms.length);
@@ -530,6 +537,25 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
   const [callSavePrograms, { loading: savingPrograms }] = useApi({ errMsg: true });
   const [callRequestManualAvailability, { loading: requestingManualAvailability }] = useApi({ errMsg: true });
   const [callGetCampaignPrograms, { data: campaignProgramsData, loading: loadingCampaignPrograms }] = useApi({ errMsg: true });
+  const [callVerifyCampaign, { loading: verifyingCampaign }] = useApi({ errMsg: false });
+
+  // State to control RESET button visibility based on verification error
+  const [showResetButton, setShowResetButton] = useState(false);
+
+  // Reset showResetButton and verification error when campaignId changes
+  useEffect(() => {
+    setShowResetButton(false);
+    setVerificationError(null);
+  }, [campaignId]);
+
+  // Reset showResetButton and verification error when reset completes successfully
+  useEffect(() => {
+    if (!resettingCampaign && showResetButton) {
+      // Reset was completed, hide the button and clear error modal
+      setShowResetButton(false);
+      setVerificationError(null);
+    }
+  }, [resettingCampaign, showResetButton]);
 
   const effectiveCategoryId = useMemo(() => {
     return (
@@ -1345,13 +1371,49 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
     handleSavePrograms();
   };
 
-  // Handle proceed to booking - save programs first, then proceed
+  // Handle proceed to booking - save programs first, then verify, then proceed
   const handleProceedToBookingClick = () => {
-    if (!onProceedToBooking) return;
+    if (!onProceedToBooking || !campaignId) {
+      if (!campaignId) {
+        toast.error("Campaign ID is missing");
+      }
+      return;
+    }
 
-    // Save programs first, then call the proceed callback
+    // Reset RESET button visibility
+    setShowResetButton(false);
+
+    // Save programs first, then verify campaign
     handleSavePrograms(() => {
-      onProceedToBooking();
+      // Call verification API after saving
+      callVerifyCampaign(
+        verifyCampaignApi(campaignId),
+        (response: any) => {
+          // Success (200 OK) - proceed to booking
+          setShowResetButton(false); // Hide RESET button on success
+          if (response?.data?.message) {
+            toast.success(response.data.message);
+          }
+          onProceedToBooking();
+        },
+        (errorData: any) => {
+          // Error handling
+          const errorResponse = errorData?.response?.data || errorData?.data || errorData;
+          const errorMessage = errorResponse?.message || "Verification failed";
+
+          // Check if error response contains days_difference
+          const hasDaysDifference = errorResponse?.days_difference !== undefined;
+
+          // Show error in modal
+          setVerificationError({
+            message: errorMessage,
+            hasDaysDifference,
+          });
+
+          // Show RESET button if days_difference exists (regardless of value)
+          setShowResetButton(hasDaysDifference);
+        }
+      );
     });
   };
 
@@ -1771,7 +1833,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
       <div className="flex items-center justify-end gap-2 border-t pt-4">
         {isEditMode ? (
           <>
-            {onResetCampaign && (
+            {onResetCampaign && showResetButton && (
               <Button
                 variant="outline"
                 onClick={onResetCampaign}
@@ -1795,13 +1857,13 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
               <Button
                 variant="default"
                 onClick={handleProceedToBookingClick}
-                disabled={savingPrograms || hasErrors || !selectedInsertType}
+                disabled={savingPrograms || verifyingCampaign || hasErrors || !selectedInsertType}
                 className="bg-green-600 text-white hover:bg-green-700"
               >
-                {savingPrograms ? (
+                {savingPrograms || verifyingCampaign ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2 h-4 w-4" />
-                    Saving...
+                    {savingPrograms ? "Saving..." : "Verifying..."}
                   </>
                 ) : (
                   "Proceed to Booking"
@@ -1847,6 +1909,32 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
               onClick={confirmDeleteProgram}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Verification Error Modal */}
+      <Dialog open={!!verificationError} onOpenChange={(open) => !open && setVerificationError(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <DialogTitle>Verification Failed</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              {verificationError?.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="default"
+              onClick={() => setVerificationError(null)}
+              className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+            >
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>

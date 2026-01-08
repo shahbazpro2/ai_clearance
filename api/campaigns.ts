@@ -143,3 +143,14 @@ export const resetCampaignProgramsApi = (campaignId: string) => {
     "delete"
   );
 };
+
+/**
+ * Campaign Verification
+ * Endpoint: GET /campaigns/verification?campaign_id={campaign_id}
+ */
+export const verifyCampaignApi = (campaignId: string) => {
+  return universalApi(
+    `/campaigns/verification?campaign_id=${campaignId}`,
+    "get"
+  );
+};
