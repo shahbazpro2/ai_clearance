@@ -1417,6 +1417,52 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
     });
   };
 
+  // Handle complete (for create campaign flow - non-edit mode)
+  const handleCompleteClick = () => {
+    if (!onComplete || !campaignId) {
+      if (!campaignId) {
+        toast.error("Campaign ID is missing");
+      }
+      return;
+    }
+
+    // Reset RESET button visibility
+    setShowResetButton(false);
+
+    // Save programs first, then verify campaign
+    handleSavePrograms(() => {
+      // Call verification API after saving
+      callVerifyCampaign(
+        verifyCampaignApi(campaignId),
+        (response: any) => {
+          // Success (200 OK) - proceed to booking
+          setShowResetButton(false); // Hide RESET button on success
+          if (response?.data?.message) {
+            toast.success(response.data.message);
+          }
+          onComplete();
+        },
+        (errorData: any) => {
+          // Error handling
+          const errorResponse = errorData?.response?.data || errorData?.data || errorData;
+          const errorMessage = errorResponse?.message || "Verification failed";
+
+          // Check if error response contains days_difference
+          const hasDaysDifference = errorResponse?.days_difference !== undefined;
+
+          // Show error in modal
+          setVerificationError({
+            message: errorMessage,
+            hasDaysDifference,
+          });
+
+          // Show RESET button if days_difference exists (regardless of value)
+          setShowResetButton(hasDaysDifference);
+        }
+      );
+    });
+  };
+
   // Check if manual availability request button should be shown
   const shouldShowManualAvailabilityButton = useMemo(() => {
     const manualPrograms = filteredAvailabilityPrograms.filter(
@@ -1875,10 +1921,17 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
         ) : (
           <Button
             className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-            onClick={onComplete}
-            disabled={hasErrors || !selectedInsertType}
+            onClick={handleCompleteClick}
+            disabled={savingPrograms || verifyingCampaign || hasErrors || !selectedInsertType}
           >
-            Proceed to Booking
+            {savingPrograms || verifyingCampaign ? (
+              <>
+                <LoadingSpinner size="sm" className="mr-2 h-4 w-4" />
+                {savingPrograms ? "Saving..." : "Verifying..."}
+              </>
+            ) : (
+              "Proceed to Booking"
+            )}
           </Button>
         )}
       </div>
