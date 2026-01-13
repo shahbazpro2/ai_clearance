@@ -16,6 +16,8 @@ import {
   CategoryMismatchStep,
   ProgramsSelectionStep,
   AvailabilityReportStep,
+  ArtFileUploadStep,
+  AgreementStep,
   type AvailabilityReportStepRef,
 } from "@/components/campaign/steps";
 import { ProgressBar } from "@/components/campaign/ProgressBar";
@@ -37,7 +39,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { toast } from "react-toastify";
 import { RotateCcw } from "lucide-react";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 8;
 
 function CreateCampaignPageContent() {
   const router = useRouter();
@@ -220,6 +222,14 @@ function CreateCampaignPageContent() {
       return 6; // Availability Report Step
     }
 
+    // 4. If Current Stage = Art Files Submission
+    if (currentStage === "artfiles_submission") {
+      return 7; // Art File Upload Step
+    }
+
+    // 5. If Current Stage = Agreement (or similar)
+    // Note: You may need to add a new stage check here based on your backend logic
+
     // Default: use step from query or start from beginning
     if (stepFromQuery) {
       const step = parseInt(stepFromQuery, 10);
@@ -291,8 +301,19 @@ function CreateCampaignPageContent() {
       }
 
       // Determine correct step based on stage
-      const determinedStep = determineStepFromStage(campaign);
       const queryStep = stepFromQuery ? parseInt(stepFromQuery, 10) : null;
+      
+      const determinedStep = determineStepFromStage(campaign);
+      
+      // If determined step is 7 (art file upload) or query step is 7, ensure campaign ID is set
+      if (determinedStep === 7 || queryStep === 7) {
+        setCampaignId(campaignIdFromQuery);
+        setCurrentStep(7);
+        if (queryStep !== 7) {
+          router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=7`);
+        }
+        return;
+      }
 
       // Only update step if determined step differs from query step
       if (determinedStep !== queryStep) {
@@ -461,11 +482,17 @@ function CreateCampaignPageContent() {
   };
 
   const handleProceedToBooking = () => {
-    // Clear all campaign-related cache data and navigate to home
-    clearAllCampaignCache();
+    // Navigate to art file upload step (step 7)
+    const campaignId = campaignIdFromQuery || campaignDetailsData?.campaign?.id;
+    if (!campaignId) {
+      toast.error("Campaign ID is missing");
+      return;
+    }
+    // Ensure campaign ID is set in atom for ArtFileUploadStep
+    setCampaignId(campaignId);
     setHasUnsavedChanges(false);
-    setSelectedCategoryForProceed(null);
-    router.push(`/`);
+    setCurrentStep(7);
+    router.replace(`/create-campaign?campaign_id=${campaignId}&step=7`);
   };
 
   return (
@@ -577,12 +604,45 @@ function CreateCampaignPageContent() {
                     <AvailabilityReportStep
                       ref={availabilityReportStepRef}
                       onBack={() => setCurrentStep(5)}
-                      onComplete={handleComplete}
+                      onComplete={handleProceedToBooking}
                       useSavedPrograms={isEditMode && campaignIdFromQuery ? true : false}
                       isEditMode={isEditMode}
-                      onProceedToBooking={isEditMode ? handleProceedToBooking : undefined}
+                      onProceedToBooking={handleProceedToBooking}
                       onResetCampaign={isEditMode ? handleResetCampaign : undefined}
                       resettingCampaign={resettingCampaign}
+                    />
+                  )}
+
+                  {/* Step 7: Art File Upload */}
+                  {currentStep === 7 && (
+                    <ArtFileUploadStep
+                      onBack={() => {
+                        setCurrentStep(6);
+                        router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=6`);
+                      }}
+                      onNext={() => {
+                        // Navigate to agreement page (step 8)
+                        setHasUnsavedChanges(false);
+                        setCurrentStep(8);
+                        router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=8`);
+                      }}
+                    />
+                  )}
+
+                  {/* Step 8: Agreement */}
+                  {currentStep === 8 && (
+                    <AgreementStep
+                      onBack={() => {
+                        setCurrentStep(7);
+                        router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=7`);
+                      }}
+                      onNext={() => {
+                        // Complete campaign creation
+                        clearAllCampaignCache();
+                        setHasUnsavedChanges(false);
+                        setSelectedCategoryForProceed(null);
+                        router.push(`/`);
+                      }}
                     />
                   )}
                 </>

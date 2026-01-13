@@ -154,3 +154,47 @@ export const verifyCampaignApi = (campaignId: string) => {
     "get"
   );
 };
+
+/**
+ * Get Art Files Details
+ * Endpoint: GET /art-and-csv?campaign_id={campaign_id}
+ */
+export const getArtFilesDetailsApi = (campaignId: string) => {
+  return universalApi(`/art-and-csv/?campaign_id=${campaignId}`, "get");
+};
+
+/**
+ * Upload Art Files and Code Files
+ * Endpoint: POST /art-and-csv/
+ */
+export const uploadArtFilesApi = (payload: FormData) => {
+  return responseApi("/art-and-csv/", "post", payload);
+};
+
+/**
+ * Delete Art Files
+ * Endpoint: DELETE /art-and-csv/
+ */
+export const deleteArtFilesApi = (payload: {
+  campaign_id: string;
+  program_id: string;
+  month_number: number;
+}) => {
+  return responseApi("/art-and-csv/", "delete", payload);
+};
+
+/**
+ * Get Art and CSV Details for Agreement
+ * Endpoint: GET /art-and-csv/details?campaign_id={campaign_id}
+ */
+export const getArtAndCsvDetailsApi = (campaignId: string) => {
+  return universalApi(`/agreement/details?campaign_id=${campaignId}`, "get");
+};
+
+/**
+ * Accept Agreement
+ * Endpoint: POST /art-and-csv/accept
+ */
+export const acceptAgreementApi = (payload: { campaign_id: string }) => {
+  return responseApi("/agreement/accept", "post", payload);
+};

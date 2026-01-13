@@ -52,6 +52,7 @@ const getStepFromStage = (stage: string): number => {
     "programs_selection": 5,
     "program_selection": 5, // Alternative naming
     "availability_planning": 6,
+    "artfiles_submission": 7,
   };
   return stageMap[stage] || 1;
 };
