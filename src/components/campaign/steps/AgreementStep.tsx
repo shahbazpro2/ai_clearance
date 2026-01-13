@@ -126,7 +126,7 @@ export function AgreementStep({ onBack, onNext }: AgreementStepProps) {
         <p className="text-gray-600">
           This Statement of Work is effective as of the date of the last
           signature {agreementDetails.date || ""}, by and between Red Crane
-          Media ("RCM") and {agreementDetails.client_name} (the "Client").
+          Media (&quot;RCM&quot;) and {agreementDetails.client_name} (the &quot;Client&quot;).
         </p>
       </div>
 
