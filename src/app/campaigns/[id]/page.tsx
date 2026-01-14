@@ -36,6 +36,8 @@ interface CampaignDetails {
     program_flags: {
       any_manual_availability_pending: boolean;
       any_manual_availability_required: boolean;
+      manual_availability_required?: boolean;
+      manual_availability_status?: string;
     };
     programs: any[];
   };
@@ -53,6 +55,7 @@ const getStepFromStage = (stage: string): number => {
     "program_selection": 5, // Alternative naming
     "availability_planning": 6,
     "artfiles_submission": 7,
+    "agreement": 8,
   };
   return stageMap[stage] || 1;
 };
@@ -301,8 +304,13 @@ export default function CampaignDetailPage() {
                 </div>
                 {campaign.category.confirmed_category_id && (
                   <div>
-                    <p className="text-sm font-medium text-gray-500 mb-1">Confirmed Category ID</p>
-                    <p className="text-sm text-gray-900">{campaign.category.confirmed_category_id}</p>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Confirmed Category</p>
+                    <div>
+                      <p className="text-sm text-gray-900 mb-1">
+                        {categoryNames[campaign.category.confirmed_category_id] || campaign.category.confirmed_category_id}
+                      </p>
+                      <p className="text-xs text-gray-500">ID: {campaign.category.confirmed_category_id}</p>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -318,35 +326,44 @@ export default function CampaignDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">Manual Availability Required</p>
                   <div className="flex items-center gap-2">
-                    {campaign.program_flags.any_manual_availability_required ? (
+                    {campaign.program_flags.contain_manual_programs !== undefined ? (
+                      <>
+                        {campaign.program_flags.contain_manual_programs ? (
+                          <>
+                            <AlertCircle className="h-4 w-4 text-yellow-600" />
+                            <span className="text-sm text-yellow-600">True</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            <span className="text-sm text-green-600">False</span>
+                          </>
+                        )}
+                      </>
+                    ) : campaign.program_flags.contain_manual_programs ? (
                       <>
                         <AlertCircle className="h-4 w-4 text-yellow-600" />
-                        <span className="text-sm text-yellow-600">Yes</span>
+                        <span className="text-sm text-yellow-600">True</span>
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="text-sm text-green-600">No</span>
+                        <span className="text-sm text-green-600">False</span>
                       </>
                     )}
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Manual Availability Pending</p>
-                  <div className="flex items-center gap-2">
-                    {campaign.program_flags.any_manual_availability_pending ? (
-                      <>
-                        <Clock className="h-4 w-4 text-orange-600" />
-                        <span className="text-sm text-orange-600">Yes</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="text-sm text-green-600">No</span>
-                      </>
-                    )}
+                {
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Manual Availability Status</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="capitalize">
+                        {campaign.program_flags.manual_programs_availability_status?.replace(/_/g, " ") || "Not Available"}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
+                }
+
               </CardContent>
             </Card>
 

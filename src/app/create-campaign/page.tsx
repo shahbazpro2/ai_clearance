@@ -227,8 +227,10 @@ function CreateCampaignPageContent() {
       return 7; // Art File Upload Step
     }
 
-    // 5. If Current Stage = Agreement (or similar)
-    // Note: You may need to add a new stage check here based on your backend logic
+    // 5. If Current Stage = Agreement
+    if (currentStage === "agreement") {
+      return 8; // Agreement Step
+    }
 
     // Default: use step from query or start from beginning
     if (stepFromQuery) {

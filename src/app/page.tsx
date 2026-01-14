@@ -47,6 +47,8 @@ const getStepFromStage = (stage?: string): number => {
     "programs_selection": 5,
     "program_selection": 5, // Alternative naming
     "availability_planning": 6,
+    "artfiles_submission": 7,
+    "agreement": 8,
   };
   return stageMap[stage] || 1;
 };
@@ -177,7 +179,7 @@ export default function Home() {
                         >
                           {/* Campaign Name */}
                           <h3 className="font-semibold text-gray-900 mb-3 text-lg">
-                            {campaign.name || `Campaign ${campaign.id.slice(0, 8)}...`}
+                            {campaign?.campaign_name || campaign.name || `Campaign ${campaign.id.slice(0, 8)}...`}
                           </h3>
 
                           <div className="space-y-2 mb-3">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from "react";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useApi } from "use-hook-api";
 import { useCampaignCache } from "@/hooks/useCampaignCache";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { BlockedProgramsModal } from "./BlockedProgramsModal";
 import { AlertTriangle, Download, Trash2, Save, FileCheck, RotateCcw } from "lucide-react";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
@@ -222,8 +223,6 @@ const extractFreightRanges = (
     });
   });
 
-  console.log('ranges', ranges);
-
   return ranges.sort((a, b) => a.min - b.min);
 };
 
@@ -300,10 +299,6 @@ const normalizeAvailabilityProgram = (
     programData._id;
 
   if (!channelId) {
-    // Debug: Log when channelId cannot be found
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Cannot find channelId in program data:', programData);
-    }
     return null;
   }
 
@@ -481,6 +476,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
   const [selectedPrograms, setSelectedPrograms] = useAtom(selectedProgramsAtom);
   const [selectedProgramIds, setSelectedProgramIds] = useAtom(selectedProgramIdsAtom);
   const selectedCategoryId = useAtomValue(selectedCategoryAtom);
+  const setSelectedCategory = useSetAtom(selectedCategoryAtom);
   const classificationResult = useAtomValue(classificationResultAtom);
   const campaignId = useAtomValue(campaignIdAtom);
 
@@ -515,9 +511,16 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
     hasDaysDifference: boolean;
   } | null>(null);
 
+  // State for blocked programs modal
+  const [blockedPrograms, setBlockedPrograms] = useState<Record<string, {
+    program_name: string;
+    reason: string;
+  }> | null>(null);
+
   const isDeletingRef = useRef(false);
   const skipRefetchRef = useRef(false);
   const prevSelectedProgramsLengthRef = useRef(selectedPrograms.length);
+  const isNavigatingAwayRef = useRef(false);
 
   const [
     callGetAvailability,
@@ -536,7 +539,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
 
   const [callSavePrograms, { loading: savingPrograms }] = useApi({ errMsg: true });
   const [callRequestManualAvailability, { loading: requestingManualAvailability }] = useApi({ errMsg: true });
-  const [callGetCampaignPrograms, { data: campaignProgramsData, loading: loadingCampaignPrograms }] = useApi({ errMsg: true });
+  const [callGetCampaignPrograms, { data: campaignProgramsData, fullRes: campaignProgramsFullData, loading: loadingCampaignPrograms }] = useApi({ errMsg: true, fullRes: true });
   const [callVerifyCampaign, { loading: verifyingCampaign }] = useApi({ errMsg: false });
 
   // State to control RESET button visibility based on verification error
@@ -546,7 +549,57 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
   useEffect(() => {
     setShowResetButton(false);
     setVerificationError(null);
+    setBlockedPrograms(null);
   }, [campaignId]);
+
+  // Check for blocked programs and confirmed category in campaign programs response
+  useEffect(() => {
+    if (!campaignProgramsFullData) {
+      return;
+    }
+    const response = campaignProgramsFullData as any;
+    let blocked: Record<string, { program_name: string; reason: string }> | null = null;
+
+    // Check for blocked_programs field in the response
+    if (response?.blocked_programs && typeof response.blocked_programs === 'object' && !Array.isArray(response.blocked_programs)) {
+      const blockedPrograms = response.blocked_programs;
+      const blockedProgramsKeys = Object.keys(blockedPrograms);
+
+      // Validate that blocked_programs contains valid blocked program objects
+      if (blockedProgramsKeys.length > 0) {
+        const isValidBlockedPrograms = blockedProgramsKeys.every((key) => {
+          const item = blockedPrograms[key];
+          return (
+            item &&
+            typeof item === 'object' &&
+            'program_name' in item &&
+            'reason' in item &&
+            typeof item.program_name === 'string' &&
+            typeof item.reason === 'string'
+          );
+        });
+
+        if (isValidBlockedPrograms) {
+          blocked = blockedPrograms as Record<string, { program_name: string; reason: string }>;
+        }
+      }
+    }
+
+    // Set blocked programs state if found
+    if (blocked && Object.keys(blocked).length > 0) {
+      setBlockedPrograms(blocked);
+    } else {
+      setBlockedPrograms(null);
+    }
+
+    // Check for confirmed_category_id and update if needed
+    if (response?.confirmed_category_id && typeof response.confirmed_category_id === 'string') {
+      // Update selected category atom with confirmed category ID if it's different
+      if (selectedCategoryId !== response.confirmed_category_id) {
+        setSelectedCategory(response.confirmed_category_id);
+      }
+    }
+  }, [campaignProgramsFullData, selectedCategoryId, setSelectedCategory]);
 
   // Reset showResetButton and verification error when reset completes successfully
   useEffect(() => {
@@ -579,9 +632,25 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
     }
   }, [selectedPrograms, excludedPrograms.length, setExcludedPrograms]);
 
+  // Track navigation state to prevent API calls when navigating away
+  useEffect(() => {
+    // Reset navigation flag when component mounts or campaignId changes
+    isNavigatingAwayRef.current = false;
+
+    return () => {
+      // Set flag when component is unmounting (navigating away)
+      isNavigatingAwayRef.current = true;
+    };
+  }, [campaignId]);
+
   // Fetch availability data on mount (but skip if we're deleting to prevent refetch)
   // Use Get Campaign Programs if useSavedPrograms is true AND no programs are selected, otherwise use Availability API
   useEffect(() => {
+    // Don't make API calls if we're navigating away
+    if (isNavigatingAwayRef.current) {
+      return;
+    }
+
     const prevLength = prevSelectedProgramsLengthRef.current;
     const currentLength = selectedPrograms.length;
 
@@ -720,20 +789,6 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
       raw = [];
     }
 
-    // Debug: Log data source info in development
-    if (process.env.NODE_ENV === 'development' && dataSource) {
-      console.log('Availability Data Source:', {
-        useSavedPrograms,
-        hasCampaignProgramsData: !!campaignProgramsData,
-        hasAvailabilityData: !!availabilityData,
-        dataSourceType: typeof dataSource,
-        rawType: typeof raw,
-        rawIsArray: Array.isArray(raw),
-        rawLength: Array.isArray(raw) ? raw.length : Object.keys(raw || {}).length,
-        sampleData: Array.isArray(raw) && raw.length > 0 ? raw[0] : (typeof raw === 'object' ? Object.keys(raw).slice(0, 3) : null)
-      });
-    }
-
     const normalizedPrograms: AvailabilityProgram[] = [];
     rawProgramDataMap.current.clear();
     orderQuantitiesMap.current.clear();
@@ -759,9 +814,6 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
           if (Object.keys(orderQuantities).length > 0) {
             orderQuantitiesMap.current.set(channelId, orderQuantities);
           }
-        } else if (process.env.NODE_ENV === 'development') {
-          // Debug: Log when normalization fails
-          console.warn(`Failed to normalize program at index ${index}:`, program);
         }
       });
     } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -1470,22 +1522,11 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
     );
 
     if (manualPrograms.length === 0) {
-      console.log("Manual availability button: No manual programs found");
       return false;
     }
 
     // Check if at least one manual program has reviewed_by_agency = false
     const hasUnreviewedManual = manualPrograms.some((p) => p.reviewed_by_agency === false);
-
-    console.log("Manual availability button check:", {
-      manualProgramsCount: manualPrograms.length,
-      manualPrograms: manualPrograms.map(p => ({
-        name: p.program_name,
-        reviewed_by_agency: p.reviewed_by_agency,
-        availability_check_type: p.availability_check_type
-      })),
-      shouldShow: hasUnreviewedManual
-    });
 
     return hasUnreviewedManual;
   }, [filteredAvailabilityPrograms]);
@@ -1510,6 +1551,8 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
         createManualAvailabilityRequestApi({ campaign_id: campaignId }),
         () => {
           toast.success("Manual availability check request submitted successfully");
+          // Set navigation flag to prevent API calls during navigation
+          isNavigatingAwayRef.current = true;
           // Redirect to home page after successful API response
           handleBackToHome();
         }
@@ -1992,6 +2035,12 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Blocked Programs Modal */}
+      <BlockedProgramsModal
+        blockedPrograms={blockedPrograms}
+        onClose={() => setBlockedPrograms(null)}
+      />
     </div>
   );
 });
