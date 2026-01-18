@@ -1,309 +1,93 @@
-# AI Clearance
+# AI Clearance - frontend
 
-A modern, AI-powered campaign management application built with Next.js, TypeScript, and shadcn/ui. Create campaigns, classify content using AI, and manage your clearance workflow efficiently.
 
-## Features
 
-### 🚀 Core Functionality
+## Getting started
 
-- **Campaign Management**: Create and manage campaigns with a streamlined multi-step process
-- **AI-Powered Classification**: Upload PDFs or images and get AI-powered category classification
-- **Category Selection**: Choose from available categories and let AI verify the match
-- **Manual Review**: Request manual review when AI predictions don't match your selection
-- **Campaign Tracking**: View all your campaigns with status, category matching, and review information
+To make it easy for you to get started with GitLab, here's a list of recommended next steps.
 
-### 📱 User Experience
+Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
-- **Responsive Design**: Optimized for both mobile and desktop devices
-- **Modern UI**: Beautiful, intuitive interface built with Tailwind CSS and shadcn/ui
-- **Multi-step Authentication**: Secure signup process with OTP verification
+## Add your files
 
-- **Protected Routes**: Secure access to authenticated pages
-
-### 🎯 Key Features
-
-1. **Authentication Flow**
-   - Login with email/password
-   - Signup with email verification
-   - Forgot password with OTP verification
-
-2. **Campaign Creation Flow**
-   - Step 1: Create Campaign
-   - Step 2: Select Category
-   - Step 3: Upload & Classify (PDF or Image)
-   - Step 4: Category Mismatch Handling (if needed)
-   - Step 5: Programs Selection
-
-3. **AI Classification**
-   - Upload PDF or image files
-   - AI predicts the category
-   - Compare with selected category
-   - Handle mismatches with manual review option
-
-4. **Campaign Dashboard**
-   - View all campaigns
-   - See category matching status
-   - Track review status
-   - View creation and update timestamps
-
-## Technology Stack
-
-- **Frontend**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4
-- **UI Components**: shadcn/ui (Radix UI primitives)
-- **State Management**: Jotai
-- **Forms**: React Hook Form with Zod validation
-- **API Client**: use-hook-api
-- **Icons**: Lucide React
-- **Notifications**: React Toastify
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone <repository-url>
-   cd ai_clearance
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-
-   Create a `.env` file in the root directory:
-
-   ```env
-   NEXT_PUBLIC_API_URL=your_api_url_here
-   ```
-
-4. **Run the development server**
-
-   ```bash
-   npm run dev
-   ```
-
-5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-### Building for Production
-
-```bash
-npm run build
-npm start
-```
-
-## Project Structure
+* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
+* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
 
 ```
-ai_clearance/
-├── api/                          # API client functions
-│   ├── auth.ts                   # Authentication APIs
-│   ├── campaigns.ts              # Campaign APIs
-│   └── categories.ts             # Category APIs
-├── src/
-│   ├── app/                      # Next.js app router pages
-│   │   ├── page.tsx              # Homepage (campaigns list)
-│   │   ├── login/                # Login page
-│   │   ├── signup/                # Signup page
-│   │   ├── forgot-password/       # Forgot password flow
-│   │   ├── verify-otp/           # OTP verification
-│   │   └── create-campaign/      # Campaign creation flow
-│   ├── components/
-│   │   ├── campaign/              # Campaign-related components
-│   │   │   ├── steps/             # Campaign creation steps
-│   │   │   │   ├── CreateCampaignStep.tsx
-│   │   │   │   ├── CategorySelectionStep.tsx
-│   │   │   │   ├── UploadAndClassifyStep.tsx
-│   │   │   │   ├── CategoryMismatchStep.tsx
-│   │   │   │   └── ProgramsSelectionStep.tsx
-│   │   │   └── ProgressBar.tsx
-│   │   ├── common/                # Shared components
-│   │   │   ├── AuthLayout.tsx
-│   │   │   ├── DashboardNavbar.tsx
-│   │   │   └── ProtectedRoute.tsx
-│   │   ├── ui/                    # shadcn/ui components
-│   │   └── utils/                 # Utility wrappers
-│   ├── hooks/                     # Custom React hooks
-│   ├── lib/                       # Utility functions
-│   ├── store/                     # Jotai state management
-│   │   └── campaign.ts           # Campaign state atoms
-│   └── types/                     # TypeScript type definitions
-├── public/                        # Static assets
-├── components.json                # shadcn/ui configuration
-├── tailwind.config.ts            # Tailwind CSS configuration
-└── package.json                   # Dependencies and scripts
+cd existing_repo
+git remote add origin https://gitlab.com/nexpredsolutionscode/ai-clearance-frontend.git
+git branch -M main
+git push -uf origin main
 ```
 
-## Key Components
+## Integrate with your tools
 
-### Campaign Creation Flow
+* [Set up project integrations](https://gitlab.com/nexpredsolutionscode/ai-clearance-frontend/-/settings/integrations)
 
-#### CreateCampaignStep
-- Initial step to create a new campaign
-- Stores campaign ID in Jotai for the entire flow
+## Collaborate with your team
 
-#### CategorySelectionStep
-- Fetches and displays available categories
-- Allows user to select a category
-- Stores selected category in Jotai
+* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
+* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
+* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
+* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
+* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
 
-#### UploadAndClassifyStep
-- File upload (PDF or images)
-- AI classification of uploaded file
-- Shows classification results
-- Handles category matching
+## Test and Deploy
 
-#### CategoryMismatchStep
-- Displays when AI prediction doesn't match selection
-- Options to accept predicted category
-- Request manual review
-- Choose category to proceed with
+Use the built-in continuous integration in GitLab.
 
-#### ProgramsSelectionStep
-- Final step for program selection
-- Placeholder for future implementation
+* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
+* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
+* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
+* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
+* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
 
-### State Management
+***
 
-The application uses Jotai for state management:
+# Editing this README
 
-- `campaignIdAtom`: Stores the current campaign ID
-- `selectedCategoryAtom`: Stores the user-selected category
-- `classificationResultAtom`: Stores AI classification results
+When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
 
-All state is cleared when the campaign creation flow is completed.
+## Suggestions for a good README
 
-## API Integration
+Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
 
-The application integrates with a REST API for:
+## Name
+Choose a self-explaining name for your project.
 
-- **Authentication**: Login, signup, password reset, OTP verification
-- **Campaigns**: Create, fetch, update campaigns
-- **Categories**: Fetch available categories
-- **Classification**: AI-powered category prediction
-- **Manual Reviews**: Request and manage manual reviews
+## Description
+Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
 
-API functions are located in the `api/` directory and use the `use-hook-api` library for HTTP requests.
+## Badges
+On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
 
-## Environment Variables
+## Visuals
+Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
-Create a `.env` file with the following variables:
+## Installation
+Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-```env
-NEXT_PUBLIC_API_URL=your_api_base_url
-```
-
-## Development
-
-### Running the Development Server
-
-```bash
-npm run dev
-```
-
-### Building for Production
-
-```bash
-npm run build
-npm start
-```
-
-### Linting
-
-```bash
-npm run lint
-```
-
-## Features in Detail
-
-### Authentication
-- Email/password authentication
-- OTP-based email verification
-- Password reset flow
-- Protected routes with automatic redirect
-
-### Campaign Management
-- Multi-step campaign creation
-- Category selection from taxonomy
-- File upload (PDF, JPG, PNG, WEBP, GIF)
-- AI-powered category classification
-- Category mismatch handling
-- Manual review requests
-- Campaign status tracking
-
-### UI/UX
-- Responsive design
-- Loading states with animations
-- Error handling and feedback
-- Progress indicators
-- Toast notifications
-- Form validation
-
-## Customization
-
-### Styling
-
-The application uses Tailwind CSS for styling. You can customize:
-
-- Color scheme in `src/app/globals.css`
-- Component variants in `src/components/ui/`
-- Global styles in `src/app/globals.css`
-
-### Components
-
-All UI components are built with shadcn/ui and can be customized:
-
-- Modify component variants
-- Add new component types
-- Customize animations and transitions
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy automatically on push
-
-### Other Platforms
-
-- **Netlify**: Build and deploy from Git
-- **Railway**: Full-stack deployment
-- **AWS Amplify**: AWS-powered hosting
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Usage
+Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
 ## Support
+Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
-For support and questions:
+## Roadmap
+If you have ideas for releases in the future, it is a good idea to list them in the README.
 
-- Create an issue in the repository
-- Check the documentation
-- Review the code examples
+## Contributing
+State if you are open to contributions and what your requirements are for accepting them.
 
----
+For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
 
-Built with ❤️ using Next.js, TypeScript, Tailwind CSS, and shadcn/ui
+You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+
+## Authors and acknowledgment
+Show your appreciation to those who have contributed to the project.
+
+## License
+For open source projects, say how it is licensed.
+
+## Project status
+If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
