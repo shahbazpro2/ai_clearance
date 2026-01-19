@@ -49,6 +49,7 @@ const getStepFromStage = (stage?: string): number => {
     "availability_planning": 6,
     "artfiles_submission": 7,
     "agreement": 8,
+    "payment": 9,
   };
   return stageMap[stage] || 1;
 };

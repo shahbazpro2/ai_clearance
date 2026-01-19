@@ -933,6 +933,12 @@ export function ProgramsSelectionStep({
     );
   }, [programMap, selectedPrograms]);
 
+  // Check if confirmed_category_id is available
+  const hasConfirmedCategoryId = useMemo(() => {
+    const confirmedCategoryId = campaignDetailsData?.campaign?.category?.confirmed_category_id;
+    return confirmedCategoryId && confirmedCategoryId !== "None" && confirmedCategoryId !== null;
+  }, [campaignDetailsData?.campaign?.category?.confirmed_category_id]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -944,7 +950,7 @@ export function ProgramsSelectionStep({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {onBackToUpload && (
+            {onBackToUpload && !hasConfirmedCategoryId && (
               <Button variant="outline" size="sm" onClick={onBackToUpload}>
                 Return to Upload Step
               </Button>

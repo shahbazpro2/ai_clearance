@@ -9,3 +9,4 @@ export {
 } from "./AvailabilityReportStep";
 export { ArtFileUploadStep } from "./art-file-upload/ArtFileUploadStep";
 export { AgreementStep } from "./AgreementStep";
+export { PaymentStep } from "./PaymentStep";

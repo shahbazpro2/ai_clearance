@@ -74,9 +74,10 @@ export function ArtFileUploadStep({ onBack, onNext }: ArtFileUploadStepProps) {
       </Card>
 
       <div className="flex items-center justify-between border-t pt-4">
-        <Button variant="outline" onClick={onBack}>
+        {/* <Button variant="outline" onClick={onBack}>
           Back
-        </Button>
+        </Button> */}
+        <div></div>
         <Button
           onClick={onNext}
           disabled={!allFilesUploaded()}

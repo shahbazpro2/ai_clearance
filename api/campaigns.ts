@@ -160,7 +160,7 @@ export const verifyCampaignApi = (campaignId: string) => {
  * Endpoint: GET /art-and-csv?campaign_id={campaign_id}
  */
 export const getArtFilesDetailsApi = (campaignId: string) => {
-  return universalApi(`/art-and-csv/?campaign_id=${campaignId}`, "get");
+  return universalApi(`/art-and-csv/get-details?campaign_id=${campaignId}`, "get");
 };
 
 /**
@@ -168,7 +168,7 @@ export const getArtFilesDetailsApi = (campaignId: string) => {
  * Endpoint: POST /art-and-csv/
  */
 export const uploadArtFilesApi = (payload: FormData) => {
-  return responseApi("/art-and-csv/", "post", payload);
+  return responseApi("/art-and-csv/upload", "post", payload);
 };
 
 /**
@@ -197,4 +197,12 @@ export const getArtAndCsvDetailsApi = (campaignId: string) => {
  */
 export const acceptAgreementApi = (payload: { campaign_id: string }) => {
   return responseApi("/agreement/accept", "post", payload);
+};
+
+/**
+ * Create Stripe Checkout Session
+ * Endpoint: POST /stripe/create-checkout-session
+ */
+export const createStripeCheckoutSessionApi = (payload: { campaign_id: string }) => {
+  return responseApi("/stripe/create-checkout-session", "post", payload);
 };

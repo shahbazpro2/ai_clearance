@@ -12,7 +12,7 @@ export function Statistics({ artFilesDetails, fileUploadState }: StatisticsProps
     (sum, program) => sum + program.months.length,
     0
   );
-  
+
   const uploadedMonths = artFilesDetails.programs.reduce(
     (sum, program) =>
       sum + program.months.filter((month) => month.art_file_uploaded).length,
@@ -20,7 +20,7 @@ export function Statistics({ artFilesDetails, fileUploadState }: StatisticsProps
   );
 
   const totalPrograms = artFilesDetails.programs.length;
-  
+
   const programsWithAllUploaded = artFilesDetails.programs.filter((program) =>
     program.months.every((month) => {
       const state = fileUploadState[program.id]?.[month.month_number];

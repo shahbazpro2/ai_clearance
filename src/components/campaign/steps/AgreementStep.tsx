@@ -84,7 +84,7 @@ export function AgreementStep({ onBack, onNext }: AgreementStepProps) {
     callAcceptAgreement(
       acceptAgreementApi({ campaign_id: campaignId }),
       () => {
-        // On success, proceed to next step
+        // On success, proceed to payment step
         onNext();
       }
     );

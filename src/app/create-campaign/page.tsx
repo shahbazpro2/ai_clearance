@@ -18,6 +18,7 @@ import {
   AvailabilityReportStep,
   ArtFileUploadStep,
   AgreementStep,
+  PaymentStep,
   type AvailabilityReportStepRef,
 } from "@/components/campaign/steps";
 import { ProgressBar } from "@/components/campaign/ProgressBar";
@@ -39,7 +40,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { toast } from "react-toastify";
 import { RotateCcw } from "lucide-react";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 9;
 
 function CreateCampaignPageContent() {
   const router = useRouter();
@@ -232,6 +233,11 @@ function CreateCampaignPageContent() {
       return 8; // Agreement Step
     }
 
+    // 6. If Current Stage = Payment
+    if (currentStage === "payment") {
+      return 9; // Payment Step
+    }
+
     // Default: use step from query or start from beginning
     if (stepFromQuery) {
       const step = parseInt(stepFromQuery, 10);
@@ -304,9 +310,9 @@ function CreateCampaignPageContent() {
 
       // Determine correct step based on stage
       const queryStep = stepFromQuery ? parseInt(stepFromQuery, 10) : null;
-      
+
       const determinedStep = determineStepFromStage(campaign);
-      
+
       // If determined step is 7 (art file upload) or query step is 7, ensure campaign ID is set
       if (determinedStep === 7 || queryStep === 7) {
         setCampaignId(campaignIdFromQuery);
@@ -639,11 +645,20 @@ function CreateCampaignPageContent() {
                         router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=7`);
                       }}
                       onNext={() => {
-                        // Complete campaign creation
-                        clearAllCampaignCache();
+                        // Navigate to payment page (step 9)
                         setHasUnsavedChanges(false);
-                        setSelectedCategoryForProceed(null);
-                        router.push(`/`);
+                        setCurrentStep(9);
+                        router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=9`);
+                      }}
+                    />
+                  )}
+
+                  {/* Step 9: Payment */}
+                  {currentStep === 9 && (
+                    <PaymentStep
+                      onBack={() => {
+                        setCurrentStep(8);
+                        router.replace(`/create-campaign?campaign_id=${campaignIdFromQuery}&step=8`);
                       }}
                     />
                   )}
