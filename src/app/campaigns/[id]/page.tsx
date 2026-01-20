@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Calendar, User, Tag, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
+import { ArrowLeft, Edit, Calendar, User, Tag, CheckCircle2, XCircle, AlertCircle, Clock, CreditCard, DollarSign } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { fetchCampaignDetailsApi } from "../../../../api/campaigns";
 import { useCategories } from "@/hooks/useCategories";
@@ -40,6 +40,12 @@ interface CampaignDetails {
       manual_availability_status?: string;
     };
     programs: any[];
+    payment_info?: {
+      amount_total: number;
+      created: string;
+      currency: string;
+      status: string;
+    };
   };
   success: boolean;
 }
@@ -106,6 +112,34 @@ export default function CampaignDetailPage() {
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
+  };
+
+  const getPaymentStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
+      paid: { variant: "default", icon: CheckCircle2 },
+      pending: { variant: "secondary", icon: Clock },
+      failed: { variant: "destructive", icon: XCircle },
+      cancelled: { variant: "destructive", icon: XCircle },
+    };
+    const config = statusConfig[status.toLowerCase()] || { variant: "secondary" as const, icon: AlertCircle };
+    const Icon = config.icon;
+    return (
+      <Badge variant={config.variant} className="flex items-center gap-1">
+        <Icon className="h-3 w-3" />
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
+  const formatCurrency = (amount: number, currency: string = "usd") => {
+    // Convert cents to dollars (amount_total is in cents)
+    const amountInDollars = amount / 100;
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amountInDollars);
   };
 
   if (loadingDetails) {
@@ -394,6 +428,45 @@ export default function CampaignDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Payment Information */}
+            {campaign.payment_info && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Payment Information
+                  </CardTitle>
+                  <CardDescription>Payment details for this campaign</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Amount</p>
+                    <p className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+
+                      {formatCurrency(campaign.payment_info.amount_total, campaign.payment_info.currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
+                    <div>{getPaymentStatusBadge(campaign.payment_info.status)}</div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Payment Date</p>
+                    <p className="text-sm text-gray-900 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(campaign.payment_info.created).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Currency</p>
+                    <Badge variant="outline" className="uppercase">
+                      {campaign.payment_info.currency}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
       </div>
