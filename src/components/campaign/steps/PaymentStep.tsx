@@ -75,7 +75,7 @@ export function PaymentStep({ onBack }: PaymentStepProps) {
         callCreateCheckoutSession(
             createStripeCheckoutSessionApi({ campaign_id: campaignId }),
             (response: any) => {
-                const redirectUrl = response?.data?.checkout_url || response?.checkout_url;
+                const redirectUrl = response?.data?.redirect_url || response?.redirect_url;
                 if (redirectUrl) {
                     // Redirect to Stripe checkout
                     window.location.href = redirectUrl;
