@@ -200,6 +200,14 @@ export const acceptAgreementApi = (payload: { campaign_id: string }) => {
 };
 
 /**
+ * Get Stripe Amount Table
+ * Endpoint: GET /stripe/get-amount-table?campaign_id={campaign_id}
+ */
+export const getStripeAmountTableApi = (campaignId: string) => {
+  return universalApi(`/stripe/get-amount-table?campaign_id=${campaignId}`, "get");
+};
+
+/**
  * Create Stripe Checkout Session
  * Endpoint: POST /stripe/create-checkout-session
  */

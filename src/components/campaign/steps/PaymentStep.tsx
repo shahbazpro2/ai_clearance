@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { campaignIdAtom } from "@/store/campaign";
 import {
-    getArtAndCsvDetailsApi,
+    getStripeAmountTableApi,
     createStripeCheckoutSessionApi,
 } from "../../../../api/campaigns";
 
@@ -53,7 +53,7 @@ export function PaymentStep({ onBack }: PaymentStepProps) {
     // Fetch payment details on mount
     useEffect(() => {
         if (campaignId) {
-            callGetDetails(getArtAndCsvDetailsApi(campaignId));
+            callGetDetails(getStripeAmountTableApi(campaignId));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [campaignId]);
