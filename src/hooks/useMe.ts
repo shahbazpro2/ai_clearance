@@ -15,6 +15,10 @@ export const useMe = () => {
 
   useEffect(() => {
     // Skip if data already exists (from cache - this means data is available)
+    if (ROUTES.PUBLIC.includes(pathname as any)) {
+      hasCalledRef.current = true;
+      return;
+    }
     if (data) {
       hasCalledRef.current = true;
       apiCallInitiated = false; // Reset global flag when data is available

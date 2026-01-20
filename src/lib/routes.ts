@@ -4,10 +4,10 @@ export const ROUTES = {
   PROTECTED: [
     "/",
     "/create-campaign",
-    "/campaigns",
-    "/payment"
+    "/campaigns"
   ],
 
   // Routes that should redirect authenticated users to dashboard
   AUTH: ["/login", "/signup", "/verify-otp", "/forgot-password"],
+  PUBLIC:["/payment/success"],
 } as const;

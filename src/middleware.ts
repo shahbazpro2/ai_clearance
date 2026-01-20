@@ -21,6 +21,12 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute = ROUTES.PROTECTED.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
+  const isPublicRoute = ROUTES.PUBLIC.includes(pathname as any);
+
+  if (isPublicRoute) {
+    console.log("✅ Redirecting to dashboard from public route:", pathname);
+    return NextResponse.next();
+  }
 
   // Check if current path is an auth route
   const isAuthRoute = ROUTES.AUTH.includes(pathname as any);
