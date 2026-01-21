@@ -139,7 +139,7 @@ export default function CampaignDetailPage() {
     }
 
     // Convert cents to dollars (amount_total is in cents)
-    const amountInDollars = amount / 100;
+    const amountInDollars = amount;
 
     // Validate currency code - default to USD if invalid or N/A
     const normalizedCurrency = currency?.toUpperCase().trim();
