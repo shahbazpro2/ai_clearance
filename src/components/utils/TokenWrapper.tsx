@@ -2,7 +2,7 @@
 import { clearAuthTokens } from '@/lib/auth';
 import { jwtDecode } from 'jwt-decode';
 import { usePathname } from 'next/navigation';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { responseApi } from 'use-hook-api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -10,13 +10,26 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const TokenWrapper: React.FC = () => {
     const pathname = usePathname()
+    const isRefreshingRef = useRef(false);
+    const pathnameRef = useRef(pathname);
 
+    // Update pathname ref when it changes
+    useEffect(() => {
+        pathnameRef.current = pathname;
+    }, [pathname]);
 
     useEffect(() => {
         const checkAndRefresh = async () => {
-            if (['/login', '/signup', '/verify-otp'].includes(pathname)) {
+            const currentPathname = pathnameRef.current;
+            if (['/login', '/signup', '/verify-otp'].includes(currentPathname)) {
                 return;
             }
+
+            // Prevent concurrent refresh calls
+            if (isRefreshingRef.current) {
+                return;
+            }
+
             const access = document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
             const refresh = document.cookie.split('; ').find(row => row.startsWith('refresh_token='))?.split('=')[1];
             // Check if refresh token is missing or expired
@@ -35,26 +48,33 @@ const TokenWrapper: React.FC = () => {
                 const decoded: any = jwtDecode(access);
                 const exp = decoded.exp;
                 if (exp - now < 30) {
-                    const res = await responseApi(
-                        `${API_URL}/auth/token`,
-                        'post',
-                        {
-                            "grant_type": "refresh_token",
-                            refresh_token: refresh,
-                        },
-                    )();
+                    // Set flag to prevent concurrent calls
+                    isRefreshingRef.current = true;
+                    try {
+                        const res = await responseApi(
+                            `${API_URL}/auth/token`,
+                            'post',
+                            {
+                                "grant_type": "refresh_token",
+                                refresh_token: refresh,
+                            },
+                        )();
 
-                    if (!res.error) {
-                        if (res.data?.access_token)
-                            document.cookie = `access_token=${res.data.access_token}`;
-                        if (res.data.refresh_token) {
-                            document.cookie = `refresh_token=${res.data.refresh_token}`;
+                        if (!res.error) {
+                            if (res.data?.access_token)
+                                document.cookie = `access_token=${res.data.access_token}`;
+                            if (res.data.refresh_token) {
+                                document.cookie = `refresh_token=${res.data.refresh_token}`;
+                            }
                         }
-                    }
-                    else {
-                        //clear all cookies
-                        clearAuthTokens();
-                        window.location.href = '/login';
+                        else {
+                            //clear all cookies
+                            clearAuthTokens();
+                            window.location.href = '/login';
+                        }
+                    } finally {
+                        // Reset flag after refresh completes
+                        isRefreshingRef.current = false;
                     }
                 }
             }
@@ -64,7 +84,7 @@ const TokenWrapper: React.FC = () => {
         // Check every 10 seconds
         const interval = setInterval(checkAndRefresh, 1000);
         return () => { clearInterval(interval) };
-    }, [pathname]);
+    }, []);
 
     return <></>;
 };
