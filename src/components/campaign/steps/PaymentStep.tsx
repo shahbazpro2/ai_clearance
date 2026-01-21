@@ -86,13 +86,15 @@ export function PaymentStep({ onBack }: PaymentStepProps) {
         );
     };
 
-    const formatCurrency = (amount: number) => {
+    const formatCurrency = (amount: number | null | undefined) => {
+        // Handle null or undefined amount - default to 0
+        const validAmount = amount === null || amount === undefined || isNaN(amount) ? 0 : amount;
         return new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-        }).format(amount);
+        }).format(validAmount);
     };
 
     if (loadingDetails) {

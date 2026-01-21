@@ -18,11 +18,21 @@ const MeWrapper = () => {
 
         if (!meData?.current_period_end) return;
 
-        const currentDate = new Date();
-        const currentPeriodEnd = new Date(meData?.current_period_end);
+        try {
+            const currentDate = new Date();
+            const currentPeriodEnd = new Date(meData?.current_period_end);
 
-        if (currentPeriodEnd < currentDate) {
-            setIsActive(false)
+            // Check if date is valid
+            if (isNaN(currentPeriodEnd.getTime())) {
+                return;
+            }
+
+            if (currentPeriodEnd < currentDate) {
+                setIsActive(false)
+            }
+        } catch (error) {
+            // Silently handle invalid date
+            return;
         }
     }, [meData, pathname]);
 

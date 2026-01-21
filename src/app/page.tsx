@@ -13,6 +13,7 @@ import { useApi } from "use-hook-api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCampaignsApi, fetchCampaignDetailsApi } from "../../api/campaigns";
+import { formatDateOnly } from "@/lib/utils";
 
 interface Campaign {
   id: string;
@@ -187,7 +188,7 @@ export default function Home() {
                             {/* Created Date */}
                             {campaign.created && (
                               <p className="text-sm text-gray-600">
-                                <span className="font-medium">Created:</span> {new Date(campaign.created).toLocaleDateString('en-US', {
+                                <span className="font-medium">Created:</span> {formatDateOnly(campaign.created, {
                                   year: 'numeric',
                                   month: 'long',
                                   day: 'numeric'

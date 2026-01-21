@@ -90,13 +90,15 @@ export function AgreementStep({ onBack, onNext }: AgreementStepProps) {
     );
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    // Handle null or undefined amount - default to 0
+    const validAmount = amount === null || amount === undefined || isNaN(amount) ? 0 : amount;
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(validAmount);
   };
 
   if (loadingDetails) {
@@ -280,7 +282,7 @@ export function AgreementStep({ onBack, onNext }: AgreementStepProps) {
           </h3>
           <p className="text-gray-700">
             The total cost for insert printing, shipping, and distribution is{" "}
-            {agreementDetails.total_amount.toLocaleString()}. This is invoiced
+            {(agreementDetails.total_amount ?? 0).toLocaleString()}. This is invoiced
             upon signature of this Statement of Work and due{" "}
             {agreementDetails.date || ""}.
           </p>

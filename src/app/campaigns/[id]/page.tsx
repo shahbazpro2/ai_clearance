@@ -12,6 +12,7 @@ import { ArrowLeft, Edit, Calendar, User, Tag, CheckCircle2, XCircle, AlertCircl
 import { useApi } from "use-hook-api";
 import { fetchCampaignDetailsApi } from "../../../../api/campaigns";
 import { useCategories } from "@/hooks/useCategories";
+import { formatDate } from "@/lib/utils";
 
 interface CampaignDetails {
   campaign: {
@@ -131,12 +132,26 @@ export default function CampaignDetailPage() {
     );
   };
 
-  const formatCurrency = (amount: number, currency: string = "usd") => {
+  const formatCurrency = (amount: number | null | undefined, currency: string = "usd") => {
+    // Handle null or undefined amount - default to 0
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      amount = 0;
+    }
+
     // Convert cents to dollars (amount_total is in cents)
     const amountInDollars = amount / 100;
+
+    // Validate currency code - default to USD if invalid or N/A
+    const normalizedCurrency = currency?.toUpperCase().trim();
+    const validCurrency = normalizedCurrency &&
+      normalizedCurrency !== "N/A" &&
+      normalizedCurrency.length === 3
+      ? normalizedCurrency
+      : "USD";
+
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: currency.toUpperCase(),
+      currency: validCurrency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amountInDollars);
@@ -237,14 +252,14 @@ export default function CampaignDetailPage() {
                   <p className="text-sm font-medium text-gray-500 mb-1">Created</p>
                   <p className="text-sm text-gray-900 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {new Date(campaign.created).toLocaleString()}
+                    {formatDate(campaign.created)}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">Last Updated</p>
                   <p className="text-sm text-gray-900 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {new Date(campaign.updated).toLocaleString()}
+                    {formatDate(campaign.updated)}
                   </p>
                 </div>
                 {campaign.locked_target_months && campaign.locked_target_months.length > 0 && (
@@ -455,13 +470,16 @@ export default function CampaignDetailPage() {
                     <p className="text-sm font-medium text-gray-500 mb-1">Payment Date</p>
                     <p className="text-sm text-gray-900 flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      {new Date(campaign.payment_info.created).toLocaleString()}
+                      {formatDate(campaign.payment_info.created)}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500 mb-1">Currency</p>
                     <Badge variant="outline" className="uppercase">
-                      {campaign.payment_info.currency}
+                      {campaign.payment_info.currency &&
+                        campaign.payment_info.currency.toUpperCase() !== "N/A"
+                        ? campaign.payment_info.currency.toUpperCase()
+                        : "USD"}
                     </Badge>
                   </div>
                 </CardContent>
