@@ -292,12 +292,12 @@ export function useCampaignCache() {
 
     // Use a small delay to ensure atoms are cleared before navigation
     // This prevents race conditions where navigation happens before state updates
-    setTimeout(() => {
+    
       // Clear one final time before navigation
       setSelectedPrograms([]);
       setSelectedProgramIds([]);
       router.push("/");
-    }, 50);
+    
   }, [
     clearAllCampaignCache,
     router,

@@ -540,7 +540,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
   const [callSavePrograms, { loading: savingPrograms }] = useApi({ errMsg: true });
   const [callRequestManualAvailability, { loading: requestingManualAvailability }] = useApi({ errMsg: true });
   const [callGetCampaignPrograms, { data: campaignProgramsData, fullRes: campaignProgramsFullData, loading: loadingCampaignPrograms }] = useApi({ errMsg: true, fullRes: true });
-  const [callVerifyCampaign, { loading: verifyingCampaign }] = useApi({ errMsg: false });
+  const [callVerifyCampaign, { loading: verifyingCampaign }] = useApi({ errMsg: false, fullRes: true });
 
   // State to control RESET button visibility based on verification error
   const [showResetButton, setShowResetButton] = useState(false);
@@ -603,12 +603,12 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
 
   // Reset showResetButton and verification error when reset completes successfully
   useEffect(() => {
-    if (!resettingCampaign && showResetButton) {
+    if (!resettingCampaign) {
       // Reset was completed, hide the button and clear error modal
       setShowResetButton(false);
       setVerificationError(null);
     }
-  }, [resettingCampaign, showResetButton]);
+  }, [resettingCampaign]);
 
   const effectiveCategoryId = useMemo(() => {
     return (
@@ -674,7 +674,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
 
     // THIRD: Now we can safely make API calls
     // If programs are selected from Program Selection page, always use Availability API
-    if (selectedPrograms.length > 0 && effectiveCategoryId) {
+    if (selectedPrograms.length > 0 && effectiveCategoryId && campaignId) {
       // Use Availability API when navigating from Program Selection page or when programs are selected
       callGetAvailability(
         getProgramAvailabilityApi({
@@ -1450,11 +1450,13 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
         },
         (errorData: any) => {
           // Error handling
+          console.log("errorData", errorData);
           const errorResponse = errorData?.response?.data || errorData?.data || errorData;
           const errorMessage = errorResponse?.message || "Verification failed";
 
           // Check if error response contains days_difference
-          const hasDaysDifference = errorResponse?.days_difference !== undefined;
+          const hasDaysDifference = errorData?.fullRes?.days_difference !== undefined;
+          console.log("hasDaysDifference", hasDaysDifference);
 
           // Show error in modal
           setVerificationError({
@@ -1463,7 +1465,7 @@ export const AvailabilityReportStep = forwardRef<AvailabilityReportStepRef, Avai
           });
 
           // Show RESET button if days_difference exists (regardless of value)
-          setShowResetButton(hasDaysDifference);
+          setShowResetButton(true);
         }
       );
     });
