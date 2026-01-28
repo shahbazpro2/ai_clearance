@@ -939,6 +939,10 @@ export function ProgramsSelectionStep({
     return confirmedCategoryId && confirmedCategoryId !== "None" && confirmedCategoryId !== null;
   }, [campaignDetailsData?.campaign?.category?.confirmed_category_id]);
 
+  const isReviewPending = useMemo(() => {
+    return campaignDetailsData?.campaign?.category?.review_status?.toLowerCase() === "pending";
+  }, [campaignDetailsData?.campaign?.category?.review_status]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -950,7 +954,7 @@ export function ProgramsSelectionStep({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {onBackToUpload && !hasConfirmedCategoryId && (
+            {onBackToUpload && !hasConfirmedCategoryId && !isReviewPending && (
               <Button variant="outline" size="sm" onClick={onBackToUpload}>
                 Return to Upload Step
               </Button>
