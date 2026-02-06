@@ -5,6 +5,7 @@ import { ROUTES } from "./lib/routes";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
 
   // Debug logging
   console.log("🔍 Middleware executing for:", pathname);
@@ -51,7 +52,7 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && accessToken) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL(isAdminPath ? "/admin" : "/", request.url));
   }
 
   return NextResponse.next();

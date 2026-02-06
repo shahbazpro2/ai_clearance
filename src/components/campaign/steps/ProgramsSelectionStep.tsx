@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronsUpDown } from "lucide-react";
 import { classificationResultAtom, selectedCategoryAtom, selectedCategoryLabelAtom, selectedProgramCategoryAtom, selectedProgramIdsAtom, selectedProgramsAtom, campaignIdAtom, availabilityReportBookingQuantitiesAtom, availabilityReportInputValuesAtom, availabilityReportQuantityErrorsAtom, availabilityReportBookingTouchedAtom, availabilityReportExcludedProgramsAtom, cacheClearedAtom } from "@/store/campaign";
-import { fetchInsertProgramsApi, fetchCampaignDetailsApi } from "../../../../api/campaigns";
+import { fetchInsertProgramsApi, fetchCampaignDetailsApi } from "@/api/campaigns";
 import { useCategories } from "@/hooks/useCategories";
 
 interface ProgramsSelectionStepProps {

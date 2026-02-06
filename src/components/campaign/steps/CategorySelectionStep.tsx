@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useApi } from "use-hook-api";
-import { setCampaignCategoryApi } from "../../../../api/campaigns";
+import { setCampaignCategoryApi } from "@/api/campaigns";
 import { useCategories } from "@/hooks/useCategories";
 import { useAtomValue, useSetAtom } from "jotai";
 import {

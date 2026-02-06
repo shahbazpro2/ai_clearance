@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useApi } from "use-hook-api";
 import * as z from "zod";
-import { signupApi } from "../../api/auth";
+import { signupApi } from "@/api/auth";
 
 // Define the form schema using Zod
 const signupSchema = z.object({
@@ -30,7 +30,15 @@ const signupSchema = z.object({
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
-export function SignupScreen() {
+export function SignupScreen({
+    role,
+    title,
+    loginPath,
+}: {
+    role?: "admin" | "user";
+    title?: string;
+    loginPath?: string;
+}) {
     const [callApi, { loading: isLoading }] = useApi({ both: true, resSuccessMsg: 'Signup Successfully' });
     const router = useRouter();
 
@@ -40,30 +48,36 @@ export function SignupScreen() {
     });
 
     const onSubmit = async (payload: SignupFormData) => {
-        callApi(signupApi(payload), ({ data }: any) => {
+        const apiPayload = role ? { ...payload, role } : payload;
+        callApi(signupApi(apiPayload), ({ data }: any) => {
             console.log('Signup successful:', data);
-            router.push(`/verify-otp?email=${encodeURIComponent(payload.email)}`);
+            const roleQuery = role ? `&role=${encodeURIComponent(role)}` : "";
+            router.push(
+                `/verify-otp?email=${encodeURIComponent(payload.email)}${roleQuery}`
+            );
         });
     };
 
     const handleLogin = () => {
-        router.push("/login");
+        const targetLoginPath =
+            loginPath || (role === "admin" ? "/admin/login" : "/login");
+        router.push(targetLoginPath);
     };
 
     return (
         <AuthLayout>
-            <AuthHeader title="Create Account" />
+            <AuthHeader title={title || "Create Account"} />
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-5">
                 {/* First Name & Last Name */}
-               
-                    <FormField
-                        name="name"
-                        label="Name"
-                        placeholder="Enter Name"
-                        form={form}
-                        required
-                    />
-              
+
+                <FormField
+                    name="name"
+                    label="Name"
+                    placeholder="Enter Name"
+                    form={form}
+                    required
+                />
+
 
                 {/* Email Field */}
                 <FormField
@@ -75,7 +89,7 @@ export function SignupScreen() {
                     required
                 />
 
-            
+
 
                 {/* Password Field */}
                 <PasswordField
@@ -106,7 +120,7 @@ export function SignupScreen() {
                     ) : (
                         <>
                             Signup
-                            
+
                         </>
                     )}
                 </Button>
@@ -126,7 +140,7 @@ export function SignupScreen() {
                 </p>
             </div>
 
-          
+
         </AuthLayout>
     );
 }

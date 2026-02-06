@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AlertTriangle } from "lucide-react";
 import { useApi } from "use-hook-api";
-import { acceptPredictedCategoryApi, createManualReviewApi } from "../../../../api/campaigns";
+import { acceptPredictedCategoryApi, createManualReviewApi } from "@/api/campaigns";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   campaignIdAtom,

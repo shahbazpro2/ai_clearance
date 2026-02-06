@@ -34,7 +34,7 @@ import {
   availabilityReportBookingQuantitiesAtom,
 } from "@/store/campaign";
 import { useCampaignCache } from "@/hooks/useCampaignCache";
-import { fetchCampaignDetailsApi, resetCampaignProgramsApi, saveCampaignProgramsApi } from "../../../api/campaigns";
+import { fetchCampaignDetailsApi, resetCampaignProgramsApi, saveCampaignProgramsApi } from "@/api/campaigns";
 import { useApi } from "use-hook-api";
 import { useCategories } from "@/hooks/useCategories";
 import { toast } from "react-toastify";

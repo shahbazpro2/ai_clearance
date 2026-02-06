@@ -12,7 +12,7 @@ import { campaignIdAtom } from "@/store/campaign";
 import {
   getArtAndCsvDetailsApi,
   acceptAgreementApi,
-} from "../../../../api/campaigns";
+} from "@/api/campaigns";
 
 interface MediaPlanItem {
   amount: number;

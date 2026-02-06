@@ -7,7 +7,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Upload, CheckCircle2, XCircle, X, ArrowLeft, Sparkles } from "lucide-react";
 import { useApi } from "use-hook-api";
-import { classifyCategoryApi } from "../../../../api/categories";
+import { classifyCategoryApi } from "@/api/categories";
 import { useAtomValue, useSetAtom } from "jotai";
 import { campaignIdAtom, classificationResultAtom, ClassificationResult } from "@/store/campaign";
 

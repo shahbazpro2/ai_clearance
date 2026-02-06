@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useApi } from "use-hook-api";
-import { createCampaignApi } from "../../../../api/campaigns";
+import { createCampaignApi } from "@/api/campaigns";
 import { useSetAtom } from "jotai";
 import { campaignIdAtom } from "@/store/campaign";
 

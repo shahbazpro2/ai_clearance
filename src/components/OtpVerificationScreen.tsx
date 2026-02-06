@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Axios, useApi } from "use-hook-api";
 import * as z from "zod";
-import { verifySignupOtpApi, resendOtpApi } from "../../api/auth";
+import { verifySignupOtpApi, resendOtpApi } from "@/api/auth";
 import { setAccessToken, setRefreshToken } from "@/lib/auth";
 
 // Define the OTP form schema using Zod
@@ -28,10 +28,17 @@ interface OtpVerificationScreenProps {
     email: string;
     onBack?: () => void;
     shouldResendOtp?: boolean; // If true, automatically resend OTP on mount (e.g., when redirected from login)
+    role?: string;
 }
 
-export function OtpVerificationScreen({ email, onBack, shouldResendOtp = false }: OtpVerificationScreenProps) {
+export function OtpVerificationScreen({
+    email,
+    onBack,
+    shouldResendOtp = false,
+    role,
+}: OtpVerificationScreenProps) {
     const [callApi, { loading: isLoading }] = useApi({ both: true, resSuccessMsg: 'OTP verified successfully' });
+    const [resendOtpCall, { loading: isResendingOtpLoading }] = useApi({ both: true, resSuccessMsg: 'OTP resent successfully' });
     const router = useRouter();
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
     const [canResend, setCanResend] = useState(false);
@@ -48,8 +55,8 @@ export function OtpVerificationScreen({ email, onBack, shouldResendOtp = false }
     useEffect(() => {
         if (shouldResendOtp && email && !hasRequestedOtp) {
             setIsResending(true);
-            callApi(
-                resendOtpApi({ email }),
+            resendOtpCall(
+                resendOtpApi({ email, role }),
                 () => {
                     setTimeLeft(300);
                     setCanResend(false);
@@ -61,7 +68,7 @@ export function OtpVerificationScreen({ email, onBack, shouldResendOtp = false }
                 }
             );
         }
-    }, [shouldResendOtp, email, hasRequestedOtp, callApi]);
+    }, [shouldResendOtp, email, role, hasRequestedOtp]);
 
     // Countdown timer
     useEffect(() => {
@@ -128,7 +135,7 @@ export function OtpVerificationScreen({ email, onBack, shouldResendOtp = false }
         setIsResending(true);
         try {
             // Call resend OTP API
-            await callApi(resendOtpApi({ email }), () => {
+            await resendOtpCall(resendOtpApi({ email, role }), () => {
                 setTimeLeft(300);
                 setCanResend(false);
                 setHasRequestedOtp(true);
@@ -141,14 +148,14 @@ export function OtpVerificationScreen({ email, onBack, shouldResendOtp = false }
     };
 
     const onSubmit = async (data: OtpFormData) => {
-        callApi(verifySignupOtpApi({ email, otp: data.otp }), ({ data }: any) => {
+        callApi(verifySignupOtpApi({ email, otp: data.otp, role }), ({ data }: any) => {
             if (data?.access_token) {
                 setAccessToken(data.access_token);
                 setRefreshToken(data.refresh_token);
                 Axios.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
-                window.location.href = "/";
+                window.location.href = ["admin", "super_admin"].includes(role || "") ? "/admin" : "/";
             } else
-                window.location.href = "/login";
+                window.location.href = ["admin", "super_admin"].includes(role || "") ? "/admin/login" : "/login";
         });
     };
 
@@ -240,7 +247,7 @@ export function OtpVerificationScreen({ email, onBack, shouldResendOtp = false }
                     <Button
                         type="submit"
                         className="w-full bg-blue-gradient text-white hover:bg-blue-gradient/90"
-                        disabled={isLoading || !form.getValues("otp") || form.getValues("otp")?.length !== 6}
+                        disabled={isLoading || isResendingOtpLoading || !form.getValues("otp") || form.getValues("otp")?.length !== 6}
                     >
                         {isLoading ? (
                             "Verifying..."

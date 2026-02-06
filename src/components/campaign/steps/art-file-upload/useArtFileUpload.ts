@@ -6,7 +6,7 @@ import { campaignIdAtom } from "@/store/campaign";
 import {
   getArtFilesDetailsApi,
   uploadArtFilesApi,
-} from "../../../../../api/campaigns";
+} from "@/api/campaigns";
 import { ArtFilesDetails, FileUploadState, Program, Month } from "./types";
 
 export function useArtFileUpload() {

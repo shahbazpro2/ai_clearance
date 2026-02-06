@@ -13,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AuthHeader, AuthLayout } from "@/components/common";
 import { Axios, useApi } from "use-hook-api";
-import { loginApi } from "../../api/auth";
+import { loginApi } from "@/api/auth";
 import { setAccessToken, setIsActive, setRefreshToken } from "@/lib/auth";
 import { VERSION } from "@/constant";
 
@@ -25,10 +25,25 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export function LoginScreen() {
+export function LoginScreen({
+    role,
+    defaultRedirectTo,
+    showSignup = true,
+    title,
+    signupPath,
+}: {
+    role?: "admin" | "user";
+    defaultRedirectTo?: string;
+    showSignup?: boolean;
+    title?: string;
+    signupPath?: string;
+}) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const redirectTo = searchParams.get('redirect') || '/';
+    const redirectTo =
+        searchParams.get("redirect") ||
+        defaultRedirectTo ||
+        (role === "admin" ? "/admin" : "/");
 
     const form = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -38,8 +53,9 @@ export function LoginScreen() {
     const [callApi, { loading: isLoading }] = useApi({ both: true, resSuccessMsg: 'Login successful' });
 
     const onSubmit = async (data: LoginFormData) => {
+        const payload = role ? { ...data, role } : data;
         callApi(
-            loginApi(data),
+            loginApi(payload),
             async ({ data: responseData }: any) => {
                 console.log('Login successful:', responseData);
                 // Set authentication tokens using utility functions
@@ -58,7 +74,12 @@ export function LoginScreen() {
                     errorMessage.includes('email has not been verified') ||
                     errorMessage.includes('not been verified')) {
                     // Redirect to verification page and request OTP resend
-                    router.push(`/verify-otp?email=${encodeURIComponent(data.email)}&resend=true`);
+                    const roleQuery = role ? `&role=${encodeURIComponent(role)}` : "";
+                    router.push(
+                        `/verify-otp?email=${encodeURIComponent(
+                            data.email
+                        )}&resend=true${roleQuery}`
+                    );
                 }
                 // Other errors will be handled by useApi's default error handling
             }
@@ -67,12 +88,14 @@ export function LoginScreen() {
 
 
     const handleSignup = () => {
-        router.push("/signup");
+        const targetSignupPath =
+            signupPath || (role === "admin" ? "/admin/signup" : "/signup");
+        router.push(targetSignupPath);
     };
 
     return (
         <AuthLayout>
-            <AuthHeader title="Welcome Back" />
+            <AuthHeader title={title || "Welcome Back"} />
             <div className="text-center mb-6">
                 <p className="text-sm text-gray-600 mb-1">Sign in to your Ai Clerance account</p>
             </div>
@@ -127,18 +150,20 @@ export function LoginScreen() {
             </form>
 
             {/* Account Navigation */}
-            <div className="text-center pt-4">
-                <p className="text-sm text-gray-600">
-                    Don&apos;t have an account?{" "}
-                    <Button
-                        variant="link"
-                        onClick={handleSignup}
-                        className="text-primary hover:text-primary/90 p-0 h-auto text-sm font-medium cursor-pointer"
-                    >
-                        Create an account
-                    </Button>
-                </p>
-            </div>
+            {showSignup && (
+                <div className="text-center pt-4">
+                    <p className="text-sm text-gray-600">
+                        Don&apos;t have an account?{" "}
+                        <Button
+                            variant="link"
+                            onClick={handleSignup}
+                            className="text-primary hover:text-primary/90 p-0 h-auto text-sm font-medium cursor-pointer"
+                        >
+                            Create an account
+                        </Button>
+                    </p>
+                </div>
+            )}
         </AuthLayout>
     );
 }

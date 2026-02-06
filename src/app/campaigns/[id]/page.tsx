@@ -10,7 +10,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Edit, Calendar, User, Tag, CheckCircle2, XCircle, AlertCircle, Clock, CreditCard, DollarSign } from "lucide-react";
 import { useApi } from "use-hook-api";
-import { fetchCampaignDetailsApi } from "../../../../api/campaigns";
+import { fetchCampaignDetailsApi } from "@/api/campaigns";
 import { useCategories } from "@/hooks/useCategories";
 import { formatDate } from "@/lib/utils";
 

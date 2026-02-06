@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useApi } from "use-hook-api";
-import { meApi } from "../../api/auth";
+import { meApi } from "@/api/auth";
 import { usePathname } from "next/navigation";
 import { ROUTES } from "@/lib/routes";
 import { clearAuthTokens } from "@/lib/auth";
@@ -45,7 +45,11 @@ export const useMe = () => {
       console.log("🔑 errorData:", errorData);
       if (errorData?.status === 401) {
         clearAuthTokens();
-        window.location.href = "/login";
+        if (ROUTES.ADMIN.includes(pathname as any)) {
+          window.location.href = "/admin/login";
+        } else {
+          window.location.href = "/login";
+        }
       }
       // Reset global flag on error so it can be retried
       apiCallInitiated = false;

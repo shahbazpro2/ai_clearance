@@ -15,8 +15,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useApi } from "use-hook-api";
-import { createCampaignApi, setCampaignCategoryApi, acceptPredictedCategoryApi, createManualReviewApi } from "../../../api/campaigns";
-import { classifyCategoryApi } from "../../../api/categories";
+import { createCampaignApi, setCampaignCategoryApi, acceptPredictedCategoryApi, createManualReviewApi } from "@/api/campaigns";
+import { classifyCategoryApi } from "@/api/categories";
 import { useCategories } from "@/hooks/useCategories";
 
 interface CreateCampaignModalProps {

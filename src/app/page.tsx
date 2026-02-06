@@ -12,7 +12,7 @@ import { Plus, FolderOpen, Eye, Edit } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchCampaignsApi, fetchCampaignDetailsApi } from "../../api/campaigns";
+import { fetchCampaignsApi, fetchCampaignDetailsApi } from "@/api/campaigns";
 import { formatDateOnly } from "@/lib/utils";
 
 interface Campaign {

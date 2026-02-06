@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,19 +9,24 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-    Settings,
-    LogOut,
-    ArrowLeft
-} from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
-import { logout } from "@/lib/auth";
 import { useMe } from "@/hooks/useMe";
+import { logout } from "@/lib/auth";
+import { mobileSidebarOpenAtom } from "@/store/ui";
+import { useSetAtom } from "jotai";
+import {
+    LogOut,
+    Menu,
+    Settings
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 export function DashboardNavbar() {
     const router = useRouter();
     const pathname = usePathname();
     const userData = useMe();
+    const setMobileOpen = useSetAtom(mobileSidebarOpenAtom);
+    const isAdminPage = pathname?.startsWith("/admin");
 
     const handleLogout = () => {
         logout();
@@ -48,15 +53,40 @@ export function DashboardNavbar() {
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo or Back Button */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-6">
 
-                        <button
-                            onClick={() => router.push("/")}
-                            className="text-xl font-bold text-gray-900 hover:text-primary transition-colors cursor-pointer"
-                        >
-                            Ai Clearance
-                        </button>
+                        <div className="flex items-center">
+                            {isAdminPage && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="md:hidden mr-2"
+                                    onClick={() => setMobileOpen(true)}
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </Button>
+                            )}
+                            <button
+                                onClick={() => router.push("/")}
+                                className="text-xl font-bold text-gray-900 hover:text-primary transition-colors cursor-pointer"
+                            >
+                                Ai Clearance
+                            </button>
+                        </div>
 
+                        <nav className="hidden md:flex items-center space-x-4">
+                            {["admin", "super_admin"].includes(userData?.role || "") && (
+                                <Link
+                                    href="/admin/manual-reviews"
+                                    className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/manual-reviews")
+                                            ? "text-primary"
+                                            : "text-muted-foreground"
+                                        }`}
+                                >
+                                    Manual Review
+                                </Link>
+                            )}
+                        </nav>
                     </div>
 
                     {/* User Menu */}

@@ -11,7 +11,7 @@ import { campaignIdAtom } from "@/store/campaign";
 import {
     getStripeAmountTableApi,
     createStripeCheckoutSessionApi,
-} from "../../../../api/campaigns";
+} from "@/api/campaigns";
 
 interface MediaPlanItem {
     amount: number;

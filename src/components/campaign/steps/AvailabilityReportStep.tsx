@@ -43,7 +43,7 @@ import {
   createManualAvailabilityRequestApi,
   getCampaignProgramsApi,
   verifyCampaignApi,
-} from "../../../../api/campaigns";
+} from "@/api/campaigns";
 
 interface AvailabilityReportStepProps {
   onBack: () => void;

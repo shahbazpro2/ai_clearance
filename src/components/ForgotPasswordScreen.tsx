@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Axios, useApi } from "use-hook-api";
-import { forgotPasswordApi, resetPasswordApi, verifyOtpApi } from "../../api/auth";
+import { forgotPasswordApi, resetPasswordApi, verifyOtpApi } from "@/api/auth";
 import {
     EmailStep,
     OtpStep,

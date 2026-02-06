@@ -4,7 +4,7 @@ export function getAccessToken(): string | null {
 
   const cookies = document.cookie.split(";");
   const accessTokenCookie = cookies.find((cookie) =>
-    cookie.trim().startsWith("access_token=")
+    cookie.trim().startsWith("access_token="),
   );
 
   return accessTokenCookie ? accessTokenCookie.split("=")[1] : null;
@@ -16,7 +16,7 @@ export function getRefreshToken(): string | null {
 
   const cookies = document.cookie.split(";");
   const refreshTokenCookie = cookies.find((cookie) =>
-    cookie.trim().startsWith("refresh_token=")
+    cookie.trim().startsWith("refresh_token="),
   );
 
   return refreshTokenCookie ? refreshTokenCookie.split("=")[1] : null;
@@ -48,7 +48,7 @@ export function getIsActive(): boolean {
 
   const cookies = document.cookie.split(";");
   const isActiveCookie = cookies.find((cookie) =>
-    cookie.trim().startsWith("is_active=")
+    cookie.trim().startsWith("is_active="),
   );
 
   return isActiveCookie ? isActiveCookie.split("=")[1] === "true" : false;
@@ -74,7 +74,12 @@ export function logout(): void {
   clearAuthTokens();
   setTimeout(() => {
     if (typeof window !== "undefined") {
-      window.location.href = "/login";
+      //if url have admin in it, redirect to login
+      if (window.location.href.includes("admin")) {
+        window.location.href = "/admin/login";
+      } else {
+        window.location.href = "/login";
+      }
     }
   }, 1000);
 }
