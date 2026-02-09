@@ -9,6 +9,7 @@ export const ROUTES = {
     "/admin/challenged-reviews",
     "/admin/approve-reviews",
     "/admin/deny-reviews",
+    "/admin/users",
   ],
 
   // Routes that should redirect authenticated users to dashboard

@@ -86,6 +86,17 @@ export function DashboardNavbar() {
                                     Manual Review
                                 </Link>
                             )}
+                            {(userData?.role || "") === "super_admin" && (
+                                <Link
+                                    href="/admin/users"
+                                    className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/users")
+                                            ? "text-primary"
+                                            : "text-muted-foreground"
+                                        }`}
+                                >
+                                    Admin Users
+                                </Link>
+                            )}
                         </nav>
                     </div>
 

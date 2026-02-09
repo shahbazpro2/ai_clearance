@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, Settings, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, ChevronLeft, ChevronRight, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { sidebarCollapsedAtom, mobileSidebarOpenAtom } from "@/store/ui";
@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { logout } from "@/lib/auth";
+import { useMe } from "@/hooks/useMe";
 
-const sidebarItems = [
+const baseSidebarItems = [
     {
         title: "Dashboard",
         href: "/admin",
@@ -24,10 +25,15 @@ const sidebarItems = [
         icon: FileText,
         exact: false,
     },
-];
+] as const;
 
 interface SidebarNavProps {
-    items: typeof sidebarItems;
+    items: Array<{
+        title: string;
+        href: string;
+        icon: any;
+        exact: boolean;
+    }>;
     collapsed?: boolean;
     pathname: string | null;
     onItemClick?: () => void;
@@ -81,6 +87,20 @@ export function AdminSidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom);
     const [mobileOpen, setMobileOpen] = useAtom(mobileSidebarOpenAtom);
+    const userData = useMe();
+    const items = [
+        ...baseSidebarItems,
+        ...(userData?.role === "super_admin"
+            ? [
+                {
+                    title: "Admin Users",
+                    href: "/admin/users",
+                    icon: Users,
+                    exact: false,
+                },
+            ]
+            : []),
+    ];
 
     return (
         <TooltipProvider>
@@ -103,7 +123,7 @@ export function AdminSidebar() {
                     </div>}
                 </div>
 
-                <SidebarNav items={sidebarItems} collapsed={collapsed} pathname={pathname} />
+                <SidebarNav items={items} collapsed={collapsed} pathname={pathname} />
 
                 <div className={cn("p-4 border-t", collapsed ? "flex justify-center" : "")}>
                     <Link
@@ -143,7 +163,7 @@ export function AdminSidebar() {
                         </div>
 
                         <SidebarNav
-                            items={sidebarItems}
+                            items={items}
                             collapsed={false}
                             pathname={pathname}
                             onItemClick={() => setMobileOpen(false)}

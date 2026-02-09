@@ -49,3 +49,19 @@ export const submitManualReviewApi = (payload: {
 }) => {
   return responseApi("/admin/manual-reviews/set", "post", payload);
 };
+
+// 2.1 Get All Admin Users
+export const fetchAdminUsersApi = (params?: { status?: "active" | "pending" | "suspended" | "rejected" }) => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) {
+    queryParams.append("status", params.status);
+  }
+  const queryString = queryParams.toString();
+  const url = `/admin/users${queryString ? `?${queryString}` : ""}`;
+  return universalApi(url, "get");
+};
+
+// 2.2 Set Admin Users Status
+export const setAdminUserStatusApi = (payload: { user_id: string; status: "active" | "pending" | "suspended" | "rejected" }) => {
+  return responseApi("/admin/users/set/status", "post", payload);
+};
