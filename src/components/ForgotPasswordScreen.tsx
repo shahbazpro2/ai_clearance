@@ -2,7 +2,7 @@
 
 import { AuthHeader, AuthLayout } from "@/components/common";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Axios, useApi } from "use-hook-api";
@@ -20,6 +20,8 @@ import {
 
 export function ForgotPasswordScreen() {
     const router = useRouter();
+    const searchParams = useSearchParams()
+    const isAdmin = searchParams.get("admin") === "true"
     const [step, setStep] = useState<"email" | "otp" | "success">("email");
     const [email, setEmail] = useState("");
 
@@ -55,19 +57,20 @@ export function ForgotPasswordScreen() {
         callResetPasswordApi(verifyOtpApi({
             email,
             otp: data.otp,
-            new_password: data.password
+            new_password: data.password,
+            ...(isAdmin ? { role: 'admin' } : {})
         }), () => {
             setStep("success");
-            router.push("/login");
+            router.push(isAdmin ? "/admin/login" : "/login");
         });
     };
 
     const handleBackToLogin = () => {
-        router.push("/login");
+        router.back()
     };
 
     const handleResendOtp = () => {
-        callForgotPasswordApi(forgotPasswordApi({ email }), () => {
+        callForgotPasswordApi(forgotPasswordApi({ email, ...(isAdmin ? { role: 'admin' } : {}) }), () => {
             // OTP resent successfully
         });
     };

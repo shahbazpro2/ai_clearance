@@ -51,7 +51,9 @@ export const submitManualReviewApi = (payload: {
 };
 
 // 2.1 Get All Admin Users
-export const fetchAdminUsersApi = (params?: { status?: "active" | "pending" | "suspended" | "rejected" }) => {
+export const fetchAdminUsersApi = (params?: {
+  status?: "active" | "pending" | "suspended" | "rejected";
+}) => {
   const queryParams = new URLSearchParams();
   if (params?.status) {
     queryParams.append("status", params.status);
@@ -62,6 +64,9 @@ export const fetchAdminUsersApi = (params?: { status?: "active" | "pending" | "s
 };
 
 // 2.2 Set Admin Users Status
-export const setAdminUserStatusApi = (payload: { user_id: string; status: "active" | "pending" | "suspended" | "rejected" }) => {
+export const setAdminUserStatusApi = (payload: {
+  user_id: string;
+  status: "active" | "pending" | "suspended" | "rejected";
+}) => {
   return responseApi("/admin/users/set/status", "post", payload);
 };

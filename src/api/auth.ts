@@ -27,7 +27,10 @@ export const resetPasswordApi = (payload: {
   return responseApi("/auth/reset-password", "post", payload);
 };
 
-export const forgotPasswordApi = (payload: { email: string }) => {
+export const forgotPasswordApi = (payload: {
+  email: string;
+  role?: string;
+}) => {
   return responseApi("/auth/forgot-password", "post", payload);
 };
 
@@ -35,6 +38,7 @@ export const verifyOtpApi = (payload: {
   email: string;
   otp: string;
   new_password: string;
+  role?: string;
 }) => {
   return responseApi(`/auth/reset-password`, "post", payload);
 };

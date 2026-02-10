@@ -6,13 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCategories } from "@/hooks/useCategories";
+import { formatDate } from "@/lib/utils";
 import { Check, Eye, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useApi } from "use-hook-api";
+import { SampleViewerDialog } from "./SampleViewerDialog";
+import { atom, useAtom } from "jotai";
 
+const statusFilterAtom = atom<string>("pending");
 export default function ChallengedReviewsSection() {
-    const [statusFilter, setStatusFilter] = useState<string>("pending");
+    const [statusFilter, setStatusFilter] = useAtom(statusFilterAtom);
     const [selectedReview, setSelectedReview] = useState<any>(null);
     const [reviewAction, setReviewAction] = useState<"approve" | "deny" | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -74,7 +78,7 @@ export default function ChallengedReviewsSection() {
                 campaign_id: selectedReview.campaign_id,
                 is_approved: reviewAction === "approve",
                 feedback: feedback,
-                category_id: reviewAction === "deny" ? selectedCategory : undefined
+                category_id: reviewAction === "deny" ? selectedCategory : selectedReview.self_declared_category || undefined
             };
             await submitReview(submitManualReviewApi(payload));
             toast.success("Review submitted successfully");
@@ -118,8 +122,20 @@ export default function ChallengedReviewsSection() {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Campaign ID
+                                        Advertiser
                                     </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Created At
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Updated At
+                                    </th>
+                                    {
+                                        statusFilter !== 'pending' &&
+                                        <th scope='col' className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Reviewed Category
+                                        </th>
+                                    }
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         User Category
                                     </th>
@@ -138,8 +154,21 @@ export default function ChallengedReviewsSection() {
                                 {reviews.map((item: any) => (
                                     <tr key={item.id}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {item.campaign_id}
+                                            {item.name}
                                         </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {item.created_at ? formatDate(item.created_at) : "-"}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {item.updated_at ? formatDate(item.updated_at) : "-"}
+                                        </td>
+                                        {
+                                            statusFilter !== 'pending' &&
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {item.reviewed_category ? categoryNames[item.reviewed_category] : item.reviewed_category || "-"}
+                                            </td>
+                                        }
+
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {
                                                 item.self_declared_category ? categoryNames[item.self_declared_category] : item.self_declared_category || "-"}
@@ -243,21 +272,7 @@ export default function ChallengedReviewsSection() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
-                <DialogContent className="max-w-4xl w-full">
-                    <DialogHeader>
-                        <DialogTitle>View Sample</DialogTitle>
-                        <DialogDescription>Preview of the file in the current window.</DialogDescription>
-                    </DialogHeader>
-                    <div className="w-full">
-                        <iframe
-                            src={previewUrl || ""}
-                            className="w-full rounded-md border"
-                            style={{ height: "70vh" }}
-                        />
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <SampleViewerDialog open={!!previewUrl} url={previewUrl} onClose={() => setPreviewUrl(null)} />
         </div>
     );
 }

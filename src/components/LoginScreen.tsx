@@ -98,6 +98,16 @@ export function LoginScreen({
             <AuthHeader title={title || "Welcome Back"} />
             <div className="text-center mb-6">
                 <p className="text-sm text-gray-600 mb-1">Sign in to your Ai Clerance account</p>
+                {role !== "admin" && (
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="text-sm text-primary hover:text-primary/90 p-0 h-auto cursor-pointer"
+                        onClick={() => router.push("/admin/login")}
+                    >
+                        Login as Admin
+                    </Button>
+                )}
             </div>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -126,7 +136,7 @@ export function LoginScreen({
                         type="button"
                         variant="link"
                         className="text-sm text-primary hover:text-primary/90 p-0 h-auto cursor-pointer"
-                        onClick={() => router.push("/forgot-password")}
+                        onClick={() => router.push(`/forgot-password${role === 'admin' ? '?admin=true' : ''}`)}
                     >
                         Forgot Password?
                     </Button>
