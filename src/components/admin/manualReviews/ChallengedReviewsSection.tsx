@@ -101,7 +101,7 @@ export default function ChallengedReviewsSection() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="done">Reviewed</SelectItem>
+                        <SelectItem value="reviewed">Reviewed</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
