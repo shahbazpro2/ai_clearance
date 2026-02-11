@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Minus, Plus, RotateCcw } from "lucide-react";
-import { useRef, useState } from "react";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { useMemo } from "react";
 
 export function SampleViewerDialog({
   open,
@@ -14,122 +15,72 @@ export function SampleViewerDialog({
   url: string | null;
   onClose: () => void;
 }) {
-  const [zoom, setZoom] = useState<number>(1);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStateRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+  const isImage = useMemo(() => {
+    if (!url) return false;
+    const u = url.split("?")[0].toLowerCase();
+    return u.endsWith(".jpg") || u.endsWith(".jpeg") || u.endsWith(".png") || u.endsWith(".gif") || u.endsWith(".webp");
+  }, [url]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="!max-w-none !w-screen max-h-[95vh]">
+      <DialogContent className="!max-w-none !w-screen !h-[95vh]">
         <DialogHeader>
           <DialogTitle>View Sample</DialogTitle>
           <DialogDescription>Preview of the file in the current window.</DialogDescription>
         </DialogHeader>
         <div className="w-full">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.1).toFixed(2))))}
-              >
-                <Minus className="h-4 w-4 mr-1" /> Zoom Out
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setZoom((z) => Math.min(3, Number((z + 0.1).toFixed(2))))}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Zoom In
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setZoom(1)}
-              >
-                <RotateCcw className="h-4 w-4 mr-1" /> Reset
-              </Button>
-            </div>
-            <div className="text-sm text-gray-600">{Math.round(zoom * 100)}%</div>
-          </div>
-          <div
-            ref={containerRef}
-            className={`w-full overflow-auto ${zoom > 1 ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "cursor-default"}`}
-            style={{ height: "90vh" }}
-            onMouseDown={(e) => {
-              if (zoom <= 1) return;
-              const container = containerRef.current;
-              if (!container) return;
-              setIsDragging(true);
-              dragStateRef.current = {
-                x: e.clientX,
-                y: e.clientY,
-                scrollLeft: container.scrollLeft,
-                scrollTop: container.scrollTop,
-              };
-            }}
-            onMouseMove={(e) => {
-              if (!isDragging || zoom <= 1) return;
-              const container = containerRef.current;
-              const dragState = dragStateRef.current;
-              if (!container || !dragState) return;
-              e.preventDefault();
-              const dx = e.clientX - dragState.x;
-              const dy = e.clientY - dragState.y;
-              container.scrollLeft = dragState.scrollLeft - dx;
-              container.scrollTop = dragState.scrollTop - dy;
-            }}
-            onMouseUp={() => {
-              setIsDragging(false);
-              dragStateRef.current = null;
-            }}
-            onMouseLeave={() => {
-              setIsDragging(false);
-              dragStateRef.current = null;
-            }}
-            onTouchStart={(e) => {
-              if (zoom <= 1) return;
-              const touch = e.touches[0];
-              const container = containerRef.current;
-              if (!container || !touch) return;
-              setIsDragging(true);
-              dragStateRef.current = {
-                x: touch.clientX,
-                y: touch.clientY,
-                scrollLeft: container.scrollLeft,
-                scrollTop: container.scrollTop,
-              };
-            }}
-            onTouchMove={(e) => {
-              if (!isDragging || zoom <= 1) return;
-              const touch = e.touches[0];
-              const container = containerRef.current;
-              const dragState = dragStateRef.current;
-              if (!container || !dragState || !touch) return;
-              const dx = touch.clientX - dragState.x;
-              const dy = touch.clientY - dragState.y;
-              container.scrollLeft = dragState.scrollLeft - dx;
-              container.scrollTop = dragState.scrollTop - dy;
-            }}
-            onTouchEnd={() => {
-              setIsDragging(false);
-              dragStateRef.current = null;
-            }}
-          >
-            <div
-              style={{
-                transform: `scale(${zoom})`,
-                transformOrigin: "top left",
-                width: `${100 / zoom}%`,
-              }}
+          {isImage ? (
+            <TransformWrapper
+              initialScale={1}
+              wheel={{ step: 0.2 }}
+              doubleClick={{ disabled: true }}
+              pinch={{ step: 0.5 }}
+              centerOnInit
             >
-              <iframe
-                src={url || ""}
-                className="w-full max-h-[calc(90vh-40px)] h-[calc(90vh-40px)] rounded-md border"
-              />
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => zoomOut()}>
+                        <Minus className="h-4 w-4 mr-1" /> Zoom Out
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => zoomIn()}>
+                        <Plus className="h-4 w-4 mr-1" /> Zoom In
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => resetTransform()}>
+                        <RotateCcw className="h-4 w-4 mr-1" /> Reset
+                      </Button>
+                    </div>
+                    <div className="text-sm text-gray-600">Zoom</div>
+                  </div>
+                  <TransformComponent
+                    wrapperStyle={{ width: "100%", height: "calc(95vh - 140px)" }}
+                    wrapperClass="rounded-md border bg-neutral-50"
+                    contentClass="select-none"
+                  >
+                    <img
+                      src={url || ""}
+                      alt="Preview"
+                      className="object-contain h-[80vh]"
+                    />
+                  </TransformComponent>
+                </>
+              )}
+            </TransformWrapper>
+          ) : (
+            <div className="w-full h-[calc(95vh-140px)] rounded-md border flex items-center justify-center">
+              <div className="text-center text-sm text-gray-600">
+                Preview not supported.{" "}
+                {url ? (
+                  <a href={url} target="_blank" rel="noreferrer" className="text-primary underline">
+                    Open in new tab
+                  </a>
+                ) : (
+                  "No file URL."
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
