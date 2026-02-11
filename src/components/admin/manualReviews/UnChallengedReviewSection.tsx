@@ -189,14 +189,18 @@ export default function UnchallengedReviewsSection() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex space-x-2">
-                                                <Button
-                                                    variant="default"
-                                                    size="sm"
-                                                    className="bg-green-600 hover:bg-green-700"
-                                                    onClick={() => openReviewDialog(item, "approve")}
-                                                >
-                                                    <Check className="h-4 w-4 mr-1" /> Approve
-                                                </Button>
+                                                {
+                                                    !item?.reviewed_category && (
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            className="bg-green-600 hover:bg-green-700"
+                                                            onClick={() => openReviewDialog(item, "approve")}
+                                                        >
+                                                            <Check className="h-4 w-4 mr-1" /> Approve
+                                                        </Button>
+                                                    )
+                                                }
                                                 <Button
                                                     variant="destructive"
                                                     size="sm"
