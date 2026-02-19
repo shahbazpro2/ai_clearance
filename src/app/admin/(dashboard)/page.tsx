@@ -14,10 +14,14 @@ export default function AdminDashboard() {
     }, [getDetails]);
 
     const stats = data?.manual_review_counts || { done: 0, pending: 0, total_count: 0 };
+    const availabilityStats = data?.manual_availability_counts || { done: 0, pending: 0, total_count: 0 };
     // Calculate percentages safely
     const total = stats.total_count || 1; // Avoid division by zero for display
     const donePercentage = (stats.done / total) * 100;
     const pendingPercentage = (stats.pending / total) * 100;
+    const availabilityTotal = availabilityStats.total_count || 1;
+    const availabilityDonePct = (availabilityStats.done / availabilityTotal) * 100;
+    const availabilityPendingPct = (availabilityStats.pending / availabilityTotal) * 100;
 
     return (
         <main className="container mx-auto px-4 py-8">
@@ -132,6 +136,77 @@ export default function AdminDashboard() {
                                     <div className="flex items-center gap-2">
                                         <span className="inline-block w-3 h-3 rounded-sm bg-yellow-500" />
                                         <span>Pending ({Math.round((stats.pending / total) * 100)}%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card className="col-span-1">
+                    <CardHeader>
+                        <CardTitle>Manual Availability Review Statistics</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between mb-1 text-sm">
+                                    <span>Completed</span>
+                                    <span>{availabilityStats.done}</span>
+                                </div>
+                                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                                    <div className="bg-green-500 h-full transition-all duration-500" style={{ width: `${availabilityDonePct}%` }}></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-1 text-sm">
+                                    <span>Pending</span>
+                                    <span>{availabilityStats.pending}</span>
+                                </div>
+                                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                                    <div className="bg-yellow-500 h-full transition-all duration-500" style={{ width: `${availabilityPendingPct}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="col-span-1">
+                    <CardHeader>
+                        <CardTitle>Manual Availability Graph</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {availabilityStats.total_count === 0 ? (
+                            <div className="text-sm text-muted-foreground">No data available</div>
+                        ) : (
+                            <div className="w-full">
+                                <div className="flex items-end justify-center gap-8 h-44">
+                                    {[
+                                        { label: "Completed", value: availabilityStats.done, color: "bg-green-500" },
+                                        { label: "Pending", value: availabilityStats.pending, color: "bg-yellow-500" },
+                                    ].map((item) => {
+                                        const maxValue = Math.max(availabilityStats.done, availabilityStats.pending, 1);
+                                        const height = Math.round((item.value / maxValue) * 160);
+                                        const percent = Math.round((item.value / availabilityTotal) * 100);
+                                        return (
+                                            <div key={item.label} className="flex flex-col items-center">
+                                                <div className="text-xs font-medium mb-2">{item.value}</div>
+                                                <div
+                                                    className={`w-12 ${item.color} rounded-t-md transition-all duration-500`}
+                                                    style={{ height }}
+                                                    aria-label={`${item.label} ${percent}%`}
+                                                />
+                                                <div className="text-xs text-muted-foreground mt-2">{item.label}</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="mt-3 flex justify-center gap-8 text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-block w-3 h-3 rounded-sm bg-green-500" />
+                                        <span>Completed ({Math.round(availabilityDonePct)}%)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-block w-3 h-3 rounded-sm bg-yellow-500" />
+                                        <span>Pending ({Math.round(availabilityPendingPct)}%)</span>
                                     </div>
                                 </div>
                             </div>

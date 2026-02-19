@@ -70,3 +70,53 @@ export const setAdminUserStatusApi = (payload: {
 }) => {
   return responseApi("/admin/users/set/status", "post", payload);
 };
+
+// 6.1 Fetch Manual Availability Requests
+export const fetchManualAvailabilityRequestsApi = (params?: {
+  status?: "pending" | "reviewed";
+  page?: number;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) {
+    queryParams.append("status", params.status);
+  }
+  if (params?.page != null) {
+    queryParams.append("page", String(params.page));
+  }
+  if (params?.per_page != null) {
+    queryParams.append("per_page", String(params.per_page));
+  }
+  const queryString = queryParams.toString();
+  const url = `/admin/manual-availability/requests${queryString ? `?${queryString}` : ""}`;
+  return universalApi(url, "get");
+};
+
+// 6.2 GET Specific Campaign Manual Availability Review Details
+export const fetchManualAvailabilityCampaignDetailsApi = (
+  campaignId: string,
+) => {
+  const params = new URLSearchParams({ campaign_id: campaignId });
+  return universalApi(
+    `/admin/manual-availability/campaign/details?${params.toString()}`,
+    "get",
+  );
+};
+
+// 6.3 Set Manual Availability Review Details
+export const submitManualAvailabilityReviewApi = (payload: {
+  campaign_id: string;
+  request_id: string;
+  programs: Record<
+    string,
+    {
+      confirmed_availability: Record<string, number>;
+      admin_notes?: string;
+      reviewed_media_rate: number;
+      isApproved: boolean;
+      media_cost: number;
+    }
+  >;
+}) => {
+  return responseApi("/admin/manual-availability/review", "post", payload);
+};

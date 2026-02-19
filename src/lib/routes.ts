@@ -6,6 +6,7 @@ export const ROUTES = {
   ADMIN: [
     "/admin",
     "/admin/manual-reviews",
+    "/admin/manual-availability-reviews",
     "/admin/challenged-reviews",
     "/admin/approve-reviews",
     "/admin/deny-reviews",

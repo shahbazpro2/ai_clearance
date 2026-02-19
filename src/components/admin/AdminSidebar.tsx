@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, Settings, ChevronLeft, ChevronRight, LogOut, Users } from "lucide-react";
+import { LayoutDashboard, FileText, ClipboardList, Settings, ChevronLeft, ChevronRight, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { sidebarCollapsedAtom, mobileSidebarOpenAtom } from "@/store/ui";
@@ -23,6 +23,12 @@ const baseSidebarItems = [
         title: "Manual Reviews",
         href: "/admin/manual-reviews",
         icon: FileText,
+        exact: false,
+    },
+    {
+        title: "Manual Availability Review",
+        href: "/admin/manual-availability-reviews",
+        icon: ClipboardList,
         exact: false,
     },
 ] as const;

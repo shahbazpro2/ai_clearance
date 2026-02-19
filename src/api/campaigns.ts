@@ -55,7 +55,7 @@ export const createManualReviewApi = (payload: { campaign_id: string }) => {
  */
 export const fetchInsertProgramsApi = (
   category?: string,
-  campaignId?: string
+  campaignId?: string,
 ) => {
   const params = new URLSearchParams();
   if (category) {
@@ -67,7 +67,7 @@ export const fetchInsertProgramsApi = (
   const query = params.toString();
   return universalApi(
     `/programs/insert-programs${query ? `?${query}` : ""}`,
-    "get"
+    "get",
   );
 };
 
@@ -140,7 +140,7 @@ export const getCampaignProgramsApi = (campaignId: string) => {
 export const resetCampaignProgramsApi = (campaignId: string) => {
   return responseApi(
     `/programs/campaign-programs/${campaignId}/reset`,
-    "delete"
+    "delete",
   );
 };
 
@@ -151,7 +151,7 @@ export const resetCampaignProgramsApi = (campaignId: string) => {
 export const verifyCampaignApi = (campaignId: string) => {
   return universalApi(
     `/campaigns/verification?campaign_id=${campaignId}`,
-    "get"
+    "get",
   );
 };
 
@@ -160,7 +160,10 @@ export const verifyCampaignApi = (campaignId: string) => {
  * Endpoint: GET /art-and-csv?campaign_id={campaign_id}
  */
 export const getArtFilesDetailsApi = (campaignId: string) => {
-  return universalApi(`/art-and-csv/get-details?campaign_id=${campaignId}`, "get");
+  return universalApi(
+    `/art-and-csv/get-details?campaign_id=${campaignId}`,
+    "get",
+  );
 };
 
 /**
@@ -204,13 +207,18 @@ export const acceptAgreementApi = (payload: { campaign_id: string }) => {
  * Endpoint: GET /stripe/get-amount-table?campaign_id={campaign_id}
  */
 export const getStripeAmountTableApi = (campaignId: string) => {
-  return universalApi(`/stripe/get-amount-table?campaign_id=${campaignId}`, "get");
+  return universalApi(
+    `/stripe/get-amount-table?campaign_id=${campaignId}`,
+    "get",
+  );
 };
 
 /**
  * Create Stripe Checkout Session
  * Endpoint: POST /stripe/create-checkout-session
  */
-export const createStripeCheckoutSessionApi = (payload: { campaign_id: string }) => {
+export const createStripeCheckoutSessionApi = (payload: {
+  campaign_id: string;
+}) => {
   return responseApi("/stripe/create-checkout-session", "post", payload);
 };

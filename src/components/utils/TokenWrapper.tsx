@@ -70,7 +70,11 @@ const TokenWrapper: React.FC = () => {
                         else {
                             //clear all cookies
                             clearAuthTokens();
-                            window.location.href = '/login';
+                            if (window.location.href.includes('admin')) {
+                                window.location.href = '/admin/login';
+                            } else {
+                                window.location.href = '/login';
+                            }
                         }
                     } finally {
                         // Reset flag after refresh completes
