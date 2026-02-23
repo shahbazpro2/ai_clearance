@@ -19,12 +19,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Eye, Loader2 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import PaginationControls from "@/components/PaginationControls";
 
 const PER_PAGE = 25;
 
 export interface ManualAvailabilityRequestRecord {
   campaign_id: string;
+  campaign_name?: string;
+  created_at?: string;
+  updated_at?: string;
   user_name?: string;
   name?: string;
   advertiser_name?: string;
@@ -35,6 +39,10 @@ export interface ManualAvailabilityRequestRecord {
 
 function getAdvertiserName(record: ManualAvailabilityRequestRecord): string {
   return record.user_name ?? record.advertiser_name ?? record.name ?? "—";
+}
+
+function getCampaignName(record: ManualAvailabilityRequestRecord): string {
+  return record.campaign_name ?? record.campaign_id ?? "—";
 }
 
 function getProgramsCount(record: ManualAvailabilityRequestRecord): number {
@@ -132,6 +140,12 @@ export default function ManualAvailabilityReviewPage() {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
+                      Campaign Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Advertiser
                     </th>
                     <th
@@ -139,6 +153,18 @@ export default function ManualAvailabilityReviewPage() {
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Programs Count
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Created At
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Updated At
                     </th>
                     <th
                       scope="col"
@@ -163,6 +189,9 @@ export default function ManualAvailabilityReviewPage() {
                     return (
                       <tr key={campaignId} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {getCampaignName(record)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {getAdvertiserName(record)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -179,6 +208,12 @@ export default function ManualAvailabilityReviewPage() {
                               {count} Program{count !== 1 ? "s" : ""}
                             </span>
                           )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {record.created_at ? formatDate(record.created_at) : "—"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {record.updated_at ? formatDate(record.updated_at) : "—"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {record.status ? (

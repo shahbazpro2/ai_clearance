@@ -75,7 +75,7 @@ function parseProgramsFromDetailsData(data: any): ProgramRow[] {
       selected_freight,
       media_rate,
       media_cost,
-      reviewed_by_agency: Boolean(value?.is_approved ?? value?.reviewed_by_agency),
+      reviewed_by_agency: value?.is_approved ?? value?.reviewed_by_agency ?? true,
       availability,
       rawMetrics: metrics,
       rawFreight,
@@ -102,6 +102,7 @@ export default function ManualAvailabilityReviewDetailPage() {
     confirmedCategoryId != null && confirmedCategoryId !== ""
       ? (categoryNames[confirmedCategoryId] ?? confirmedCategoryId)
       : "—";
+  const campaignName = data?.campaign_name ?? (campaignId || "—");
   const advertiserName = data?.user_name ?? data?.name ?? "—";
   const status = data?.status ?? "—";
   const requestId = data?.request_id ?? "";
@@ -250,6 +251,7 @@ export default function ManualAvailabilityReviewDetailPage() {
           <CardTitle>Campaign details</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 text-sm">
+          <div><span className="font-medium text-gray-500">Campaign Name:</span> {campaignName}</div>
           <div><span className="font-medium text-gray-500">Advertiser:</span> {advertiserName}</div>
           <div><span className="font-medium text-gray-500">Confirmed category:</span> {confirmedCategoryName}</div>
           <div><span className="font-medium text-gray-500">Status:</span> <span className="capitalize">{String(status)}</span></div>
