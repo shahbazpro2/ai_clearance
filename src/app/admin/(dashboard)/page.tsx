@@ -5,6 +5,7 @@ import { useApi } from "use-hook-api";
 import { fetchHomePageDetailsApi } from "@/api/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
 export default function AdminDashboard() {
     const [getDetails, { data, loading, error }] = useApi({});
@@ -14,7 +15,7 @@ export default function AdminDashboard() {
     }, [getDetails]);
 
     const stats = data?.manual_review_counts || { done: 0, pending: 0, total_count: 0 };
-    const availabilityStats = data?.manual_availability_counts || { done: 0, pending: 0, total_count: 0 };
+    const availabilityStats = data?.manual_availability_review_counts || { done: 0, pending: 0, total_count: 0 };
     // Calculate percentages safely
     const total = stats.total_count || 1; // Avoid division by zero for display
     const donePercentage = (stats.done / total) * 100;
@@ -25,7 +26,7 @@ export default function AdminDashboard() {
 
     return (
         <main className="container mx-auto px-4 py-8">
-            <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+            <h1 className="text-lg font-bold mb-6">Dashboard</h1>
 
             {loading && <div className="text-center py-4">Loading stats...</div>}
 
@@ -35,37 +36,61 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-3 mb-8">
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Records</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.total_count}</div>
+                    <CardContent className="p-0 flex flex-col sm:flex-row sm:min-h-[100px]">
+                        <div className="flex-1 p-6">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Manual Reviews</p>
+                            <p className="text-sm font-medium mt-1">Total Records</p>
+                            <div className="text-xl font-bold mt-2 text-primary">{stats.total_count}</div>
+                        </div>
+                        <Separator orientation="vertical" className="sm:block hidden h-auto self-stretch" />
+                        <Separator orientation="horizontal" className="sm:hidden" />
+                        <div className="flex-1 p-6">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Manual Availability</p>
+                            <p className="text-sm font-medium mt-1">Total</p>
+                            <div className="text-xl font-bold mt-2 text-primary">{availabilityStats.total_count}</div>
+                        </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.pending}</div>
-                        <Progress value={pendingPercentage} className="mt-2" />
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {pendingPercentage.toFixed(1)}% of total
-                        </p>
+                    <CardContent className="p-0 flex flex-col sm:flex-row sm:min-h-[100px]">
+                        <div className="flex-1 p-6">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Manual Reviews</p>
+                            <p className="text-sm font-medium mt-1">Pending</p>
+                            <div className="text-xl font-bold mt-2 text-primary">{stats.pending}</div>
+                            <Progress value={pendingPercentage} className="mt-2" />
+                            <p className="text-xs text-muted-foreground mt-1">{pendingPercentage.toFixed(1)}% of total</p>
+                        </div>
+                        <Separator orientation="vertical" className="sm:block hidden h-auto self-stretch" />
+                        <Separator orientation="horizontal" className="sm:hidden" />
+                        <div className="flex-1 p-6">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Manual Availability</p>
+                            <p className="text-sm font-medium mt-1">Pending</p>
+                            <div className="text-xl font-bold mt-2 text-primary">{availabilityStats.pending}</div>
+                            <Progress value={availabilityPendingPct} className="mt-2" />
+                            <p className="text-xs text-muted-foreground mt-1">{availabilityPendingPct.toFixed(1)}% of total</p>
+                        </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Completed Reviews</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.done}</div>
-                        <Progress value={donePercentage} className="mt-2" />
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {donePercentage.toFixed(1)}% of total
-                        </p>
+                    <CardContent className="p-0 flex flex-col sm:flex-row sm:min-h-[100px]">
+                        <div className="flex-1 p-6">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Manual Reviews</p>
+                            <p className="text-sm font-medium mt-1">Completed</p>
+                            <div className="text-xl font-bold mt-2 text-primary">{stats.done}</div>
+                            <Progress value={donePercentage} className="mt-2" />
+                            <p className="text-xs text-muted-foreground mt-1">{donePercentage.toFixed(1)}% of total</p>
+                        </div>
+                        <Separator orientation="vertical" className="sm:block hidden h-auto self-stretch" />
+                        <Separator orientation="horizontal" className="sm:hidden" />
+                        <div className="flex-1 p-6">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Manual Availability</p>
+                            <p className="text-sm font-medium mt-1">Done</p>
+                            <div className="text-xl font-bold mt-2 text-primary">{availabilityStats.done}</div>
+                            <Progress value={availabilityDonePct} className="mt-2" />
+                            <p className="text-xs text-muted-foreground mt-1">{availabilityDonePct.toFixed(1)}% of total</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
