@@ -1,5 +1,5 @@
 import { universalApi } from "@/lib/universal-api";
-import { responseApi } from "use-hook-api";
+import { responseApi, Axios } from "use-hook-api";
 
 // 5.1 Home Page Details
 export const fetchHomePageDetailsApi = () => {
@@ -95,12 +95,57 @@ export const fetchManualAvailabilityRequestsApi = (params?: {
 // 6.2 GET Specific Campaign Manual Availability Review Details
 export const fetchManualAvailabilityCampaignDetailsApi = (
   campaignId: string,
+  options?: { fetch_instant_programs?: boolean },
 ) => {
   const params = new URLSearchParams({ campaign_id: campaignId });
+  if (options?.fetch_instant_programs === true) {
+    params.append("fetch_instant_programs", "true");
+  }
   return universalApi(
     `/admin/manual-availability/campaign/details?${params.toString()}`,
     "get",
   );
+};
+
+// 7.1 GET Campaign Booked
+export const fetchCampaignBookedApi = () => {
+  return universalApi("/admin/campaign-booked", "get");
+};
+
+// 7.2 Download Campaign Booked Files (returns ZIP; uses Axios blob, triggers download – use with useApi)
+export const downloadCampaignBookedFilesApi = (
+  campaignId: string,
+): (() => Promise<any>) => {
+  return () =>
+    Axios.post<Blob>(
+      "/admin/campaign-booked/download-files",
+      { campaign_id: campaignId },
+      { responseType: "blob" },
+    ).then((res) => {
+      const disposition = res.headers["content-disposition"];
+      const match =
+        typeof disposition === "string"
+          ? disposition.match(/filename[*]?=(?:UTF-8'')?["']?([^"'\s]+)["']?/i)
+          : null;
+      const filename = match?.[1] ?? `campaign-${campaignId}-files.zip`;
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return res;
+    });
+};
+
+// 7.3 Set Media Cost for Campaign Booked (programs: program_id -> { media_cost })
+export const setCampaignBookedMediaCostApi = (payload: {
+  campaign_id: string;
+  programs: Record<string, { media_cost: number }>;
+}) => {
+  return responseApi("/admin/campaign-booked/media-cost/set", "post", payload);
 };
 
 // 6.3 Set Manual Availability Review Details

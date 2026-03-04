@@ -7,6 +7,7 @@ export const ROUTES = {
     "/admin",
     "/admin/manual-reviews",
     "/admin/manual-availability-reviews",
+    "/admin/complete-booking-review",
     "/admin/challenged-reviews",
     "/admin/approve-reviews",
     "/admin/deny-reviews",

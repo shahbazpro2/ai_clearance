@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, ClipboardList, Settings, ChevronLeft, ChevronRight, LogOut, Users } from "lucide-react";
+import { LayoutDashboard, FileText, ClipboardList, BookOpen, Settings, ChevronLeft, ChevronRight, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { sidebarCollapsedAtom, mobileSidebarOpenAtom } from "@/store/ui";
@@ -29,6 +29,12 @@ const baseSidebarItems = [
         title: "Manual Availability Review",
         href: "/admin/manual-availability-reviews",
         icon: ClipboardList,
+        exact: false,
+    },
+    {
+        title: "Complete Booking Review",
+        href: "/admin/complete-booking-review",
+        icon: BookOpen,
         exact: false,
     },
 ] as const;

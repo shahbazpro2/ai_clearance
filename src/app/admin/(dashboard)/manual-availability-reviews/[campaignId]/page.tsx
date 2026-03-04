@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useApi } from "use-hook-api";
-import { fetchManualAvailabilityCampaignDetailsApi, submitManualAvailabilityReviewApi } from "@/api/admin";
+import {
+  fetchManualAvailabilityCampaignDetailsApi,
+  submitManualAvailabilityReviewApi,
+  setCampaignBookedMediaCostApi,
+} from "@/api/admin";
 import { useCategories } from "@/hooks/useCategories";
 import {
   formatMonthLabel,
@@ -14,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, Check, Download } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface AvailabilityEntry {
@@ -88,13 +92,18 @@ function parseProgramsFromDetailsData(data: any): ProgramRow[] {
 export default function ManualAvailabilityReviewDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const campaignId = (params?.campaignId as string) ?? "";
+  const fromBookingReview = searchParams?.get("from") === "booking-review";
+  const fetchInstantPrograms = searchParams?.get("fetch_instant_programs") === "true";
   const { categoryNames } = useCategories();
 
   const [callDetails, { data: detailsData, loading: loadingDetails }] = useApi({ errMsg: true });
   const [callSave, { loading: saving }] = useApi({ errMsg: true });
+  const [callSetMediaCost, { loading: savingMediaCost }] = useApi({ errMsg: true });
 
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
+  const [editingMediaCostProgramId, setEditingMediaCostProgramId] = useState<string | null>(null);
 
   const data = detailsData?.data ?? detailsData;
   const confirmedCategoryId = data?.confirmed_category_id ?? null;
@@ -108,13 +117,18 @@ export default function ManualAvailabilityReviewDetailPage() {
   const requestId = data?.request_id ?? "";
   const programsCount = typeof data?.programs_count === "number" ? data.programs_count : 0;
   const isPending = String(status).toLowerCase() === "pending";
-  const isEditable = isPending;
+  const isEditable = isPending && !fromBookingReview;
+  const isBookingReviewContext = fromBookingReview;
 
   useEffect(() => {
     if (campaignId) {
-      callDetails(fetchManualAvailabilityCampaignDetailsApi(campaignId));
+      callDetails(
+        fetchManualAvailabilityCampaignDetailsApi(campaignId, {
+          fetch_instant_programs: fetchInstantPrograms,
+        })
+      );
     }
-  }, [campaignId, callDetails]);
+  }, [campaignId, fetchInstantPrograms, callDetails]);
 
   useEffect(() => {
     if (data?.programs != null) {
@@ -158,6 +172,68 @@ export default function ManualAvailabilityReviewDetailPage() {
       return p.availability.find((a) => a.month === month) ?? { month, available: 0, order_qty: 0 };
     },
     []
+  );
+
+  const handleDownloadSpreadsheet = useCallback(() => {
+    const headers = [
+      "Program Name",
+      "Selected Freight",
+      "Media Rate",
+      "Media Cost",
+      "Is Approved",
+      ...months.flatMap((m) => [
+        `${formatMonthLabel(m)} Available`,
+        `${formatMonthLabel(m)} Order Qty`,
+        `${formatMonthLabel(m)} Reason`,
+      ]),
+    ];
+    const rows = programs.map((p) => {
+      const base = [
+        p.program_name,
+        p.selected_freight,
+        p.media_rate,
+        p.media_cost ?? "",
+        p.reviewed_by_agency ? "Yes" : "No",
+      ];
+      const monthCells = months.flatMap((month) => {
+        const e = getAvailabilityEntry(p, month);
+        return [e.available, e.order_qty, e.reason ?? ""];
+      });
+      return [...base, ...monthCells];
+    });
+    const escape = (v: string | number) => {
+      const s = String(v);
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const csv = [headers.map(escape).join(","), ...rows.map((r) => r.map(escape).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `campaign-details-${campaignId}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Spreadsheet downloaded");
+  }, [programs, months, campaignId, getAvailabilityEntry]);
+
+  const handleSetMediaCost = useCallback(
+    (programId: string, mediaCost: number) => {
+      if (!campaignId) return;
+      callSetMediaCost(
+        setCampaignBookedMediaCostApi({
+          campaign_id: campaignId,
+          programs: { [programId]: { media_cost: mediaCost } },
+        }),
+        () => {
+          toast.success("Media cost updated");
+          setEditingMediaCostProgramId(null);
+        }
+      );
+    },
+    [campaignId, callSetMediaCost]
   );
 
   const handleSubmit = useCallback(() => {
@@ -208,9 +284,9 @@ export default function ManualAvailabilityReviewDetailPage() {
 
     callSave(submitManualAvailabilityReviewApi(payload), () => {
       toast.success("Review submitted successfully");
-      router.push("/admin/manual-availability-reviews");
+      router.push(fromBookingReview ? "/admin/complete-booking-review" : "/admin/manual-availability-reviews");
     });
-  }, [campaignId, requestId, programs, months, getAvailabilityEntry, callSave, router]);
+  }, [campaignId, requestId, programs, months, getAvailabilityEntry, callSave, router, fromBookingReview]);
 
   const loading = loadingDetails;
 
@@ -228,7 +304,7 @@ export default function ManualAvailabilityReviewDetailPage() {
     return (
       <main className="container mx-auto px-4 py-8">
         <p className="text-gray-500">Invalid campaign.</p>
-        <Link href="/admin/manual-availability-reviews">
+        <Link href={fromBookingReview ? "/admin/complete-booking-review" : "/admin/manual-availability-reviews"}>
           <Button variant="outline" className="mt-4">
             Back to list
           </Button>
@@ -237,12 +313,15 @@ export default function ManualAvailabilityReviewDetailPage() {
     );
   }
 
+  const backHref = fromBookingReview ? "/admin/complete-booking-review" : "/admin/manual-availability-reviews";
+  const backLabel = fromBookingReview ? "Back to Complete Booking Review" : "Back to Manual Availability Review";
+
   return (
     <main className="container mx-auto px-4 py-8">
       <Button variant="ghost" asChild className="mb-4">
-        <Link href="/admin/manual-availability-reviews">
+        <Link href={backHref}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Manual Availability Review
+          {backLabel}
         </Link>
       </Button>
 
@@ -261,10 +340,24 @@ export default function ManualAvailabilityReviewDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Manual Availability Review Table</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {isEditable ? "Editable (pending review)." : "Read-only (already reviewed)."}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <CardTitle>Manual Availability Review Table</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {isBookingReviewContext
+                  ? "From Complete Booking Review – media cost editable per program."
+                  : isEditable
+                    ? "Editable (pending review)."
+                    : "Read-only (already reviewed)."}
+              </p>
+            </div>
+            {programs.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleDownloadSpreadsheet}>
+                <Download className="h-4 w-4 mr-2" />
+                Download spreadsheet
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {programs.length === 0 && !loading ? (
@@ -281,7 +374,51 @@ export default function ManualAvailabilityReviewDetailPage() {
                         <span>Selected freight: <strong className="text-foreground">{p.selected_freight}</strong></span>
                         <span className="flex items-center gap-2">
                           Media cost:
-                          {isEditable ? (
+                          {isBookingReviewContext ? (
+                            editingMediaCostProgramId === p.channel_id ? (
+                              <span className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  className="w-24 h-8 inline"
+                                  value={p.media_cost ?? ""}
+                                  onChange={(e) =>
+                                    updateProgram(p.channel_id, {
+                                      media_cost: e.target.value === "" ? null : Number(e.target.value),
+                                    })
+                                  }
+                                  placeholder="—"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const cost = p.media_cost ?? 0;
+                                    handleSetMediaCost(p.channel_id, cost);
+                                  }}
+                                  disabled={savingMediaCost}
+                                  className="p-1 rounded hover:bg-gray-100 text-primary"
+                                  aria-label="Save media cost"
+                                >
+                                  {savingMediaCost ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Check className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <strong className="text-foreground">{p.media_cost ?? "—"}</strong>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMediaCostProgramId(p.channel_id)}
+                                  className="p-1 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground"
+                                  aria-label="Edit media cost"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              </span>
+                            )
+                          ) : isEditable ? (
                             <Input
                               type="number"
                               className="w-24 h-8 inline"
@@ -404,7 +541,7 @@ export default function ManualAvailabilityReviewDetailPage() {
             </div>
           )}
 
-          {isEditable && programs.length > 0 && (
+          {(isEditable || isBookingReviewContext) && programs.length > 0 && !isBookingReviewContext && (
             <div className="mt-6 flex justify-end">
               <Button onClick={handleSubmit} disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

@@ -76,15 +76,26 @@ export function DashboardNavbar() {
 
                         <nav className="hidden md:flex items-center space-x-4">
                             {["admin", "super_admin"].includes(userData?.role || "") && (
-                                <Link
-                                    href="/admin/manual-reviews"
-                                    className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/manual-reviews")
-                                            ? "text-primary"
-                                            : "text-muted-foreground"
-                                        }`}
-                                >
-                                    Manual Review
-                                </Link>
+                                <>
+                                    <Link
+                                        href="/admin/manual-reviews"
+                                        className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/manual-reviews")
+                                                ? "text-primary"
+                                                : "text-muted-foreground"
+                                            }`}
+                                    >
+                                        Manual Review
+                                    </Link>
+                                    <Link
+                                        href="/admin/complete-booking-review"
+                                        className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/complete-booking-review")
+                                                ? "text-primary"
+                                                : "text-muted-foreground"
+                                            }`}
+                                    >
+                                        Complete Booking Review
+                                    </Link>
+                                </>
                             )}
                             {(userData?.role || "") === "super_admin" && (
                                 <Link
