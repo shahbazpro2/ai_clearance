@@ -9,7 +9,7 @@ import MeWrapper from "@/components/utils/MeWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ai Clerance",
+  title: "Ai Clearance",
   description: "AI-powered clearance and identification platform",
 };
 

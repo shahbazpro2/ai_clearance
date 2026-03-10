@@ -97,8 +97,17 @@ export function LoginScreen({
         <AuthLayout>
             <AuthHeader title={title || "Welcome Back"} />
             <div className="text-center mb-6">
-                <p className="text-sm text-gray-600 mb-1">Sign in to your Ai Clerance account</p>
-                {role !== "admin" && (
+                <p className="text-sm text-gray-600 mb-1">Sign in to your Ai Clearance account</p>
+                {role === "admin" ? (
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="text-sm text-primary hover:text-primary/90 p-0 h-auto cursor-pointer"
+                        onClick={() => router.push("/login")}
+                    >
+                        Login As Advertiser
+                    </Button>
+                ) : (
                     <Button
                         type="button"
                         variant="link"

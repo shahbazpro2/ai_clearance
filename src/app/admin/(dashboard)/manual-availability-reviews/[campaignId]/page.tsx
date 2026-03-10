@@ -89,13 +89,23 @@ function parseProgramsFromDetailsData(data: any): ProgramRow[] {
   return rows;
 }
 
-export default function ManualAvailabilityReviewDetailPage() {
+export interface CampaignDetailsSpreadsheetProps {
+  fromBookingReviewOverride?: boolean;
+  fetchInstantProgramsOverride?: boolean;
+}
+
+export default function ManualAvailabilityReviewDetailPage(
+  props?: CampaignDetailsSpreadsheetProps
+) {
+  const { fromBookingReviewOverride, fetchInstantProgramsOverride } = props ?? {};
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const campaignId = (params?.campaignId as string) ?? "";
-  const fromBookingReview = searchParams?.get("from") === "booking-review";
-  const fetchInstantPrograms = searchParams?.get("fetch_instant_programs") === "true";
+  const fromBookingReview =
+    fromBookingReviewOverride ?? searchParams?.get("from") === "booking-review";
+  const fetchInstantPrograms =
+    fetchInstantProgramsOverride ?? searchParams?.get("fetch_instant_programs") === "true";
   const { categoryNames } = useCategories();
 
   const [callDetails, { data: detailsData, loading: loadingDetails }] = useApi({ errMsg: true });
@@ -119,6 +129,10 @@ export default function ManualAvailabilityReviewDetailPage() {
   const isPending = String(status).toLowerCase() === "pending";
   const isEditable = isPending && !fromBookingReview;
   const isBookingReviewContext = fromBookingReview;
+  const salesforceOrderPushed =
+    data?.salesforce_order_pushed === true || data?.salesforce_order_pushed === "true";
+  const canEditMediaCostInBookingReview =
+    isBookingReviewContext && !salesforceOrderPushed;
 
   useEffect(() => {
     if (campaignId) {
@@ -335,6 +349,15 @@ export default function ManualAvailabilityReviewDetailPage() {
           <div><span className="font-medium text-gray-500">Confirmed category:</span> {confirmedCategoryName}</div>
           <div><span className="font-medium text-gray-500">Status:</span> <span className="capitalize">{String(status)}</span></div>
           <div><span className="font-medium text-gray-500">Programs count:</span> {programsCount > 0 ? programsCount : programs.length}</div>
+          {isBookingReviewContext && (
+            <div className="mt-4 pt-4 border-t">
+              <Button asChild variant="default">
+                <Link href={`/admin/complete-booking-review/${campaignId}/order-details`}>
+                  {salesforceOrderPushed ? "View Order Details" : "Proceed"}
+                </Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -375,6 +398,7 @@ export default function ManualAvailabilityReviewDetailPage() {
                         <span className="flex items-center gap-2">
                           Media cost:
                           {isBookingReviewContext ? (
+                            canEditMediaCostInBookingReview &&
                             editingMediaCostProgramId === p.channel_id ? (
                               <span className="flex items-center gap-1">
                                 <Input
@@ -408,14 +432,16 @@ export default function ManualAvailabilityReviewDetailPage() {
                             ) : (
                               <span className="flex items-center gap-1">
                                 <strong className="text-foreground">{p.media_cost ?? "—"}</strong>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingMediaCostProgramId(p.channel_id)}
-                                  className="p-1 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground"
-                                  aria-label="Edit media cost"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
+                                {canEditMediaCostInBookingReview && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingMediaCostProgramId(p.channel_id)}
+                                    className="p-1 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground"
+                                    aria-label="Edit media cost"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </button>
+                                )}
                               </span>
                             )
                           ) : isEditable ? (

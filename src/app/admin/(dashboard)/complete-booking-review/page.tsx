@@ -16,6 +16,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SampleViewerDialog } from "@/components/admin/manualReviews/SampleViewerDialog";
 import { Download, Eye, FileSpreadsheet, Loader2, MoreHorizontal } from "lucide-react";
 import { formatDate } from "@/lib/utils";
@@ -41,6 +48,7 @@ export default function CompleteBookingReviewPage() {
   const [downloadFiles, { loading: downloading }] = useApi({ both: true, resSuccessMsg: "Downloaded files successfully" });
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
 
   // Clear row-level download state when request finishes (success or error)
   useEffect(() => {
@@ -48,8 +56,14 @@ export default function CompleteBookingReviewPage() {
   }, [downloading, downloadingId]);
 
   const fetchList = useCallback(() => {
-    getList(fetchCampaignBookedApi());
-  }, [getList]);
+    getList(
+      fetchCampaignBookedApi(
+        statusFilter === "all"
+          ? undefined
+          : { status: statusFilter as "pending" | "reviewed" }
+      )
+    );
+  }, [getList, statusFilter]);
 
   useEffect(() => {
     fetchList();
@@ -86,12 +100,25 @@ export default function CompleteBookingReviewPage() {
   );
 
   const detailsUrl = (campaignId: string) =>
-    `/admin/manual-availability-reviews/${campaignId}?fetch_instant_programs=true&from=booking-review`;
+    `/admin/complete-booking-review/${campaignId}`;
 
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold">Complete Booking Review</h1>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="reviewed">Reviewed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="bg-white shadow rounded-lg overflow-hidden">

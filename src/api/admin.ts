@@ -108,8 +108,16 @@ export const fetchManualAvailabilityCampaignDetailsApi = (
 };
 
 // 7.1 GET Campaign Booked
-export const fetchCampaignBookedApi = () => {
-  return universalApi("/admin/campaign-booked", "get");
+export const fetchCampaignBookedApi = (params?: {
+  status?: "pending" | "reviewed";
+}) => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) {
+    queryParams.append("status", params.status);
+  }
+  const queryString = queryParams.toString();
+  const url = `/admin/campaign-booked${queryString ? `?${queryString}` : ""}`;
+  return universalApi(url, "get");
 };
 
 // 7.2 Download Campaign Booked Files (returns ZIP; uses Axios blob, triggers download – use with useApi)
@@ -164,4 +172,22 @@ export const submitManualAvailabilityReviewApi = (payload: {
   >;
 }) => {
   return responseApi("/admin/manual-availability/review", "post", payload);
+};
+
+// 8.1 Push Salesforce Orders
+export const pushSalesforceOrdersApi = (payload: {
+  campaign_id: string;
+  billing_account_id: string;
+  buying_advertiser_account_id: string;
+}) => {
+  return responseApi("/admin/salesforce-orders", "post", payload);
+};
+
+// 8.2 GET Salesforce Orders Details
+export const fetchSalesforceOrderDetailsApi = (campaignId: string) => {
+  const params = new URLSearchParams({ campaign_id: campaignId });
+  return universalApi(
+    `/admin/salesforce-orders/details?${params.toString()}`,
+    "get"
+  );
 };
