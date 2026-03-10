@@ -1,18 +1,20 @@
 import { fetchManualReviewsApi, submitManualReviewApi, viewGcpFileApi } from "@/api/admin";
-import { fetchCategoriesApi } from "@/api/categories";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCategories } from "@/hooks/useCategories";
+import { usePagination } from "@/hooks/usePagination";
+import { DEFAULT_PER_PAGE } from "@/lib/pagination";
 import { formatDate } from "@/lib/utils";
 import { Check, Eye, Loader2, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { atom, useAtom } from "jotai";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useApi } from "use-hook-api";
 import { SampleViewerDialog } from "./SampleViewerDialog";
-import { atom, useAtom } from "jotai";
 
 const statusFilterAtom = atom<string>("pending");
 export default function UnchallengedReviewsSection() {
@@ -23,21 +25,29 @@ export default function UnchallengedReviewsSection() {
     const [feedback, setFeedback] = useState<string>("");
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    const [getReviews, { data: reviewsData, loading: reviewsLoading }] = useApi({ cache: 'unchallenged-reviews' });
+    const [getReviews, { data: reviewsData, fullRes: reviewsFullData, loading: reviewsLoading }] = useApi({ cache: "unchallenged-reviews", fullRes: true });
     const [viewFile, { loading: viewingFile }] = useApi({});
     const [submitReview, { loading: submittingReview }] = useApi({});
     const { categoryNames } = useCategories();
 
-    const fetchReviews = useCallback(() => {
-        getReviews(fetchManualReviewsApi({
-            is_challenged: false,
-            status: statusFilter
-        }));
-    }, [statusFilter]);
+    const { page, currentPage, paginationBarProps } = usePagination({
+        pagination: reviewsFullData?.pagination ?? null,
+        loading: reviewsLoading,
+        resetPageWhen: statusFilter,
+    });
 
+    const getReviewsRef = useRef(getReviews);
+    getReviewsRef.current = getReviews;
     useEffect(() => {
-        fetchReviews();
-    }, [fetchReviews]);
+        getReviewsRef.current(
+            fetchManualReviewsApi({
+                is_challenged: false,
+                status: statusFilter,
+                page,
+                per_page: DEFAULT_PER_PAGE,
+            })
+        );
+    }, [statusFilter, page]);
 
 
     const handleViewSample = async (gcpPath: string) => {
@@ -84,7 +94,14 @@ export default function UnchallengedReviewsSection() {
             await submitReview(submitManualReviewApi(payload));
             toast.success("Review submitted successfully");
             closeReviewDialog();
-            fetchReviews();
+            getReviewsRef.current(
+                fetchManualReviewsApi({
+                    is_challenged: false,
+                    status: statusFilter,
+                    page: currentPage,
+                    per_page: DEFAULT_PER_PAGE,
+                })
+            );
         } catch (err) {
             console.error(err);
             toast.error("Error submitting review");
@@ -216,6 +233,7 @@ export default function UnchallengedReviewsSection() {
                         </table>
                     </div>
                 )}
+                <PaginationBar {...paginationBarProps} />
             </div>
 
             <Dialog open={!!selectedReview} onOpenChange={(open) => !open && closeReviewDialog()}>

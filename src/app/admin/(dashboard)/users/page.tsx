@@ -1,12 +1,15 @@
 "use client";
 
 import { fetchAdminUsersApi } from "@/api/admin";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect, useMemo, useState } from "react";
-import { useApi } from "use-hook-api";
 import { AdminUserRow } from "@/components/admin/users/AdminUserRow";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { PaginationBar } from "@/components/ui/pagination-bar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { usePagination } from "@/hooks/usePagination";
+import { DEFAULT_PER_PAGE } from "@/lib/pagination";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useApi } from "use-hook-api";
 
 type AdminStatus = "active" | "pending" | "suspended" | "rejected";
 
@@ -26,17 +29,28 @@ const STATUS_OPTIONS: AdminStatus[] = ["active", "pending", "suspended", "reject
 
 export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState<AdminStatus | "all">("all");
-  const [getUsers, { data, loading, error }] = useApi({ cache: 'admin-users' });
+  const [getUsers, { data, fullRes, loading, error }] = useApi({ cache: "admin-users", fullRes: true });
 
+  const { page, currentPage, paginationBarProps } = usePagination({
+    pagination: fullRes?.pagination ?? null,
+    loading,
+    resetPageWhen: statusFilter,
+  });
+
+  const getUsersRef = useRef(getUsers);
+  getUsersRef.current = getUsers;
   useEffect(() => {
-    const params = statusFilter === "all" ? undefined : { status: statusFilter };
-    getUsers(fetchAdminUsersApi(params));
-  }, [statusFilter]);
+    const params =
+      statusFilter === "all"
+        ? { page, per_page: DEFAULT_PER_PAGE }
+        : { status: statusFilter, page, per_page: DEFAULT_PER_PAGE };
+    getUsersRef.current(fetchAdminUsersApi(params));
+  }, [statusFilter, page]);
 
   const users: AdminUser[] = useMemo(() => {
-    const raw = (data?.data as AdminUser[]) ?? (data as AdminUser[]) ?? [];
+    const raw = (data?.data as AdminUser[]) ?? (fullRes?.data as AdminUser[]) ?? (data as AdminUser[]) ?? [];
     return Array.isArray(raw) ? raw : [];
-  }, [data]);
+  }, [data, fullRes]);
 
 
   return (
@@ -112,6 +126,7 @@ export default function AdminUsersPage() {
               </tbody>
             </table>
           </div>
+          <PaginationBar {...paginationBarProps} />
         </div>
       </main>
     </ProtectedRoute>

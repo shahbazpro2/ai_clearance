@@ -10,23 +10,21 @@ export const fetchHomePageDetailsApi = () => {
 export const fetchManualReviewsApi = (params?: {
   is_challenged?: boolean;
   status?: string;
+  page?: number;
+  per_page?: number;
 }) => {
-  // Construct query string manually if needed, or rely on universalApi/responseApi if they handle params object.
-  // universalApi wrapper passes data as 3rd arg, which for GET requests usually means query params in some libs,
-  // but let's check how universalApi handles it.
-  // Looking at universalApi implementation:
-  // const res = await responseApi(`${process.env.NEXT_PUBLIC_API_URL}${url}`, method, data, headers)();
-  // use-hook-api's responseApi typically takes (url, method, data, headers).
-  // For GET, data usually is ignored or appended as query.
-  // Let's assume we need to append query params to URL or pass as data if the lib supports it.
-  // Safest is to append to URL for now given I haven't seen the lib internals fully.
-
   const queryParams = new URLSearchParams();
   if (params?.is_challenged !== undefined) {
     queryParams.append("is_challenged", String(params.is_challenged));
   }
   if (params?.status) {
     queryParams.append("status", params.status);
+  }
+  if (params?.page !== undefined) {
+    queryParams.append("page", String(params.page));
+  }
+  if (params?.per_page !== undefined) {
+    queryParams.append("per_page", String(params.per_page));
   }
 
   const queryString = queryParams.toString();
@@ -53,10 +51,18 @@ export const submitManualReviewApi = (payload: {
 // 2.1 Get All Admin Users
 export const fetchAdminUsersApi = (params?: {
   status?: "active" | "pending" | "suspended" | "rejected";
+  page?: number;
+  per_page?: number;
 }) => {
   const queryParams = new URLSearchParams();
   if (params?.status) {
     queryParams.append("status", params.status);
+  }
+  if (params?.page != null) {
+    queryParams.append("page", String(params.page));
+  }
+  if (params?.per_page != null) {
+    queryParams.append("per_page", String(params.per_page));
   }
   const queryString = queryParams.toString();
   const url = `/admin/users${queryString ? `?${queryString}` : ""}`;
@@ -110,10 +116,18 @@ export const fetchManualAvailabilityCampaignDetailsApi = (
 // 7.1 GET Campaign Booked
 export const fetchCampaignBookedApi = (params?: {
   status?: "pending" | "reviewed";
+  page?: number;
+  per_page?: number;
 }) => {
   const queryParams = new URLSearchParams();
   if (params?.status) {
     queryParams.append("status", params.status);
+  }
+  if (params?.page != null) {
+    queryParams.append("page", String(params.page));
+  }
+  if (params?.per_page != null) {
+    queryParams.append("per_page", String(params.per_page));
   }
   const queryString = queryParams.toString();
   const url = `/admin/campaign-booked${queryString ? `?${queryString}` : ""}`;

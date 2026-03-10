@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 import {
   fetchCampaignBookedApi,
@@ -10,6 +10,9 @@ import {
 } from "@/api/admin";
 import { useCategories } from "@/hooks/useCategories";
 import { Button } from "@/components/ui/button";
+import { PaginationBar } from "@/components/ui/pagination-bar";
+import { usePagination } from "@/hooks/usePagination";
+import { DEFAULT_PER_PAGE } from "@/lib/pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,8 +44,9 @@ export interface CampaignBookedRecord {
 
 export default function CompleteBookingReviewPage() {
   const { categoryNames } = useCategories();
-  const [getList, { data: listData, loading: listLoading }] = useApi({
+  const [getList, { data: listData, fullRes: fullRes, loading: listLoading }] = useApi({
     errMsg: true,
+    fullRes: true,
   });
   const [viewFile, { loading: viewingFile }] = useApi({});
   const [downloadFiles, { loading: downloading }] = useApi({ both: true, resSuccessMsg: "Downloaded files successfully" });
@@ -50,28 +54,31 @@ export default function CompleteBookingReviewPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
 
+  const { page, paginationBarProps } = usePagination({
+    pagination: fullRes?.pagination ?? null,
+    loading: listLoading,
+    resetPageWhen: statusFilter,
+  });
+
+  const getListRef = useRef(getList);
+  getListRef.current = getList;
+  useEffect(() => {
+    getListRef.current(
+      fetchCampaignBookedApi(
+        statusFilter === "all"
+          ? { page, per_page: DEFAULT_PER_PAGE }
+          : { status: statusFilter as "pending" | "reviewed", page, per_page: DEFAULT_PER_PAGE }
+      )
+    );
+  }, [statusFilter, page]);
+
   // Clear row-level download state when request finishes (success or error)
   useEffect(() => {
     if (!downloading && downloadingId) setDownloadingId(null);
   }, [downloading, downloadingId]);
 
-  const fetchList = useCallback(() => {
-    getList(
-      fetchCampaignBookedApi(
-        statusFilter === "all"
-          ? undefined
-          : { status: statusFilter as "pending" | "reviewed" }
-      )
-    );
-  }, [getList, statusFilter]);
-
-  useEffect(() => {
-    fetchList();
-  }, [fetchList]);
-
-  const rawData = listData?.data ?? listData;
+  const rawData = listData?.data ?? fullRes?.data ?? listData;
   const list: CampaignBookedRecord[] = Array.isArray(rawData) ? rawData : [];
-  const count = typeof listData?.count === "number" ? listData.count : list.length;
 
   const handleViewInsertSample = async (gcpPath: string) => {
     if (!gcpPath) {
@@ -263,13 +270,8 @@ export default function CompleteBookingReviewPage() {
             </table>
           </div>
         )}
+        <PaginationBar {...paginationBarProps} />
       </div>
-
-      {!listLoading && count > 0 && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          Total: {count} booked campaign{count !== 1 ? "s" : ""}
-        </p>
-      )}
 
       <SampleViewerDialog
         open={!!previewUrl}

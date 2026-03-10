@@ -1,10 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 import { fetchManualAvailabilityRequestsApi } from "@/api/admin";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 import {
   Select,
   SelectContent,
@@ -12,17 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Eye, Loader2 } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import { buildPaginationMeta, DEFAULT_PER_PAGE } from "@/lib/pagination";
 import { formatDate } from "@/lib/utils";
-import PaginationControls from "@/components/PaginationControls";
-
-const PER_PAGE = 25;
+import { Eye, Loader2 } from "lucide-react";
 
 export interface ManualAvailabilityRequestRecord {
   campaign_id: string;
@@ -60,41 +60,42 @@ function getProgramsList(record: ManualAvailabilityRequestRecord): Array<{ progr
 
 export default function ManualAvailabilityReviewPage() {
   const [statusFilter, setStatusFilter] = useState<"pending" | "reviewed">("pending");
-  const [page, setPage] = useState(1);
   const [programsModalRecord, setProgramsModalRecord] = useState<ManualAvailabilityRequestRecord | null>(null);
 
-  const [getList, { data: listData, loading: listLoading }] = useApi({ errMsg: true });
+  const [getList, { data: listData, fullRes: fullRes, loading: listLoading }] = useApi({ errMsg: true, fullRes: true });
 
-  const fetchList = useCallback(() => {
-    getList(
+  const totalFromRes =
+    typeof fullRes?.total === "number"
+      ? fullRes.total
+      : typeof fullRes?.total_count === "number"
+        ? fullRes.total_count
+        : 0;
+
+  const serverPage = fullRes?.pagination?.page ?? fullRes?.page ?? 1;
+  const { page, paginationBarProps } = usePagination({
+    pagination:
+      fullRes?.pagination ??
+      (totalFromRes >= 0
+        ? buildPaginationMeta(serverPage, DEFAULT_PER_PAGE, totalFromRes)
+        : null),
+    loading: listLoading,
+    resetPageWhen: statusFilter,
+  });
+
+  const getListRef = useRef(getList);
+  getListRef.current = getList;
+  useEffect(() => {
+    getListRef.current(
       fetchManualAvailabilityRequestsApi({
         status: statusFilter,
         page,
-        per_page: PER_PAGE,
+        per_page: DEFAULT_PER_PAGE,
       })
     );
-  }, [statusFilter, page, getList]);
+  }, [statusFilter, page]);
 
-  useEffect(() => {
-    fetchList();
-  }, [fetchList]);
-
-  const rawList = listData?.data ?? listData?.results ?? listData ?? [];
+  const rawList = listData?.data ?? fullRes?.data ?? listData?.results ?? listData ?? [];
   const list: ManualAvailabilityRequestRecord[] = Array.isArray(rawList) ? rawList : [];
-  const total =
-    typeof listData?.total === "number"
-      ? listData.total
-      : typeof listData?.total_count === "number"
-        ? listData.total_count
-        : list.length;
-  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-
-  const pagination = {
-    page,
-    total,
-    pages: totalPages,
-    limit: PER_PAGE,
-  };
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -105,10 +106,7 @@ export default function ManualAvailabilityReviewPage() {
       <div className="flex items-center gap-4 mb-6">
         <Select
           value={statusFilter}
-          onValueChange={(v) => {
-            setStatusFilter(v as "pending" | "reviewed");
-            setPage(1);
-          }}
+          onValueChange={(v) => setStatusFilter(v as "pending" | "reviewed")}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Status" />
@@ -236,15 +234,7 @@ export default function ManualAvailabilityReviewPage() {
                 </tbody>
               </table>
             </div>
-            {totalPages > 1 && (
-              <div className="border-t px-4 py-3">
-                <PaginationControls
-                  pagination={pagination}
-                  isLoading={listLoading}
-                  onPageChange={setPage}
-                />
-              </div>
-            )}
+            <PaginationBar {...paginationBarProps} />
           </>
         )}
       </div>
