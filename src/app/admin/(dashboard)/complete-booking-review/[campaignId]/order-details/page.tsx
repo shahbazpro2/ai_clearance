@@ -46,7 +46,7 @@ interface SalesforceOrderDetailsData {
   created_at?: string;
   updated_at?: string;
   created_orders?: number;
-  salesforce_order_pushed?: boolean;
+  salesforce_order_pushed?: boolean | string;
   production_order_details?: ProductionOrderDetails;
   insertion_order_details?: Record<string, InsertionOrderProgram>;
 }
@@ -54,7 +54,7 @@ interface SalesforceOrderDetailsData {
 function formatBookingMonth(month: string): string {
   if (!month) return month;
   const [y, m] = month.split("-");
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const idx = parseInt(m, 10);
   return idx >= 1 && idx <= 12 ? `${months[idx - 1]} ${y}` : month;
 }
