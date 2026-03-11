@@ -10,16 +10,27 @@ export function SampleViewerDialog({
   open,
   url,
   onClose,
+  mimeType,
 }: {
   open: boolean;
   url: string | null;
   onClose: () => void;
+  /** Optional MIME type when URL has no extension (e.g. signed GCP URLs) */
+  mimeType?: string | null;
 }) {
   const isImage = useMemo(() => {
+    if (mimeType?.startsWith("image/")) return true;
     if (!url) return false;
     const u = url.split("?")[0].toLowerCase();
     return u.endsWith(".jpg") || u.endsWith(".jpeg") || u.endsWith(".png") || u.endsWith(".gif") || u.endsWith(".webp");
-  }, [url]);
+  }, [url, mimeType]);
+
+  const isPdf = useMemo(() => {
+    if (mimeType === "application/pdf") return true;
+    if (!url) return false;
+    const u = url.split("?")[0].toLowerCase();
+    return u.endsWith(".pdf");
+  }, [url, mimeType]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -67,6 +78,22 @@ export function SampleViewerDialog({
                 </>
               )}
             </TransformWrapper>
+          ) : isPdf ? (
+            <div className="w-full flex flex-col gap-2">
+              <a
+                href={url || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-primary underline self-end"
+              >
+                Open in new tab
+              </a>
+              <iframe
+                src={`${url}#toolbar=1`}
+                title="PDF preview"
+                className="w-full rounded-md border bg-white flex-1 min-h-[calc(95vh-180px)]"
+              />
+            </div>
           ) : (
             <div className="w-full h-[calc(95vh-140px)] rounded-md border flex items-center justify-center">
               <div className="text-center text-sm text-gray-600">
