@@ -202,6 +202,56 @@ export const fetchSalesforceOrderDetailsApi = (campaignId: string) => {
   const params = new URLSearchParams({ campaign_id: campaignId });
   return universalApi(
     `/admin/salesforce-orders/details?${params.toString()}`,
-    "get"
+    "get",
   );
+};
+
+type FineTuningJobStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "cancelled";
+
+// 9.6 GET Active Model
+export const fetchActiveModelApi = () => {
+  return universalApi("/admin/model-fine-tuning/active-model", "get");
+};
+
+// 9.3 GET Fine-Tuning Jobs
+export const fetchFineTuningJobsApi = (params?: {
+  status?: FineTuningJobStatus;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) {
+    queryParams.append("status", params.status);
+  }
+  const queryString = queryParams.toString();
+  const url = `/admin/model-fine-tuning/jobs${queryString ? `?${queryString}` : ""}`;
+  return universalApi(url, "get");
+};
+
+// 9.7 Model Switching
+export const switchActiveModelApi = (payload: {
+  use_base_model: boolean;
+  job_version?: string;
+}) => {
+  return responseApi("/admin/model-fine-tuning/active-model", "post", payload);
+};
+
+// 9.1 Start Model Fine-Tuning
+export const startModelFineTuningApi = (payload?: {
+  tuned_model_display_name?: string;
+}) => {
+  return responseApi("/admin/model-fine-tuning", "post", payload ?? {});
+};
+
+// 9.2 Refresh Fine-Tuning Running Jobs Status
+export const refreshFineTuningRunningJobsApi = () => {
+  return universalApi("/admin/model-fine-tuning/running-jobs/refresh", "get");
+};
+
+// 9.5 Fine-Tuned Model Testing
+export const testFineTunedModelApi = (payload: FormData) => {
+  return responseApi("/admin/model-fine-tuning/classify", "post", payload);
 };

@@ -80,8 +80,8 @@ export function DashboardNavbar() {
                                     <Link
                                         href="/admin/manual-reviews"
                                         className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/manual-reviews")
-                                                ? "text-primary"
-                                                : "text-muted-foreground"
+                                            ? "text-primary"
+                                            : "text-muted-foreground"
                                             }`}
                                     >
                                         Manual Review
@@ -89,11 +89,20 @@ export function DashboardNavbar() {
                                     <Link
                                         href="/admin/complete-booking-review"
                                         className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/complete-booking-review")
-                                                ? "text-primary"
-                                                : "text-muted-foreground"
+                                            ? "text-primary"
+                                            : "text-muted-foreground"
                                             }`}
                                     >
                                         Complete Booking Review
+                                    </Link>
+                                    <Link
+                                        href="/admin/fine-tuning"
+                                        className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/fine-tuning")
+                                            ? "text-primary"
+                                            : "text-muted-foreground"
+                                            }`}
+                                    >
+                                        Fine-Tuning
                                     </Link>
                                 </>
                             )}
@@ -101,8 +110,8 @@ export function DashboardNavbar() {
                                 <Link
                                     href="/admin/users"
                                     className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith("/admin/users")
-                                            ? "text-primary"
-                                            : "text-muted-foreground"
+                                        ? "text-primary"
+                                        : "text-muted-foreground"
                                         }`}
                                 >
                                     Admin Users
