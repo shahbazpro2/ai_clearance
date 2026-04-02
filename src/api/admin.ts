@@ -255,3 +255,8 @@ export const refreshFineTuningRunningJobsApi = () => {
 export const testFineTunedModelApi = (payload: FormData) => {
   return responseApi("/admin/model-fine-tuning/classify", "post", payload);
 };
+
+// 9.9 Cancel Fine-Tuning Job
+export const cancelFineTuningJobApi = (payload: { job_version: string }) => {
+  return responseApi("/admin/model-fine-tuning/cancel", "post", payload);
+};

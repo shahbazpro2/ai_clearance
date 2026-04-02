@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  cancelFineTuningJobApi,
   fetchActiveModelApi,
   fetchFineTuningJobsApi,
   refreshFineTuningRunningJobsApi,
@@ -22,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CircleStop } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 
@@ -63,10 +65,12 @@ export default function FineTuningPage() {
   const [switchModalOpen, setSwitchModalOpen] = useState(false);
   const [startModalOpen, setStartModalOpen] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [useBaseModel, setUseBaseModel] = useState(true);
   const [selectedJobVersion, setSelectedJobVersion] = useState<string>("");
   const [tunedModelDisplayName, setTunedModelDisplayName] = useState("");
   const [testingJobVersion, setTestingJobVersion] = useState<string>("");
+  const [cancellingJobVersion, setCancellingJobVersion] = useState<string>("");
   const [testFile, setTestFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -95,6 +99,10 @@ export default function FineTuningPage() {
   const [testModel, { data: testResponseData, loading: testingModel, error: testModelError }] = useApi({
     both: true,
     resSuccessMsg: "Model tested successfully",
+  });
+  const [cancelJob, { loading: cancellingJob }] = useApi({
+    both: true,
+    resSuccessMsg: "Fine-tuning job cancellation requested successfully",
   });
 
   const getActiveModelRef = useRef(getActiveModel);
@@ -187,7 +195,21 @@ export default function FineTuningPage() {
     formData.append("job_version", testingJobVersion);
     formData.append("file", testFile);
     // Provide an explicit callback so the hook lifecycle reliably toggles `loading`.
-    testModel(testFineTunedModelApi(formData), () => {});
+    testModel(testFineTunedModelApi(formData), () => { });
+  };
+
+  const handleCancelJob = (jobVersion: string) => {
+    setCancellingJobVersion(jobVersion);
+    setCancelModalOpen(true);
+  };
+
+  const confirmCancelJob = () => {
+    if (!cancellingJobVersion) return;
+    cancelJob(cancelFineTuningJobApi({ job_version: cancellingJobVersion }), () => {
+      setCancelModalOpen(false);
+      setCancellingJobVersion("");
+      getJobsRef.current(fetchFineTuningJobsApi(statusFilter === "all" ? undefined : { status: statusFilter }));
+    });
   };
 
   const testResult = testResponseData;
@@ -279,7 +301,7 @@ export default function FineTuningPage() {
                   <th className="px-4 py-3">Version</th>
                   <th className="px-4 py-3">Total Records Count</th>
                   <th className="px-4 py-3">Train Records Count</th>
-                  <th className="px-4 py-3">Test Model</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -320,10 +342,21 @@ export default function FineTuningPage() {
                       <td className="px-4 py-3">{job.version}</td>
                       <td className="px-4 py-3">{job.total_records_count ?? "-"}</td>
                       <td className="px-4 py-3">{job.train_records_count ?? "-"}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-right">
                         {job.status === "succeeded" ? (
                           <Button variant="outline" size="sm" onClick={() => openTestModal(job.version)}>
                             Test
+                          </Button>
+                        ) : (job.status === "queued" || job.status === "running") ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                            onClick={() => handleCancelJob(job.version)}
+                            disabled={cancellingJob}
+                          >
+                            <CircleStop className="h-4 w-4 mr-1" />
+                            Stop
                           </Button>
                         ) : (
                           <span className="text-xs text-gray-400">Unavailable</span>
@@ -489,6 +522,36 @@ export default function FineTuningPage() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Fine-Tuning Job</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel the fine-tuning job {cancellingJobVersion}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCancelModalOpen(false)}
+              disabled={cancellingJob}
+            >
+              No, keep it
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmCancelJob}
+              disabled={cancellingJob}
+            >
+              {cancellingJob && <LoadingSpinner size="sm" />}
+              <span className={cancellingJob ? "ml-2" : ""}>
+                {cancellingJob ? "Cancelling..." : "Yes, cancel job"}
+              </span>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>
