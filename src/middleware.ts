@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
   // Check if current path is protected
   const isProtectedRoute = ROUTES.PROTECTED.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
   const isPublicRoute = ROUTES.PUBLIC.includes(pathname as any);
 
@@ -52,7 +52,9 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && accessToken) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
-    return NextResponse.redirect(new URL(isAdminPath ? "/admin" : "/", request.url));
+    return NextResponse.redirect(
+      new URL(isAdminPath ? "/admin" : "/", request.url),
+    );
   }
 
   return NextResponse.next();

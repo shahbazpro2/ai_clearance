@@ -22,12 +22,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <div className="min-h-screen bg-background">
-          {children}
+          <MeWrapper>{children}</MeWrapper>
         </div>
         <AxiosWrapper />
         <FeedbackWrapper />
         <TokenWrapper />
-        <MeWrapper />
       </body>
     </html>
   );
