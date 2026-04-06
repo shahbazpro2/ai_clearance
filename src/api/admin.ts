@@ -251,6 +251,15 @@ export const refreshFineTuningRunningJobsApi = () => {
   return universalApi("/admin/model-fine-tuning/running-jobs/refresh", "get");
 };
 
+// 9.10 GET Dataset Stats
+export const fetchFineTuningDatasetStatsApi = (jobVersion: string) => {
+  const params = new URLSearchParams({ job_version: jobVersion });
+  return universalApi(
+    `/admin/model-fine-tuning/dataset-stats?${params.toString()}`,
+    "get",
+  );
+};
+
 // 9.5 Fine-Tuned Model Testing
 export const testFineTunedModelApi = (payload: FormData) => {
   return responseApi("/admin/model-fine-tuning/classify", "post", payload);
