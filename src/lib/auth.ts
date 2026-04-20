@@ -42,6 +42,26 @@ export function setIsActive(isActive: boolean): void {
   document.cookie = `is_active=${isActive}; path=/;`; // 30 days
 }
 
+export function setAuthRole(role: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `auth_role=${encodeURIComponent(role)}; path=/;`;
+}
+
+export function getAuthRole(): string | null {
+  if (typeof document === "undefined") return null;
+  const cookies = document.cookie.split(";");
+  const roleCookie = cookies.find((cookie) =>
+    cookie.trim().startsWith("auth_role="),
+  );
+  return roleCookie ? decodeURIComponent(roleCookie.split("=")[1]) : null;
+}
+
+export function clearAuthRole(): void {
+  if (typeof document === "undefined") return;
+  document.cookie =
+    "auth_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+}
+
 // Get is_active status from cookies
 export function getIsActive(): boolean {
   if (typeof document === "undefined") return false;
@@ -62,6 +82,7 @@ export function clearAuthTokens(): void {
     "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
   document.cookie =
     "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+  clearAuthRole();
 }
 
 // Check if user is authenticated

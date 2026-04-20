@@ -6,6 +6,9 @@ import { ROUTES } from "./lib/routes";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+  const roleQuery = request.nextUrl.searchParams.get("role");
+  const isAdminRoleQuery = roleQuery === "admin" || roleQuery === "super_admin";
+  const isAdminContext = isAdminPath || isAdminRoleQuery;
 
   // Debug logging
   console.log("🔍 Middleware executing for:", pathname);
@@ -53,7 +56,7 @@ export async function middleware(request: NextRequest) {
   if (isAuthRoute && accessToken) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
     return NextResponse.redirect(
-      new URL(isAdminPath ? "/admin" : "/", request.url),
+      new URL(isAdminContext ? "/admin" : "/", request.url),
     );
   }
 

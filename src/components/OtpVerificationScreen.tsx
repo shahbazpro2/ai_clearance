@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { Axios, useApi } from "use-hook-api";
 import * as z from "zod";
 import { verifySignupOtpApi, resendOtpApi } from "@/api/auth";
-import { setAccessToken, setRefreshToken } from "@/lib/auth";
+import { setAccessToken, setAuthRole, setRefreshToken } from "@/lib/auth";
 
 // Define the OTP form schema using Zod
 const otpSchema = z.object({
@@ -152,6 +152,7 @@ export function OtpVerificationScreen({
             if (data?.access_token) {
                 setAccessToken(data.access_token);
                 setRefreshToken(data.refresh_token);
+                if (role) setAuthRole(role);
                 Axios.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
                 window.location.href = ["admin", "super_admin"].includes(role || "") ? "/admin" : "/";
             } else

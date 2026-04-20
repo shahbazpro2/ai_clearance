@@ -21,7 +21,8 @@ import {
 export function ForgotPasswordScreen() {
     const router = useRouter();
     const searchParams = useSearchParams()
-    const isAdmin = searchParams.get("admin") === "true"
+    const roleParam = searchParams.get("role") || (searchParams.get("admin") === "true" ? "admin" : "");
+    const role = roleParam === "admin" || roleParam === "retailer" ? roleParam : "";
     const [step, setStep] = useState<"email" | "otp" | "success">("email");
     const [email, setEmail] = useState("");
 
@@ -47,7 +48,7 @@ export function ForgotPasswordScreen() {
 
     const onSubmitEmail = async (data: ForgotPasswordFormData) => {
         setEmail(data.email);
-        callForgotPasswordApi(forgotPasswordApi(data), () => {
+        callForgotPasswordApi(forgotPasswordApi({ ...data, ...(role ? { role } : {}) }), () => {
             setStep("otp");
         });
     };
@@ -58,10 +59,10 @@ export function ForgotPasswordScreen() {
             email,
             otp: data.otp,
             new_password: data.password,
-            ...(isAdmin ? { role: 'admin' } : {})
+            ...(role ? { role } : {})
         }), () => {
             setStep("success");
-            router.push(isAdmin ? "/admin/login" : "/login");
+            router.push(role ? `/login?role=${encodeURIComponent(role)}` : "/login");
         });
     };
 
@@ -70,7 +71,7 @@ export function ForgotPasswordScreen() {
     };
 
     const handleResendOtp = () => {
-        callForgotPasswordApi(forgotPasswordApi({ email, ...(isAdmin ? { role: 'admin' } : {}) }), () => {
+        callForgotPasswordApi(forgotPasswordApi({ email, ...(role ? { role } : {}) }), () => {
             // OTP resent successfully
         });
     };

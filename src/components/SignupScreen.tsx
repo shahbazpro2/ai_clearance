@@ -35,7 +35,7 @@ export function SignupScreen({
     title,
     loginPath,
 }: {
-    role?: "admin" | "user";
+    role?: "admin" | "user" | "retailer";
     title?: string;
     loginPath?: string;
 }) {
@@ -60,7 +60,7 @@ export function SignupScreen({
 
     const handleLogin = () => {
         const targetLoginPath =
-            loginPath || (role === "admin" ? "/admin/login" : "/login");
+            loginPath || (role && role !== "user" ? `/login?role=${encodeURIComponent(role)}` : "/login");
         router.push(targetLoginPath);
     };
 

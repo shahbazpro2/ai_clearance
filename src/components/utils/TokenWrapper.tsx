@@ -1,5 +1,5 @@
 'use client'
-import { clearAuthTokens } from '@/lib/auth';
+import { clearAuthTokens, getAuthRole } from '@/lib/auth';
 import { jwtDecode } from 'jwt-decode';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef } from 'react';
@@ -57,6 +57,7 @@ const TokenWrapper: React.FC = () => {
                             {
                                 "grant_type": "refresh_token",
                                 refresh_token: refresh,
+                                ...(getAuthRole() === "retailer" ? { role: "retailer" } : {}),
                             },
                         )();
 
