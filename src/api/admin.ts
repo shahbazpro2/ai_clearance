@@ -269,3 +269,56 @@ export const testFineTunedModelApi = (payload: FormData) => {
 export const cancelFineTuningJobApi = (payload: { job_version: string }) => {
   return responseApi("/admin/model-fine-tuning/cancel", "post", payload);
 };
+
+// 10.1 GET Retailer-Account-Users
+export const fetchRetailerAccountsUsersApi = (params?: {
+  status?: "active" | "inactive";
+  user_status?: "active" | "inactive";
+  page?: number;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) {
+    queryParams.append("status", params.status);
+  }
+  if (params?.user_status) {
+    queryParams.append("user_status", params.user_status);
+  }
+  if (params?.page != null) {
+    queryParams.append("page", String(params.page));
+  }
+  if (params?.per_page != null) {
+    queryParams.append("per_page", String(params.per_page));
+  }
+  const queryString = queryParams.toString();
+  const url = `/admin/retailer-accounts-users${queryString ? `?${queryString}` : ""}`;
+  return universalApi(url, "get");
+};
+
+// 10.2 Update Retailer-Account-Users Status
+export const updateRetailerAccountStatusApi = (payload: {
+  account_id: string;
+  account_status?: "active" | "inactive";
+  user?: {
+    contact_id: string;
+    status: "active" | "inactive";
+  };
+}) => {
+  return responseApi("/admin/retailer-accounts-users/status/update", "patch", payload);
+};
+
+// 10.3 Sync All Salesforce Retailer Accounts Users
+export const syncAllSalesforceRetailingApi = () => {
+  return responseApi("/admin/sync-salesforce", "post", {});
+};
+
+// 10.4 Sync Specific Salesforce Retailer Accounts Users
+export const syncSpecificSalesforceRetailerApi = (payload: { account_id: string }) => {
+  return responseApi("/admin/sync-salesforce/account-users", "post", payload);
+};
+
+// 10.5 GET Sync Salesforce Job Stats
+export const fetchSyncSalesforceJobStatsApi = (sync_job_id: string) => {
+  const params = new URLSearchParams({ sync_job_id });
+  return universalApi(`/admin/sync-salesforce/job-stats?${params.toString()}`, "get");
+};

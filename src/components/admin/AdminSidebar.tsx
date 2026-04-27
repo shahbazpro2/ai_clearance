@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, ClipboardList, BookOpen, Settings, ChevronLeft, ChevronRight, LogOut, Users, Bot } from "lucide-react";
+import { LayoutDashboard, FileText, ClipboardList, BookOpen, Settings, ChevronLeft, ChevronRight, LogOut, Users, Bot, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { sidebarCollapsedAtom, mobileSidebarOpenAtom } from "@/store/ui";
@@ -108,6 +108,16 @@ export function AdminSidebar() {
     const userData = useMe();
     const items = [
         ...baseSidebarItems,
+        ...(userData?.role === "admin" || userData?.role === "super_admin"
+            ? [
+                {
+                    title: "Retailers Management",
+                    href: "/admin/retailers",
+                    icon: Store,
+                    exact: false,
+                },
+            ]
+            : []),
         ...(userData?.role === "super_admin"
             ? [
                 {
