@@ -75,11 +75,16 @@ export default function RetailersManagementPage() {
   });
 
   const getAccountsRef = useRef(getAccounts);
+  const getSyncStatsRef = useRef(getSyncStats);
   const shouldFetchRef = useRef(true);
 
   useEffect(() => {
     getAccountsRef.current = getAccounts;
   }, [getAccounts]);
+
+  useEffect(() => {
+    getSyncStatsRef.current = getSyncStats;
+  }, [getSyncStats]);
 
   useEffect(() => {
     if (!shouldFetchRef.current) return;
@@ -114,15 +119,17 @@ export default function RetailersManagementPage() {
 
   const handleSyncAll = () => {
     syncAll(syncAllSalesforceRetailingApi(), (response: any) => {
-      if (response?.sync_job_id) {
-        setSyncJobId(response.sync_job_id);
+      const jobId = response?.sync_job_id || response?.data?.sync_job_id;
+      if (jobId) {
+        setSyncJobId(jobId);
+        getSyncStatsRef.current(fetchSyncSalesforceJobStatsApi(jobId));
       }
     });
   };
 
   const handleRefreshSyncStatus = () => {
     if (syncJobId) {
-      getSyncStats(fetchSyncSalesforceJobStatsApi(syncJobId));
+      getSyncStatsRef.current(fetchSyncSalesforceJobStatsApi(syncJobId));
     }
   };
 
