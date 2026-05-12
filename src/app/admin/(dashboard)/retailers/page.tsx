@@ -26,11 +26,31 @@ interface RetailerUser {
   updated_at: string;
 }
 
+interface Channel {
+  channel_id: string;
+  name: string;
+  status: "active" | "inactive";
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Audience {
+  audience_id: string;
+  name: string;
+  status: "active" | "inactive";
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+  channels: Channel[];
+}
+
 interface RetailerAccount {
   account_id: string;
   account_name: string;
   status: RetailerStatus;
   users: RetailerUser[];
+  audiences: Audience[];
   created_at: string;
   updated_at: string;
 }
@@ -38,12 +58,18 @@ interface RetailerAccount {
 interface SyncJobStats {
   sync_job_id: string;
   status: "pending" | "in_progress" | "completed" | "failed";
-  accounts_fetched: number;
+  total_accounts_fetched: number;
   accounts_created: number;
   accounts_deactivated: number;
-  users_fetched: number;
+  total_users_fetched: number;
   users_created: number;
   users_deactivated: number;
+  audiences_created: number;
+  audiences_deactivated: number;
+  total_audiences_fetched: number;
+  channels_created: number;
+  channels_deactivated: number;
+  total_channels_fetched: number;
   created_at: string;
   updated_at: string;
 }
@@ -68,7 +94,7 @@ export default function RetailersManagementPage() {
 
   const [getSyncStats, { loading: refreshingStats, data: syncStatsData }] = useApi({ cache: "sync-stats" });
 
-  const { page, currentPage, paginationBarProps } = usePagination({
+  const { page, paginationBarProps } = usePagination({
     pagination: fullRes?.pagination ?? null,
     loading,
     resetPageWhen: `${accountStatusFilter}-${userStatusFilter}`,
@@ -88,7 +114,7 @@ export default function RetailersManagementPage() {
 
   useEffect(() => {
     if (!shouldFetchRef.current) return;
-    
+
     const params: any = { page, per_page: DEFAULT_PER_PAGE };
     if (accountStatusFilter !== "all") {
       params.status = accountStatusFilter;
@@ -243,7 +269,7 @@ export default function RetailersManagementPage() {
                     <RetailerAccountRow
                       key={account.account_id}
                       account={account}
-                      onStatusUpdate={() => {
+                      onDeleted={() => {
                         getAccountsRef.current(
                           fetchRetailerAccountsUsersApi({
                             page,

@@ -2,7 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useApi } from "use-hook-api";
+import { syncSpecificSalesforceRetailerApi, deleteRetailerRecordApi } from "@/api/admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,11 +15,8 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useMemo } from "react";
-import { useApi } from "use-hook-api";
-import { updateRetailerAccountStatusApi, syncSpecificSalesforceRetailerApi } from "@/api/admin";
 import { RetailerUsersTable } from "./RetailerUsersTable";
+import { RetailerAudiencesTable } from "./RetailerAudiencesTable";
 
 type RetailerStatus = "active" | "inactive";
 
@@ -29,16 +30,34 @@ interface RetailerUser {
   updated_at: string;
 }
 
+interface Channel {
+  channel_id: string;
+  name: string;
+  status: "active" | "inactive";
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Audience {
+  audience_id: string;
+  name: string;
+  status: "active" | "inactive";
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+  channels: Channel[];
+}
+
 interface RetailerAccount {
   account_id: string;
   account_name: string;
   status: RetailerStatus;
   users: RetailerUser[];
+  audiences: Audience[];
   created_at: string;
   updated_at: string;
 }
-
-const STATUS_OPTIONS: RetailerStatus[] = ["active", "inactive"];
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -50,42 +69,24 @@ function formatDate(dateString: string) {
 
 export function RetailerAccountRow({
   account,
-  onStatusUpdate
+  onDeleted,
 }: {
   account: RetailerAccount;
-  onStatusUpdate?: () => void;
+  onDeleted: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [localStatus, setLocalStatus] = useState<RetailerStatus>(account.status);
-  const currentStatus = useMemo<RetailerStatus>(() => account.status, [account.status]);
-  const hasChange = localStatus !== currentStatus;
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState<"users" | "audiences">("users");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const [updateStatus, { loading: updating }] = useApi({
-    both: true,
-    resSuccessMsg: "Account status updated successfully"
-  });
   const [syncUsers, { loading: syncingUsers }] = useApi({
     both: true,
     resSuccessMsg: "Users synced successfully"
   });
 
-  const handleStatusChange = () => {
-    setShowConfirm(true);
-  };
-
-  const handleConfirm = () => {
-    setShowConfirm(false);
-    updateStatus(
-      updateRetailerAccountStatusApi({
-        account_id: account.account_id,
-        account_status: localStatus
-      }),
-      () => {
-        onStatusUpdate?.();
-      }
-    );
-  };
+  const [deleteAccount, { loading: deletingAccount }] = useApi({
+    both: true,
+    resSuccessMsg: "Account deleted successfully"
+  });
 
   const handleSyncUsers = () => {
     syncUsers(
@@ -93,10 +94,20 @@ export function RetailerAccountRow({
     );
   };
 
-  const getStatusColor = (status: RetailerStatus) => {
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(false);
+    deleteAccount(
+      deleteRetailerRecordApi({ account_id: account.account_id }),
+      () => {
+        onDeleted();
+      }
+    );
+  };
+
+  const getStatusBadgeColor = (status: RetailerStatus) => {
     return status === "active"
-      ? "text-green-600"
-      : "text-gray-600";
+      ? "bg-green-100 text-green-800"
+      : "bg-gray-100 text-gray-800";
   };
 
   return (
@@ -113,21 +124,9 @@ export function RetailerAccountRow({
         <td className="px-4 py-3 align-top text-sm">{account.account_id}</td>
         <td className="px-4 py-3 align-top font-medium">{account.account_name}</td>
         <td className="px-4 py-3 align-top">
-          <Select
-            value={localStatus}
-            onValueChange={(value) => setLocalStatus(value as RetailerStatus)}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Badge className={getStatusBadgeColor(account.status)}>
+            {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
+          </Badge>
         </td>
         <td className="px-4 py-3 align-top text-sm text-gray-600">
           {formatDate(account.created_at)}
@@ -135,48 +134,83 @@ export function RetailerAccountRow({
         <td className="px-4 py-3 align-top text-sm text-gray-600">
           {formatDate(account.updated_at)}
         </td>
-        <td className="px-4 py-3 align-top">
+        <td className="px-4 py-3 align-top flex items-center gap-2">
           <Button
-            onClick={handleStatusChange}
-            disabled={!hasChange || updating}
+            onClick={handleSyncUsers}
+            disabled={syncingUsers}
             size="sm"
           >
-            {updating && <LoadingSpinner size="sm" />}
-            <span className={updating ? "ml-2" : ""}>
-              {updating ? "Updating..." : "Update"}
+            {syncingUsers && <LoadingSpinner size="sm" />}
+            <span className={syncingUsers ? "ml-2" : ""}>
+              {syncingUsers ? "Syncing..." : "Sync Users"}
             </span>
           </Button>
+          {account.status === "inactive" && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={deletingAccount}
+              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </td>
       </tr>
 
       {isExpanded && (
         <tr className="border-t bg-gray-50">
           <td colSpan={7} className="px-4 py-6">
-            <RetailerUsersTable
-              users={account.users}
-              accountId={account.account_id}
-              onSyncUsers={handleSyncUsers}
-              syncingUsers={syncingUsers}
-              onUserStatusUpdate={onStatusUpdate}
-            />
+            <div className="space-y-4">
+              <div className="flex gap-2 border-b">
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={`px-4 py-2 font-medium text-sm transition-colors ${
+                    activeTab === "users"
+                      ? "border-b-2 border-blue-600 text-blue-700"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Users ({account.users.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("audiences")}
+                  className={`px-4 py-2 font-medium text-sm transition-colors ${
+                    activeTab === "audiences"
+                      ? "border-b-2 border-blue-600 text-blue-700"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Audiences ({account.audiences.length})
+                </button>
+              </div>
+
+              {activeTab === "users" && (
+                <RetailerUsersTable
+                  users={account.users}
+                  onSyncUsers={handleSyncUsers}
+                  syncingUsers={syncingUsers}
+                  onDeleted={onDeleted}
+                />
+              )}
+
+              {activeTab === "audiences" && (
+                <RetailerAudiencesTable audiences={account.audiences} onDeleted={onDeleted} />
+              )}
+            </div>
           </td>
         </tr>
       )}
 
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
-          <AlertDialogTitle>Update Account Status</AlertDialogTitle>
+          <AlertDialogTitle>Delete Account</AlertDialogTitle>
           <AlertDialogDescription>
-            Do you want to update the status to{" "}
-            <span className={`font-semibold ${getStatusColor(localStatus)}`}>
-              {localStatus.charAt(0).toUpperCase() + localStatus.slice(1)}
-            </span>
-            ?
+            Are you sure you want to delete <span className="font-semibold">{account.account_name}</span>? This cannot be undone.
           </AlertDialogDescription>
           <div className="flex gap-3 justify-end mt-6">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>
-              Save
+            <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">
+              {deletingAccount ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

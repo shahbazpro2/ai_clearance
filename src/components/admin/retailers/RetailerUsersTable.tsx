@@ -2,7 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useApi } from "use-hook-api";
+import { deleteRetailerRecordApi } from "@/api/admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,9 +15,6 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState, useMemo } from "react";
-import { useApi } from "use-hook-api";
-import { updateRetailerAccountStatusApi } from "@/api/admin";
 
 type UserStatus = "active" | "inactive";
 
@@ -27,8 +28,6 @@ interface RetailerUser {
   updated_at: string;
 }
 
-const STATUS_OPTIONS: UserStatus[] = ["active", "inactive"];
-
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
@@ -37,109 +36,51 @@ function formatDate(dateString: string) {
   });
 }
 
+function getStatusBadgeColor(status: UserStatus) {
+  return status === "active"
+    ? "bg-green-100 text-green-800"
+    : "bg-gray-100 text-gray-800";
+}
+
 export function RetailerUsersTable({
   users,
-  accountId,
   onSyncUsers,
   syncingUsers,
-  onUserStatusUpdate
+  onDeleted,
 }: {
   users: RetailerUser[];
-  accountId: string;
   onSyncUsers: () => void;
   syncingUsers: boolean;
-  onUserStatusUpdate?: () => void;
+  onDeleted: () => void;
 }) {
-  const userStatusStates = useMemo(() => {
-    const states: Record<string, { current: UserStatus; local: UserStatus }> = {};
-    users.forEach((user) => {
-      states[user.contact_id] = {
-        current: user.status,
-        local: user.status,
-      };
-    });
-    return states;
-  }, [users]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ contact_id: string; name: string } | null>(null);
 
-  const [userStatusStatesLocal, setUserStatusStatesLocal] = useState(userStatusStates);
-  const [showConfirm, setShowConfirm] = useState<string | null>(null);
-  const [nextLocalStatus, setNextLocalStatus] = useState<UserStatus | null>(null);
-
-  const [updateStatus, { loading: updating }] = useApi({
+  const [deleteUser, { loading: deletingUser }] = useApi({
     both: true,
-    resSuccessMsg: "User status updated successfully"
+    resSuccessMsg: "User deleted successfully"
   });
 
-  const getHasChange = (contactId: string) => {
-    const state = userStatusStatesLocal[contactId];
-    return state && state.local !== state.current;
-  };
-
-  const handleUserStatusChange = (contactId: string, newStatus: UserStatus) => {
-    setUserStatusStatesLocal((prev) => ({
-      ...prev,
-      [contactId]: {
-        ...prev[contactId],
-        local: newStatus,
-      },
-    }));
-  };
-
-  const handleUserStatusConfirm = (contactId: string) => {
-    setShowConfirm(contactId);
-  };
-
-  const handleConfirm = () => {
-    if (!showConfirm || !nextLocalStatus) return;
-
-    setShowConfirm(null);
-    updateStatus(
-      updateRetailerAccountStatusApi({
-        account_id: accountId,
-        user: {
-          contact_id: showConfirm,
-          status: nextLocalStatus,
-        },
-      }),
+  const handleDeleteUser = () => {
+    if (!showDeleteConfirm) return;
+    deleteUser(
+      deleteRetailerRecordApi({ contact_id: showDeleteConfirm.contact_id }),
       () => {
-        onUserStatusUpdate?.();
-        setUserStatusStatesLocal((prev) => ({
-          ...prev,
-          [showConfirm]: {
-            ...prev[showConfirm],
-            current: nextLocalStatus,
-          },
-        }));
+        setShowDeleteConfirm(null);
+        onDeleted();
       }
     );
   };
 
   const getUserRow = (user: RetailerUser) => {
-    const state = userStatusStatesLocal[user.contact_id];
-    const hasChange = state && state.local !== state.current;
-    const currentStatus = state?.current || user.status;
-
     return (
       <tr key={user.contact_id} className="border-b last:border-b-0 hover:bg-white/50">
         <td className="px-4 py-3 text-sm text-gray-500">{user.contact_id}</td>
         <td className="px-4 py-3 font-medium">{user.name}</td>
         <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
         <td className="px-4 py-3">
-          <Select
-            value={state?.local || user.status}
-            onValueChange={(value) => handleUserStatusChange(user.contact_id, value as UserStatus)}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Badge className={getStatusBadgeColor(user.status)}>
+            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+          </Badge>
         </td>
         <td className="px-4 py-3 text-sm text-gray-600">
           {formatDate(user.created_at)}
@@ -148,19 +89,15 @@ export function RetailerUsersTable({
           {formatDate(user.updated_at)}
         </td>
         <td className="px-4 py-3">
-          <Button
-            onClick={() => {
-              setNextLocalStatus(state?.local || user.status);
-              handleUserStatusConfirm(user.contact_id);
-            }}
-            disabled={!hasChange || updating}
-            size="sm"
-          >
-            {updating && <LoadingSpinner size="sm" />}
-            <span className={updating ? "ml-2" : ""}>
-              {updating ? "Updating..." : "Update"}
-            </span>
-          </Button>
+          {user.status === "inactive" && (
+            <button
+              onClick={() => setShowDeleteConfirm({ contact_id: user.contact_id, name: user.name })}
+              disabled={deletingUser}
+              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </td>
       </tr>
     );
@@ -208,20 +145,16 @@ export function RetailerUsersTable({
         </div>
       )}
 
-      <AlertDialog open={showConfirm !== null} onOpenChange={(open) => !open && setShowConfirm(null)}>
+      <AlertDialog open={showDeleteConfirm !== null} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Update User Status</AlertDialogTitle>
+          <AlertDialogTitle>Delete User</AlertDialogTitle>
           <AlertDialogDescription>
-            Do you want to update the status to{" "}
-            <span className="font-semibold">
-              {nextLocalStatus ? nextLocalStatus.charAt(0).toUpperCase() + nextLocalStatus.slice(1) : ""}
-            </span>
-            ?
+            Are you sure you want to delete <span className="font-semibold">{showDeleteConfirm?.name}</span>? This cannot be undone.
           </AlertDialogDescription>
           <div className="flex gap-3 justify-end mt-6">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>
-              Save
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700">
+              {deletingUser ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

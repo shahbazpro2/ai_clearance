@@ -291,7 +291,7 @@ export const fetchRetailerAccountsUsersApi = (params?: {
     queryParams.append("per_page", String(params.per_page));
   }
   const queryString = queryParams.toString();
-  const url = `/admin/retailer-accounts-users${queryString ? `?${queryString}` : ""}`;
+  const url = `/admin/retailers-info${queryString ? `?${queryString}` : ""}`;
   return universalApi(url, "get");
 };
 
@@ -304,7 +304,7 @@ export const updateRetailerAccountStatusApi = (payload: {
     status: "active" | "inactive";
   };
 }) => {
-  return responseApi("/admin/retailer-accounts-users/status/update", "patch", payload);
+  return responseApi("/admin/retailers-info/status/update", "patch", payload);
 };
 
 // 10.3 Sync All Salesforce Retailer Accounts Users
@@ -313,12 +313,29 @@ export const syncAllSalesforceRetailingApi = () => {
 };
 
 // 10.4 Sync Specific Salesforce Retailer Accounts Users
-export const syncSpecificSalesforceRetailerApi = (payload: { account_id: string }) => {
+export const syncSpecificSalesforceRetailerApi = (payload: {
+  account_id: string;
+}) => {
   return responseApi("/admin/sync-salesforce/account-users", "post", payload);
 };
 
 // 10.5 GET Sync Salesforce Job Stats
 export const fetchSyncSalesforceJobStatsApi = (sync_job_id: string) => {
   const params = new URLSearchParams({ sync_job_id });
-  return universalApi(`/admin/sync-salesforce/job-stats?${params.toString()}`, "get");
+  return universalApi(
+    `/admin/sync-salesforce/job-stats?${params.toString()}`,
+    "get",
+  );
+};
+
+// 10.6 DELETE Sync Salesforce Record
+export const deleteRetailerRecordApi = (
+  params:
+    | { account_id: string }
+    | { contact_id: string }
+    | { audience_id: string }
+    | { channel_id: string }
+) => {
+  const query = new URLSearchParams(params as Record<string, string>).toString();
+  return responseApi(`/admin/retailer-account?${query}`, "delete", {});
 };

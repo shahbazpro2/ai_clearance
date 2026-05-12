@@ -10,12 +10,18 @@ import { CheckCircle2, XCircle, Clock, RotateCw } from "lucide-react";
 interface SyncJobStats {
   sync_job_id: string;
   status: "pending" | "in_progress" | "completed" | "failed";
-  accounts_fetched: number;
+  total_accounts_fetched: number;
   accounts_created: number;
   accounts_deactivated: number;
-  users_fetched: number;
+  total_users_fetched: number;
   users_created: number;
   users_deactivated: number;
+  audiences_created: number;
+  audiences_deactivated: number;
+  total_audiences_fetched: number;
+  channels_created: number;
+  channels_deactivated: number;
+  total_channels_fetched: number;
   created_at: string;
   updated_at: string;
 }
@@ -115,7 +121,7 @@ export function SyncStatusDashboard({
                 Accounts Fetched
               </p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {stats.accounts_fetched}
+                {stats.total_accounts_fetched}
               </p>
             </div>
 
@@ -142,7 +148,7 @@ export function SyncStatusDashboard({
                 Users Fetched
               </p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {stats.users_fetched}
+                {stats.total_users_fetched}
               </p>
             </div>
 
@@ -161,6 +167,60 @@ export function SyncStatusDashboard({
               </p>
               <p className="text-2xl font-bold text-orange-900 mt-1">
                 {stats.users_deactivated}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                Audiences Fetched
+              </p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {stats.total_audiences_fetched}
+              </p>
+            </div>
+
+            <div className="bg-purple-50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">
+                Audiences Created
+              </p>
+              <p className="text-2xl font-bold text-purple-900 mt-1">
+                {stats.audiences_created}
+              </p>
+            </div>
+
+            <div className="bg-pink-50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-pink-600 uppercase tracking-wide">
+                Audiences Deactivated
+              </p>
+              <p className="text-2xl font-bold text-pink-900 mt-1">
+                {stats.audiences_deactivated}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                Channels Fetched
+              </p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {stats.total_channels_fetched}
+              </p>
+            </div>
+
+            <div className="bg-indigo-50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">
+                Channels Created
+              </p>
+              <p className="text-2xl font-bold text-indigo-900 mt-1">
+                {stats.channels_created}
+              </p>
+            </div>
+
+            <div className="bg-rose-50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-rose-600 uppercase tracking-wide">
+                Channels Deactivated
+              </p>
+              <p className="text-2xl font-bold text-rose-900 mt-1">
+                {stats.channels_deactivated}
               </p>
             </div>
           </div>
