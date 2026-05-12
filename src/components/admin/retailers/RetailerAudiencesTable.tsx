@@ -92,7 +92,6 @@ export function RetailerAudiencesTable({
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-gray-900">Audiences ({audiences.length})</h3>
 
       <div className="overflow-x-auto border rounded-lg bg-white">
         <table className="w-full text-sm">
@@ -166,7 +165,7 @@ export function RetailerAudiencesTable({
         <div className="mt-4 pl-4 border-l-2 border-blue-500">
           {audiences.find((a) => a.audience_id === expandedAudienceId)?.channels &&
             audiences.find((a) => a.audience_id === expandedAudienceId)!.channels.length >
-              0 ? (
+            0 ? (
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-900">
                 Channels ({audiences.find((a) => a.audience_id === expandedAudienceId)?.channels.length})

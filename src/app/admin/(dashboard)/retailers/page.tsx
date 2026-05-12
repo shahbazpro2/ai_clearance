@@ -171,7 +171,7 @@ export default function RetailersManagementPage() {
           >
             {syncing && <LoadingSpinner size="sm" />}
             <span className={syncing ? "ml-2" : ""}>
-              {syncing ? "Syncing..." : "Sync Salesforce Retailers and Users"}
+              {syncing ? "Syncing..." : "Sync With Salesforce"}
             </span>
           </Button>
         </div>
@@ -179,7 +179,6 @@ export default function RetailersManagementPage() {
         <div className="mb-8">
           <SyncStatusDashboard
             stats={syncStats}
-            syncJobId={syncJobId}
             onRefresh={handleRefreshSyncStatus}
             isRefreshing={refreshingStats}
           />

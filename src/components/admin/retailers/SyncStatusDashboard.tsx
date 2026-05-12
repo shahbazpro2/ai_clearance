@@ -3,7 +3,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2, XCircle, Clock, RotateCw } from "lucide-react";
 
@@ -49,14 +48,62 @@ function getStatusColor(status: SyncJobStats["status"]) {
   return "bg-gray-100 text-gray-800";
 }
 
+type ColorType = "fetched" | "created" | "inactive";
+
+const colorMap: Record<ColorType, { bg: string; border: string; text: string; icon: string }> = {
+  fetched: {
+    bg: "bg-slate-50",
+    border: "border-slate-200",
+    text: "text-slate-700",
+    icon: "text-slate-500",
+  },
+  created: {
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+    text: "text-emerald-700",
+    icon: "text-emerald-500",
+  },
+  inactive: {
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    text: "text-rose-700",
+    icon: "text-rose-500",
+  },
+};
+
+function MetricGroup({
+  label,
+  metrics,
+}: {
+  label: string;
+  metrics: Array<{ label: string; value: number; color: ColorType }>;
+}) {
+  return (
+    <div className="border border-gray-200 rounded-lg bg-white p-3 space-y-2">
+      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider">{label}</h4>
+      <div className="space-y-1.5">
+        {metrics.map((metric) => {
+          const colors = colorMap[metric.color];
+          return (
+            <div key={metric.label} className={`${colors.bg} border ${colors.border} rounded-md px-3 py-2 transition-all hover:shadow-sm`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-gray-600">{metric.label}</span>
+                <span className={`text-lg font-bold ${colors.text}`}>{metric.value}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function SyncStatusDashboard({
   stats,
-  syncJobId,
   onRefresh,
   isRefreshing,
 }: {
   stats: SyncJobStats | null;
-  syncJobId: string | null;
   onRefresh: () => void;
   isRefreshing: boolean;
 }) {
@@ -75,155 +122,75 @@ export function SyncStatusDashboard({
   const isActive = stats.status === "pending" || stats.status === "in_progress" || stats.status === "failed";
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Latest Sync Status</h3>
-              <p className="text-sm text-gray-600">
-                Last updated: {formatDate(stats.updated_at)}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                {getStatusIcon(stats.status)}
-                <Badge className={getStatusColor(stats.status)}>
-                  {stats.status.charAt(0).toUpperCase() + stats.status.slice(1)}
-                </Badge>
+    <Card className="border-0 shadow-sm">
+      <CardContent className="pt-4 pb-4 px-5">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              {getStatusIcon(stats.status)}
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Sync Status</h3>
+                <p className="text-xs text-gray-500">Updated {formatDate(stats.updated_at)}</p>
               </div>
-              {isActive && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={onRefresh}
-                        disabled={isRefreshing}
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                      >
-                        <RotateCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="bg-gray-900 text-white text-xs">
-                      {isRefreshing ? "Refreshing..." : stats.status === "failed" ? "Retry sync status" : "Refresh sync status"}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
             </div>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Accounts Fetched
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {stats.total_accounts_fetched}
-              </p>
-            </div>
-
-            <div className="bg-blue-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-                Accounts Created
-              </p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">
-                {stats.accounts_created}
-              </p>
-            </div>
-
-            <div className="bg-red-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-red-600 uppercase tracking-wide">
-                Accounts Deactivated
-              </p>
-              <p className="text-2xl font-bold text-red-900 mt-1">
-                {stats.accounts_deactivated}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Users Fetched
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {stats.total_users_fetched}
-              </p>
-            </div>
-
-            <div className="bg-green-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-green-600 uppercase tracking-wide">
-                Users Created
-              </p>
-              <p className="text-2xl font-bold text-green-900 mt-1">
-                {stats.users_created}
-              </p>
-            </div>
-
-            <div className="bg-orange-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">
-                Users Deactivated
-              </p>
-              <p className="text-2xl font-bold text-orange-900 mt-1">
-                {stats.users_deactivated}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Audiences Fetched
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {stats.total_audiences_fetched}
-              </p>
-            </div>
-
-            <div className="bg-purple-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">
-                Audiences Created
-              </p>
-              <p className="text-2xl font-bold text-purple-900 mt-1">
-                {stats.audiences_created}
-              </p>
-            </div>
-
-            <div className="bg-pink-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-pink-600 uppercase tracking-wide">
-                Audiences Deactivated
-              </p>
-              <p className="text-2xl font-bold text-pink-900 mt-1">
-                {stats.audiences_deactivated}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Channels Fetched
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {stats.total_channels_fetched}
-              </p>
-            </div>
-
-            <div className="bg-indigo-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">
-                Channels Created
-              </p>
-              <p className="text-2xl font-bold text-indigo-900 mt-1">
-                {stats.channels_created}
-              </p>
-            </div>
-
-            <div className="bg-rose-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-rose-600 uppercase tracking-wide">
-                Channels Deactivated
-              </p>
-              <p className="text-2xl font-bold text-rose-900 mt-1">
-                {stats.channels_deactivated}
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            <Badge className={getStatusColor(stats.status)}>
+              {stats.status.charAt(0).toUpperCase() + stats.status.slice(1)}
+            </Badge>
+            {isActive && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onRefresh}
+                      disabled={isRefreshing}
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-gray-500 hover:text-blue-600"
+                    >
+                      <RotateCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="bg-gray-900 text-white text-xs">
+                    {isRefreshing ? "Refreshing..." : "Refresh"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          {/* Accounts */}
+          <MetricGroup label="Accounts" metrics={[
+            { label: "Fetched", value: stats.total_accounts_fetched, color: "fetched" },
+            { label: "Created", value: stats.accounts_created, color: "created" },
+            { label: "Inactive", value: stats.accounts_deactivated, color: "inactive" },
+          ]} />
+
+          {/* Users */}
+          <MetricGroup label="Users" metrics={[
+            { label: "Fetched", value: stats.total_users_fetched, color: "fetched" },
+            { label: "Created", value: stats.users_created, color: "created" },
+            { label: "Inactive", value: stats.users_deactivated, color: "inactive" },
+          ]} />
+
+          {/* Audiences */}
+          <MetricGroup label="Audiences" metrics={[
+            { label: "Fetched", value: stats.total_audiences_fetched, color: "fetched" },
+            { label: "Created", value: stats.audiences_created, color: "created" },
+            { label: "Inactive", value: stats.audiences_deactivated, color: "inactive" },
+          ]} />
+
+          {/* Channels */}
+          <MetricGroup label="Channels" metrics={[
+            { label: "Fetched", value: stats.total_channels_fetched, color: "fetched" },
+            { label: "Created", value: stats.channels_created, color: "created" },
+            { label: "Inactive", value: stats.channels_deactivated, color: "inactive" },
+          ]} />
         </div>
       </CardContent>
     </Card>

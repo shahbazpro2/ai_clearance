@@ -1,7 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -105,20 +103,6 @@ export function RetailerUsersTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">Users ({users.length})</h3>
-        <Button
-          onClick={onSyncUsers}
-          disabled={syncingUsers}
-          variant="outline"
-          size="sm"
-        >
-          {syncingUsers && <LoadingSpinner size="sm" />}
-          <span className={syncingUsers ? "ml-2" : ""}>
-            {syncingUsers ? "Syncing..." : "Sync Salesforce Retailer Users"}
-          </span>
-        </Button>
-      </div>
 
       {users.length === 0 ? (
         <div className="text-center py-6 text-sm text-gray-500">
