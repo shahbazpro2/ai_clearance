@@ -142,7 +142,7 @@ export function RetailerAccountRow({
           >
             {syncingUsers && <LoadingSpinner size="sm" />}
             <span className={syncingUsers ? "ml-2" : ""}>
-              {syncingUsers ? "Syncing..." : "Sync Users"}
+              {syncingUsers ? "Syncing..." : "Sync Record"}
             </span>
           </Button>
           {account.status === "inactive" && (
@@ -164,21 +164,19 @@ export function RetailerAccountRow({
               <div className="flex gap-2 border-b">
                 <button
                   onClick={() => setActiveTab("users")}
-                  className={`px-4 py-2 font-medium text-sm transition-colors ${
-                    activeTab === "users"
+                  className={`px-4 py-2 font-medium text-sm transition-colors ${activeTab === "users"
                       ? "border-b-2 border-blue-600 text-blue-700"
                       : "text-gray-500 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   Users ({account.users.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("audiences")}
-                  className={`px-4 py-2 font-medium text-sm transition-colors ${
-                    activeTab === "audiences"
+                  className={`px-4 py-2 font-medium text-sm transition-colors ${activeTab === "audiences"
                       ? "border-b-2 border-blue-600 text-blue-700"
                       : "text-gray-500 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   Audiences ({account.audiences.length})
                 </button>
