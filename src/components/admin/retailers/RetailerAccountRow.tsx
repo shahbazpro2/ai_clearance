@@ -199,14 +199,14 @@ export function RetailerAccountRow({
         </tr>
       )}
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialog open={showDeleteConfirm} onOpenChange={(open) => { if (!open) setShowDeleteConfirm(false); }}>
         <AlertDialogContent>
           <AlertDialogTitle>Delete Account</AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to delete <span className="font-semibold">{account.account_name}</span>? This cannot be undone.
           </AlertDialogDescription>
           <div className="flex gap-3 justify-end mt-6">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">
               {deletingAccount ? "Deleting..." : "Delete"}
             </AlertDialogAction>

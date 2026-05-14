@@ -129,14 +129,14 @@ export function RetailerUsersTable({
         </div>
       )}
 
-      <AlertDialog open={showDeleteConfirm !== null} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
+      <AlertDialog open={showDeleteConfirm !== null} onOpenChange={(open) => { if (!open) setShowDeleteConfirm(null); }}>
         <AlertDialogContent>
           <AlertDialogTitle>Delete User</AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to delete <span className="font-semibold">{showDeleteConfirm?.name}</span>? This cannot be undone.
           </AlertDialogDescription>
           <div className="flex gap-3 justify-end mt-6">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700">
               {deletingUser ? "Deleting..." : "Delete"}
             </AlertDialogAction>
