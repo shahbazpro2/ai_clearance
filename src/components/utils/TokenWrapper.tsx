@@ -73,6 +73,8 @@ const TokenWrapper: React.FC = () => {
                             clearAuthTokens();
                             if (window.location.href.includes('admin')) {
                                 window.location.href = '/admin/login';
+                            } else if (window.location.href.includes('retailer')) {
+                                window.location.href = '/login?role=retailer';
                             } else {
                                 window.location.href = '/login';
                             }

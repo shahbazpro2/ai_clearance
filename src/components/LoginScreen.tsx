@@ -58,7 +58,9 @@ export function LoginScreen({
         const requestedRedirect = searchParams.get("redirect");
         if (requestedRedirect) return requestedRedirect;
         if (defaultRedirectTo) return defaultRedirectTo;
-        return role === "admin" ? "/admin" : "/";
+        if (role === "admin") return "/admin";
+        if (role === "retailer") return "/retailer/block-categories";
+        return "/";
     }, [defaultRedirectTo, role, searchParams]);
 
     const apiRole = role === "user" ? undefined : role;

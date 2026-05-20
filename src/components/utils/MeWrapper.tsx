@@ -21,6 +21,8 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
         if (!meData?.role) return;
         if (['admin', 'super_admin'].includes(meData.role)) {
             router.replace('/admin');
+        } else if (meData.role === 'retailer') {
+            router.replace('/retailer/block-categories');
         }
     }, [meData, pathname, router]);
 
@@ -56,7 +58,7 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
     const shouldRedirectAdminFromRoot =
         pathname === '/' &&
         !!meData?.role &&
-        ['admin', 'super_admin'].includes(meData.role);
+        ['admin', 'super_admin', 'retailer'].includes(meData.role);
 
     useEffect(() => {
         if (!shouldGate || meData) {

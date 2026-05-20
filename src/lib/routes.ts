@@ -15,6 +15,11 @@ export const ROUTES = {
     "/admin/users",
   ],
 
+  RETAILER: [
+    "/retailer",
+    "/retailer/block-categories",
+  ],
+
   // Routes that should redirect authenticated users to dashboard
   AUTH: [
     "/login",

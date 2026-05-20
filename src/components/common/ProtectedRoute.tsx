@@ -20,7 +20,7 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
     useEffect(() => {
         const checkAuth = () => {
             const authenticated = isAuthenticated();
-            
+
             if (!authenticated) {
                 // Get current path for redirect
                 const currentPath = window.location.pathname;
@@ -38,10 +38,17 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                 }
 
                 const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-                
+
                 // Check role
                 if (!userData.role || !allowedRoles.includes(userData.role)) {
-                    router.push("/"); // Redirect to home if not authorized
+                    // Redirect to appropriate home based on role
+                    if (['admin', 'super_admin'].includes(userData.role)) {
+                        router.push("/admin");
+                    } else if (userData.role === 'retailer') {
+                        router.push("/retailer");
+                    } else {
+                        router.push("/");
+                    }
                     setIsAuth(false);
                 } else {
                     setIsAuth(true);
