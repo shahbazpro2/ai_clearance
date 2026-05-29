@@ -44,8 +44,8 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                     // Redirect to appropriate home based on role
                     if (['admin', 'super_admin'].includes(userData.role)) {
                         router.push("/admin");
-                    } else if (userData.role === 'retailer') {
-                        router.push("/retailer");
+                    } else if (['retailer', 'setup_user'].includes(userData.role)) {
+                        router.push("/retailer/block-categories");
                     } else {
                         router.push("/");
                     }

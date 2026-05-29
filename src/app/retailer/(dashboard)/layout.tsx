@@ -7,7 +7,7 @@ export default function RetailerDashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <ProtectedRoute requiredRole={["retailer"]}>
+        <ProtectedRoute requiredRole={["retailer", "setup_user"]}>
             <RetailerLayoutWrapper>{children}</RetailerLayoutWrapper>
         </ProtectedRoute>
     );

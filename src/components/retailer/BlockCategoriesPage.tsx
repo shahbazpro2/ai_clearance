@@ -10,13 +10,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ChevronDown, ChevronUp, Search, Eye } from "lucide-react";
+import { SampleViewerDialog } from "@/components/admin/manualReviews/SampleViewerDialog";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronDown, ChevronUp, Search, Images } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,11 +31,6 @@ interface Category {
     id: string;
     category: string;
     history: CategoryHistory[];
-}
-
-interface PendingChange {
-    id: string;
-    is_blocked: boolean;
 }
 
 interface InsertImage {
@@ -66,7 +62,6 @@ function formatDate(dateString: string) {
 
 function getCurrentStatus(category: Category): boolean {
     if (!category.history || category.history.length === 0) return false;
-    // Most recent entry first (sort by changed_at desc)
     const sorted = [...category.history].sort(
         (a, b) => new Date(b.changed_at).getTime() - new Date(a.changed_at).getTime()
     );
@@ -91,6 +86,7 @@ function SampleInsertsModal({
     const [images, setImages] = useState<InsertImage[]>([]);
     const [pagination, setPagination] = useState<InsertImagePagination | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const LIMIT = 10;
 
     const [callFetchImages, { loading: loadingImages }] = useApi({ errMsg: true });
@@ -125,79 +121,89 @@ function SampleInsertsModal({
         }
     }, [open, categoryId, fetchImages]);
 
-    const handleLoadMore = () => {
-        fetchImages(currentPage + 1);
-    };
-
     return (
-        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Images className="h-5 w-5 text-primary" />
-                        Sample Inserts — {categoryName}
-                    </DialogTitle>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+                <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Sample Inserts — {categoryName}</DialogTitle>
+                    </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto">
-                    {loadingImages && images.length === 0 ? (
-                        <div className="flex items-center justify-center py-16">
-                            <LoadingSpinner size="lg" />
-                        </div>
-                    ) : images.length === 0 ? (
-                        <div className="text-center py-16 text-gray-500 text-sm">
-                            No sample inserts available for this category.
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-1">
-                            {images.map((img, idx) => (
-                                <div
-                                    key={idx}
-                                    className="aspect-[3/4] rounded-lg overflow-hidden border bg-gray-50"
+                    <div className="flex-1 overflow-y-auto">
+                        {loadingImages && images.length === 0 ? (
+                            <div className="flex items-center justify-center py-16">
+                                <LoadingSpinner size="lg" />
+                            </div>
+                        ) : images.length === 0 ? (
+                            <div className="text-center py-16 text-gray-500 text-sm">
+                                No sample inserts available for this category.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-1">
+                                {images.map((img, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative group aspect-[3/4] rounded-lg overflow-hidden border bg-gray-50 cursor-pointer"
+                                        onClick={() => setViewerUrl(img.image_url)}
+                                    >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={img.image_url}
+                                            alt={`Sample insert ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        {/* Hover overlay */}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <div className="flex items-center gap-1.5 text-white text-sm font-medium">
+                                                <Eye className="h-4 w-4" />
+                                                View
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {pagination?.has_next && (
+                            <div className="flex justify-center pt-4 pb-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => fetchImages(currentPage + 1)}
+                                    disabled={loadingImages}
                                 >
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                        src={img.image_url}
-                                        alt={`Sample insert ${idx + 1}`}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                                    {loadingImages ? (
+                                        <>
+                                            <LoadingSpinner size="sm" className="mr-2" />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        "Load More"
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+                    </div>
 
-                    {pagination?.has_next && (
-                        <div className="flex justify-center pt-4 pb-2">
-                            <Button
-                                variant="outline"
-                                onClick={handleLoadMore}
-                                disabled={loadingImages}
-                            >
-                                {loadingImages ? (
-                                    <>
-                                        <LoadingSpinner size="sm" className="mr-2" />
-                                        Loading...
-                                    </>
-                                ) : (
-                                    "Load More"
-                                )}
-                            </Button>
-                        </div>
+                    {pagination && (
+                        <p className="text-xs text-gray-400 text-center pt-2 border-t">
+                            Showing {images.length} of {pagination.total} images
+                        </p>
                     )}
-                </div>
+                </DialogContent>
+            </Dialog>
 
-                {pagination && (
-                    <p className="text-xs text-gray-400 text-center pt-2 border-t">
-                        Showing {images.length} of {pagination.total} images
-                    </p>
-                )}
-            </DialogContent>
-        </Dialog>
+            {/* Full-screen viewer — same as admin GCP file viewer */}
+            <SampleViewerDialog
+                open={!!viewerUrl}
+                url={viewerUrl}
+                onClose={() => setViewerUrl(null)}
+                mimeType="image/jpeg"
+            />
+        </>
     );
 }
 
 // ─── Category Row ─────────────────────────────────────────────────────────────
-
 interface CategoryRowProps {
     index: number;
     category: Category;
