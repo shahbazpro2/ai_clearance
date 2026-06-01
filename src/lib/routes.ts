@@ -18,6 +18,7 @@ export const ROUTES = {
   RETAILER: [
     "/retailer",
     "/retailer/block-categories",
+    "/retailer/audiences/setup/step",
   ],
 
   // Routes that should redirect authenticated users to dashboard

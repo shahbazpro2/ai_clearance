@@ -3,7 +3,6 @@
 import { fetchRetailerAccountsUsersApi, syncAllSalesforceRetailingApi, fetchSyncSalesforceJobStatsApi } from "@/api/admin";
 import { RetailerAccountRow } from "@/components/admin/retailers/RetailerAccountRow";
 import { SyncStatusDashboard } from "@/components/admin/retailers/SyncStatusDashboard";
-import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -160,8 +159,7 @@ export default function RetailersManagementPage() {
   };
 
   return (
-    <ProtectedRoute requiredRole={["admin", "super_admin"]}>
-      <main className="container mx-auto px-4 py-8">
+    <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <h1 className="text-3xl font-bold">Retailers Management</h1>
           <Button
@@ -286,6 +284,5 @@ export default function RetailersManagementPage() {
           <PaginationBar {...paginationBarProps} />
         </div>
       </main>
-    </ProtectedRoute>
   );
 }

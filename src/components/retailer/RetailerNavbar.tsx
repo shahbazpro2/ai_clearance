@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Tag, LogOut, Menu } from "lucide-react";
+import { Tag, LogOut, Menu, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useMe";
 import { logout } from "@/lib/auth";
@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useState } from "react";
 
-const navItems = [
+const baseNavItems = [
     {
         title: "Block Categories",
         href: "/retailer/block-categories",
@@ -26,11 +26,23 @@ const navItems = [
     },
 ] as const;
 
+const setupUserNavItems = [
+    {
+        title: "Account Setup",
+        href: "/retailer/audiences/setup/step",
+        icon: Settings,
+    },
+    ...baseNavItems,
+] as const;
+
 export function RetailerNavbar() {
     const pathname = usePathname();
     const router = useRouter();
     const userData = useMe();
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    // Show Account Setup only for setup_user role
+    const navItems = userData?.role === "setup_user" ? setupUserNavItems : baseNavItems;
 
     const getUserName = () => {
         if (!userData) return "User";
