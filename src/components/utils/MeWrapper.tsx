@@ -17,6 +17,7 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
     }, [meData]);
 
     useEffect(() => {
+        console.log('mmmaa', meData, meData?.role)
         if (pathname !== '/') return;
         if (!meData?.role) return;
         if (['admin', 'super_admin'].includes(meData.role)) {
@@ -24,7 +25,7 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
         } else if (meData.role === 'retailer') {
             router.replace('/retailer/block-categories');
         } else if (meData.role === 'setup_user') {
-            router.replace('/retailer/block-categories');
+            router.push('/retailer/audiences/setup/step');
         }
     }, [meData, pathname, router]);
 

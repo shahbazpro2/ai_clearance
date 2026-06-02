@@ -1,26 +1,15 @@
 "use client";
 
-import { use } from "react";
 import { useAtomValue } from "jotai";
 import { retailerSetupContextAtom } from "@/store/retailerSetup";
 import { useMe } from "@/hooks/useMe";
-import { FinancialContactStep3 } from "@/components/retailer/FinancialContactStep3";
 import { SetupProgressHeader } from "@/components/retailer/SetupProgressHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Lock } from "lucide-react";
 
-export default function Step3Page({
-    params,
-}: {
-    params: Promise<{ audienceId: string }>;
-}) {
-    const { audienceId } = use(params);
+export default function Step4PendingPage() {
     const ctx = useAtomValue(retailerSetupContextAtom);
     const userData = useMe();
-
-    // For now, show financial contact form for step 3
-    // The backend will return next_step to indicate if this is financial contact (3) or something else
-    const isFinancialContactStep = ctx?.currentStep === 3;
 
     // Restrict access for retailer role
     if (userData && userData.role === "retailer") {
@@ -47,15 +36,9 @@ export default function Step3Page({
         );
     }
 
-    // Show financial contact form for step 3
-    if (isFinancialContactStep) {
-        return <FinancialContactStep3 audienceId={audienceId} />;
-    }
-
-    // Fallback to pending page for other steps
     return (
         <>
-            <SetupProgressHeader stepOverride={3} />
+            <SetupProgressHeader stepOverride={4} />
             <main className="container mx-auto px-4 py-8">
                 <div className="max-w-2xl mx-auto">
                     <Card>
@@ -67,7 +50,7 @@ export default function Step3Page({
                                 Setup In Progress
                             </h2>
                             <p className="text-sm text-gray-600 max-w-xs">
-                                We're processing your audience setup. Please check back later.
+                                We're processing your audience setup. This step is coming soon. Please check back later.
                             </p>
                             <p className="text-xs text-gray-500 mt-2">
                                 Audience: <span className="font-medium">{ctx?.audienceName}</span>

@@ -26,7 +26,7 @@ export default function SetupBlockCategoriesRoute({
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => router.push(`/retailer/account-setup/${audienceId}/step/2`)}
+                        onClick={() => router.push(`/retailer/audiences/setup/step/${audienceId}/2`)}
                         className="text-gray-500 hover:text-gray-800"
                     >
                         <ChevronLeft className="h-4 w-4 mr-1" />
@@ -35,7 +35,7 @@ export default function SetupBlockCategoriesRoute({
                 </div>
             )}
 
-            <BlockCategoriesPage channelId={channelId} />
+            <BlockCategoriesPage channelId={channelId} audienceId={audienceId} />
         </div>
     );
 }

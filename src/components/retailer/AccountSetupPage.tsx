@@ -122,12 +122,26 @@ export function AccountSetupPage() {
     };
 
     useEffect(() => {
-        fetchStats();
+        // Only fetch if user is not retailer role
+        if (userData && userData.role !== "retailer") {
+            fetchStats();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [userData?.role]);
+
+    // Show loading while userData is being determined
+    if (!userData) {
+        return (
+            <main className="container mx-auto px-4 py-8">
+                <div className="flex items-center justify-center py-20">
+                    <LoadingSpinner size="lg" />
+                </div>
+            </main>
+        );
+    }
 
     // Restrict access for retailer role
-    if (userData && userData.role === "retailer") {
+    if (userData.role === "retailer") {
         return (
             <main className="container mx-auto px-4 py-8">
                 <div className="max-w-2xl mx-auto mt-12">

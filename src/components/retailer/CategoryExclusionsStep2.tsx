@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { RefreshCw, Lock } from "lucide-react";
+import { RefreshCw, Lock, AlertCircle } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -159,20 +159,30 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                             For each channel, skip or select blocked categories.
                         </p>
                     </div>
-                    <Button
-                        onClick={handleNext}
-                        disabled={!allCompleted || verifying}
-                        className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-                    >
-                        {verifying ? (
-                            <>
-                                <LoadingSpinner size="sm" className="mr-2" />
-                                Verifying...
-                            </>
-                        ) : (
-                            "Next"
-                        )}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={fetchChannels}
+                            disabled={loading}
+                            variant="outline"
+                            size="sm"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            onClick={handleNext}
+                            disabled={channels.length === 0 || verifying}
+                            className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+                        >
+                            {verifying ? (
+                                <>
+                                    <LoadingSpinner size="sm" className="mr-2" />
+                                    Verifying...
+                                </>
+                            ) : (
+                                "Next"
+                            )}
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Loading */}
@@ -297,11 +307,14 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                             </div>
                         )}
 
-                        {/* All completed hint */}
-                        {allCompleted && (
-                            <p className="text-sm text-green-700 mt-3 text-center">
-                                All channels are completed. Click <strong>Next</strong> to proceed.
-                            </p>
+                        {/* Info message */}
+                        {channels.length > 0 && !allCompleted && (
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2 items-start">
+                                <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-blue-700">
+                                    You can skip channels you don&apos;t need to configure, or select block categories for them. Use the refresh button to reload channel status after changes.
+                                </p>
+                            </div>
                         )}
                     </>
                 )}

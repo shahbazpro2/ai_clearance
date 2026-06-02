@@ -111,3 +111,20 @@ export const verifyCategorySelectionApi = (payload: {
 }) => {
   return responseApi("/retailer/audience/setup/step", "post", payload);
 };
+
+/**
+ * 7.3 Financial Contact (financial_contact)
+ * Endpoint: POST /retailer/audience/setup/step
+ */
+export const financialContactApi = (payload: {
+  audience_id: string;
+  current_step_name: "financial_contact";
+  form_data: {
+    FirstName: string;
+    LastName: string;
+    Email: string;
+    Phone: string;
+  };
+}) => {
+  return responseApi("/retailer/audience/setup/step", "post", payload);
+};

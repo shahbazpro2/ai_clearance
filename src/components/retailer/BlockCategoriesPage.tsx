@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useApi } from "use-hook-api";
 import {
     getChannelCategoryStatusApi,
@@ -353,9 +354,11 @@ function CategoryRow({
 
 interface BlockCategoriesPageProps {
     channelId: string;
+    audienceId?: string;
 }
 
-export function BlockCategoriesPage({ channelId }: BlockCategoriesPageProps) {
+export function BlockCategoriesPage({ channelId, audienceId }: BlockCategoriesPageProps) {
+    const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState("");
     const [pendingChanges, setPendingChanges] = useState<Map<string, boolean>>(new Map());
@@ -410,13 +413,12 @@ export function BlockCategoriesPage({ channelId }: BlockCategoriesPageProps) {
         );
         callUpdate(
             updateChannelCategoryStatusApi({ channel_id: channelId, category_ids }),
-            ({ data }: any) => {
-                // Refresh categories from response or re-fetch
+            () => {
                 setPendingChanges(new Map());
-                // Re-fetch to get updated history
-                callFetch(getChannelCategoryStatusApi(channelId), ({ data: refreshData }: any) => {
-                    setCategories(refreshData?.all_categories ?? []);
-                });
+                // Redirect back to step 2 channels list after save
+                if (audienceId) {
+                    router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
+                }
             }
         );
     };
