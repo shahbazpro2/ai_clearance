@@ -9,13 +9,14 @@ import {
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AuthHeader, AuthLayout } from "@/components/common";
-import { Axios, useApi } from "use-hook-api";
+import { Axios, useApi, responseApi } from "use-hook-api";
 import { loginApi } from "@/api/auth";
 import { setAccessToken, setAuthRole, setIsActive, setRefreshToken } from "@/lib/auth";
+import { universalApi } from "@/lib/universal-api";
 import { VERSION } from "@/constant";
 
 // Define the login form schema using Zod
@@ -26,7 +27,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-type AuthRole = "user" | "admin" | "retailer";
+type AuthRole = "user" | "admin" | "retailer" | "setup_user";
 
 export function LoginScreen({
     defaultRole = "user",
@@ -54,14 +55,16 @@ export function LoginScreen({
         setAuthRole(role);
     }, [role]);
 
-    const redirectTo = useMemo(() => {
+    const getRedirectPath = (): string => {
         const requestedRedirect = searchParams.get("redirect");
         if (requestedRedirect) return requestedRedirect;
         if (defaultRedirectTo) return defaultRedirectTo;
+
+        // Redirect to role-based dashboard, let MeWrapper/ProtectedRoute handle setup_user redirect
         if (role === "admin") return "/admin";
-        if (role === "retailer") return "/retailer/block-categories";
+        if (role === "retailer") return "/retailer";
         return "/";
-    }, [defaultRedirectTo, role, searchParams]);
+    };
 
     const apiRole = role === "user" ? undefined : role;
 
@@ -84,8 +87,30 @@ export function LoginScreen({
                 setAuthRole(role);
                 Axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.access_token}`;
 
-                // User is verified, navigate to intended destination or dashboard
-                window.location.href = redirectTo;
+                // Fetch user data to get actual role
+                try {
+                    const meResponse = await universalApi('/auth/me', 'get')();
+                    const userRole = meResponse?.role;
+
+                    // Redirect based on actual user role
+                    const requestedRedirect = searchParams.get("redirect");
+                    if (requestedRedirect) {
+                        window.location.href = requestedRedirect;
+                    } else if (userRole === 'setup_user') {
+                        window.location.href = '/retailer/audiences/setup/step';
+                    } else if (userRole === 'retailer') {
+                        window.location.href = '/retailer/block-categories';
+                    } else if (userRole === 'admin' || userRole === 'super_admin') {
+                        window.location.href = '/admin';
+                    } else {
+                        window.location.href = '/';
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch user data:', error);
+                    // Fallback to role-based redirect
+                    const redirectPath = getRedirectPath();
+                    window.location.href = redirectPath;
+                }
             },
             (errorData: any) => {
                 // Check if error message indicates email not verified
