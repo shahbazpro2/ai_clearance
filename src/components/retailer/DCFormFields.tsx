@@ -28,8 +28,7 @@ interface DCFormFieldsProps {
   loadingStates: boolean;
   submitting: boolean;
   isAllocationValid: boolean;
-  onSubmit?: () => void;
-  onCancel?: () => void;
+  onAddNew?: () => void;
 }
 
 function FieldError({ message }: { message?: any }) {
@@ -53,8 +52,7 @@ export function DCFormFields({
   loadingStates,
   submitting,
   isAllocationValid,
-  onSubmit,
-  onCancel,
+  onAddNew,
 }: DCFormFieldsProps) {
   return (
     <div className="space-y-5">
@@ -237,6 +235,18 @@ export function DCFormFields({
         </div>
       </div>
 
+      {/* Action Buttons */}
+      <div className="pt-4 border-t mt-6">
+        <Button
+          type="button"
+          onClick={onAddNew}
+          disabled={submitting}
+          variant="outline"
+          className="w-full"
+        >
+          + Add New Distribution Center
+        </Button>
+      </div>
     </div>
   );
 }

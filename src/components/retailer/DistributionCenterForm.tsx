@@ -94,6 +94,8 @@ export function DistributionCenterForm({
   const [dcOrder, setDcOrder] = useState<string[]>([]); // Track order for display
   // Ref to suppress watch side-effects while programmatically loading a DC into the form
   const isLoadingFormData = useRef(false);
+  // Ref to track pending debounce timer so we can clear it when switching DCs
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [apiErrors, setApiErrors] = useState<Record<string, string>>({});
 
   const [callFetchDCs, { data: dcsData, loading: loadingDCs, error: dcError }] = useApi({ errMsg: true });
@@ -118,10 +120,11 @@ export function DistributionCenterForm({
 
   // Watch allocation percentage for real-time validation with debounce
   useEffect(() => {
-    let debounceTimer: NodeJS.Timeout;
     const subscription = watch((data) => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
         if (!isLoadingFormData.current && selectedDCId !== null && data.allocation_percentage !== undefined) {
           setDistributionCentersMap((prev) => ({
             ...prev,
@@ -137,9 +140,20 @@ export function DistributionCenterForm({
     });
     return () => {
       subscription.unsubscribe();
-      clearTimeout(debounceTimer);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
   }, [watch, selectedDCId]);
+
+  // Clear pending debounce timer when switching DCs to prevent stale updates
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [selectedDCId]);
 
   // Fetch distribution centers and states
   useEffect(() => {
@@ -356,6 +370,11 @@ export function DistributionCenterForm({
   };
 
   const handleSelectDC = (dcId: string) => {
+    // If clicking on already selected card, don't reload
+    if (selectedDCId === dcId) {
+      return;
+    }
+
     // Save current DC's form data before switching
     const currentFormData = watch();
     saveCurrentDCData(currentFormData as DCFormData);
@@ -439,8 +458,7 @@ export function DistributionCenterForm({
                     loadingStates={loadingStates}
                     submitting={submitting}
                     isAllocationValid={isAllocationValid}
-                    onSubmit={handleSubmit(onSubmit)}
-                    onCancel={() => router.back()}
+                    onAddNew={handleAddNew}
                   />
                 </div>
               )}
