@@ -128,3 +128,70 @@ export const financialContactApi = (payload: {
 }) => {
   return responseApi("/retailer/audience/setup/step", "post", payload);
 };
+
+/**
+ * 5.3 GET Distribution Centers by Channel
+ * Endpoint: GET /retailer/audience-channel-distribution-centers?channel_id=...
+ */
+export const getDistributionCentersApi = (channelId: string) => {
+  return universalApi(
+    `/retailer/audience-channel-distribution-centers?channel_id=${encodeURIComponent(channelId)}`,
+    "get"
+  );
+};
+
+/**
+ * 5.4 Get US State Codes
+ * Endpoint: GET /retailer/us-state-codes
+ */
+export const getUSStateCodesApi = () => {
+  return universalApi("/retailer/us-state-codes", "get");
+};
+
+/**
+ * 7.4 Distribution Center Setup (distribution_center)
+ * Endpoint: POST /retailer/audience/setup/step
+ */
+export const distributionCenterSetupApi = (payload: {
+  audience_id: string;
+  current_step_name: "distribution_center";
+  form_data: {
+    channel_id: string;
+    distribution_centers: Array<{
+      allocation_percentage: number;
+      city: string;
+      country_code: string;
+      distribution_center_name: string;
+      distribution_center_salesforce_id: string | null;
+      inventory_contact: {
+        Email: string;
+        FirstName: string;
+        LastName: string;
+        Phone: string;
+      };
+      ship_to_name: string;
+      shipping_address_1: string;
+      shipping_address_2: string;
+      shipping_instructions: string;
+      state: string;
+      status: string;
+      zip_code: string;
+    }>;
+  };
+}) => {
+  return responseApi("/retailer/audience/setup/step", "post", payload);
+};
+
+/**
+ * 8.1 Verify Audience Setup Step
+ * Endpoint: GET /retailer/audience/setup/step/verify
+ */
+export const verifyAudienceSetupStepApi = (payload: {
+  audience_id: string;
+  current_step_name: "distribution_center";
+}) => {
+  return universalApi(
+    `/retailer/audience/setup/step/verify?audience_id=${encodeURIComponent(payload.audience_id)}&current_step_name=${encodeURIComponent(payload.current_step_name)}`,
+    "get"
+  );
+};

@@ -433,8 +433,6 @@ export function BlockCategoriesPage({ channelId, audienceId }: BlockCategoriesPa
 
     const hasPendingChanges = pendingChanges.size > 0;
 
-    console.log('filteredfiltered', filtered)
-
     return (
         <main className="container mx-auto px-4 py-8">
             {/* Header */}
