@@ -29,6 +29,7 @@ interface DCCardsListProps {
   onSelectDC: (id: string) => void;
   onRemoveDC: (id: string) => void;
   onAddNew: () => void;
+  canAddNew?: boolean;
 }
 
 export function DCCardsList({
@@ -40,6 +41,7 @@ export function DCCardsList({
   loadingDCs,
   onSelectDC,
   onRemoveDC,
+  canAddNew = true,
   onAddNew,
 }: DCCardsListProps) {
   const allocationError =
@@ -68,7 +70,12 @@ export function DCCardsList({
                 />
               );
             })}
-            <Button onClick={onAddNew} variant="outline" className="w-full">
+            <Button
+              onClick={onAddNew}
+              variant="outline"
+              className="w-full"
+              disabled={!canAddNew}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Distribution Center
             </Button>

@@ -96,6 +96,11 @@ export function DistributionCenterForm({
   const isLoadingFormData = useRef(false);
   // Ref to track pending debounce timer so we can clear it when switching DCs
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Snapshot of saved form values for detecting unsaved changes
+  const savedSnapshotRef = useRef<DCFormData | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  // Track which DCs have been individually saved (loaded from API or saved via Save button)
+  const [savedDCIds, setSavedDCIds] = useState<Set<string>>(new Set());
   const [apiErrors, setApiErrors] = useState<Record<string, string>>({});
 
   const [callFetchDCs, { data: dcsData, loading: loadingDCs, error: dcError }] = useApi({ errMsg: true });
@@ -109,7 +114,9 @@ export function DistributionCenterForm({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    getValues,
+    trigger,
+    formState: { errors, isValid },
   } = useForm<DCFormData>({
     resolver: zodResolver(dcSchema) as any,
     mode: "onChange",
@@ -117,6 +124,38 @@ export function DistributionCenterForm({
 
   // No watch-based auto-sync — form data is flushed to the map explicitly
   // in handleSelectDC / handleRemove / onSubmit to avoid stale-closure bugs.
+
+  // Watch all form fields to detect unsaved changes
+  useEffect(() => {
+    if (selectedDCId === null || !savedSnapshotRef.current) {
+      setHasChanges(false);
+      return;
+    }
+
+    const subscription = watch((value) => {
+      if (isLoadingFormData.current || !savedSnapshotRef.current) {
+        return;
+      }
+      const current = value as Partial<DCFormData>;
+      const saved = savedSnapshotRef.current;
+      const changed =
+        current.distribution_center_name !== saved.distribution_center_name ||
+        Number(current.allocation_percentage) !== Number(saved.allocation_percentage) ||
+        current.inventory_contact?.FirstName !== saved.inventory_contact?.FirstName ||
+        current.inventory_contact?.LastName !== saved.inventory_contact?.LastName ||
+        current.inventory_contact?.Email !== saved.inventory_contact?.Email ||
+        current.inventory_contact?.Phone !== saved.inventory_contact?.Phone ||
+        current.ship_to_name !== saved.ship_to_name ||
+        current.shipping_address_1 !== saved.shipping_address_1 ||
+        (current.shipping_address_2 || "") !== (saved.shipping_address_2 || "") ||
+        (current.shipping_instructions || "") !== (saved.shipping_instructions || "") ||
+        current.city !== saved.city ||
+        current.state !== saved.state ||
+        current.zip_code !== saved.zip_code;
+      setHasChanges(changed);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, selectedDCId]);
 
   // Watch allocation percentage for real-time validation with debounce
   useEffect(() => {
@@ -183,6 +222,8 @@ export function DistributionCenterForm({
 
       setDistributionCentersMap(dcMap);
       setDcOrder(order);
+      // Mark all API-loaded DCs as saved
+      setSavedDCIds(new Set(order));
 
       if (selectedDCId === null && order.length > 0) {
         const firstId = order[0];
@@ -209,6 +250,26 @@ export function DistributionCenterForm({
     setValue("state", dc.state);
     setValue("zip_code", dc.zip_code);
     isLoadingFormData.current = false;
+
+    // Update saved snapshot after loading DC
+    savedSnapshotRef.current = {
+      distribution_center_name: dc.distribution_center_name,
+      allocation_percentage: dc.allocation_percentage,
+      inventory_contact: {
+        FirstName: dc.inventory_contact?.FirstName || "",
+        LastName: dc.inventory_contact?.LastName || "",
+        Email: dc.inventory_contact?.Email || "",
+        Phone: dc.inventory_contact?.Phone || "",
+      },
+      ship_to_name: dc.ship_to_name,
+      shipping_address_1: dc.shipping_address_1,
+      shipping_address_2: dc.shipping_address_2 || "",
+      shipping_instructions: dc.shipping_instructions || "",
+      city: dc.city,
+      state: dc.state,
+      zip_code: dc.zip_code,
+    };
+    setHasChanges(false);
   };
 
   // Restrict access for retailer role
@@ -245,6 +306,7 @@ export function DistributionCenterForm({
     return sum + allocation;
   }, 0);
   const isAllocationValid = totalAllocation === 100;
+  const allSaved = dcOrder.length > 0 && dcOrder.every(id => savedDCIds.has(id));
 
   const onSubmit: SubmitHandler<DCFormData> = (data) => {
     if (!isAllocationValid) return;
@@ -289,6 +351,21 @@ export function DistributionCenterForm({
     );
   };
 
+  const handleSaveCurrentDC = async () => {
+    if (selectedDCId === null) return;
+    const validated = await trigger();
+    if (!validated) return;
+    const formData = getValues();
+    saveCurrentDCData(formData as DCFormData);
+    // Update snapshot after saving so Save button becomes disabled
+    savedSnapshotRef.current = formData as DCFormData;
+    setHasChanges(false);
+    // Mark this DC as saved for Save All gate
+    setSavedDCIds(prev => new Set(prev).add(selectedDCId));
+  };
+
+  const canAddNew = selectedDCId === null ? true : isValid;
+
   const handleAddNew = () => {
     // Save current DC before adding new one
     if (selectedDCId !== null) {
@@ -329,6 +406,12 @@ export function DistributionCenterForm({
 
     const newOrder = dcOrder.filter(id => id !== dcId);
     setDcOrder(newOrder);
+    // Remove from saved set when DC is removed
+    setSavedDCIds(prev => {
+      const next = new Set(prev);
+      next.delete(dcId);
+      return next;
+    });
 
     if (selectedDCId === dcId) {
       const firstId = newOrder.length > 0 ? newOrder[0] : null;
@@ -443,6 +526,7 @@ export function DistributionCenterForm({
               onSelectDC={handleSelectDC}
               onRemoveDC={handleRemove}
               onAddNew={handleAddNew}
+              canAddNew={canAddNew}
             />
 
             {/* Form Section */}
@@ -458,8 +542,9 @@ export function DistributionCenterForm({
                     loadingStates={loadingStates}
                     submitting={submitting}
                     isAllocationValid={isAllocationValid}
-                    onAddNew={handleAddNew}
-                  />
+                onSave={handleSaveCurrentDC}
+                disableSave={!hasChanges}
+              />
                 </div>
               )}
 
@@ -494,7 +579,7 @@ export function DistributionCenterForm({
                     </Button>
                     <Button
                       onClick={handleSubmit(onSubmit)}
-                      disabled={submitting || !isAllocationValid}
+                      disabled={submitting || !isAllocationValid || !allSaved}
                       className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
                     >
                       {submitting ? (
