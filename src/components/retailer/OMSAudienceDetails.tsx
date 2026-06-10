@@ -186,12 +186,8 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
   const handleVerify = () => {
     callVerify(
       verifyOMSIntegrationApi({ audience_id: audienceId }),
-      ({ data }: any) => {
-        const nextStep = data?.next_step ?? 6;
-        if (ctx) {
-          setCtx({ ...ctx, currentStep: nextStep });
-        }
-        router.push(`/retailer/audiences/setup/step/${audienceId}/${nextStep}`);
+      () => {
+        router.push(`/retailer/audiences`);
       }
     );
   };
