@@ -151,12 +151,12 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
 
   const handleTestOmsClick = (dc: DistributionCenter) => {
     setSelectedDC(dc);
-    setFormData({
-      city: dc.city,
-      state: dc.state,
-      zip: dc.zip_code,
-      shipmentDate: new Date().toISOString().split("T")[0],
-    });
+    /*  setFormData({
+       city: dc.city,
+       state: dc.state,
+       zip: dc.zip_code,
+       shipmentDate: new Date().toISOString().split("T")[0],
+     }); */
     setTestOmsDialogOpen(true);
   };
 
