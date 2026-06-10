@@ -195,3 +195,57 @@ export const verifyAudienceSetupStepApi = (payload: {
     "get"
   );
 };
+
+/**
+ * 9.1 Fetch OMS Audience Details
+ * Endpoint: GET /retailer/audience/setup/step/fetch
+ */
+export const fetchOMSAudienceDetailsApi = (payload: {
+  audience_id: string;
+  ignore_status?: boolean;
+}) => {
+  const queryParams = new URLSearchParams({
+    audience_id: payload.audience_id,
+    current_step_name: "oms_integration",
+  });
+  if (payload.ignore_status !== undefined) {
+    queryParams.set("ignore_status", payload.ignore_status.toString());
+  }
+  return universalApi(
+    `/retailer/audience/setup/step/fetch?${queryParams.toString()}`,
+    "get"
+  );
+};
+
+/**
+ * 7.5 Distribution Center Setup (oms_integration)
+ * Endpoint: POST /retailer/audience/setup/step
+ */
+export const omsIntegrationApi = (payload: {
+  audience_id: string;
+  current_step_name: "oms_integration";
+  form_data: {
+    distribution_center_salesforce_id: string;
+    address1: string;
+    address2: string;
+    city: string;
+    state: string;
+    zip: string;
+    shipment_date: string;
+  };
+}) => {
+  return responseApi("/retailer/audience/setup/step", "post", payload);
+};
+
+/**
+ * 9.2 Verify OMS Integration Step
+ * Endpoint: GET /retailer/audience/setup/step/verify
+ */
+export const verifyOMSIntegrationApi = (payload: {
+  audience_id: string;
+}) => {
+  return universalApi(
+    `/retailer/audience/setup/step/verify?audience_id=${encodeURIComponent(payload.audience_id)}&current_step_name=oms_integration`,
+    "get"
+  );
+};
