@@ -24,7 +24,7 @@ interface Channel {
     channel_id: string;
     name: string;
     status: "active" | "inactive";
-    is_dc_setup_completed: boolean;
+    category_exclusions_completed: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -98,7 +98,7 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
         );
     }
 
-    const allCompleted = channels.length > 0 && channels.every((c) => c.is_dc_setup_completed);
+    const allCompleted = channels.length > 0 && channels.every((c) => c.category_exclusions_completed);
 
     const handleSkip = (channelId: string) => {
         setSkippingId(channelId);
@@ -107,7 +107,7 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
             () => {
                 setChannels((prev) =>
                     prev.map((c) =>
-                        c.channel_id === channelId ? { ...c, is_dc_setup_completed: true } : c
+                        c.channel_id === channelId ? { ...c, category_exclusions_completed: true } : c
                     )
                 );
                 setSkippingId(null);
@@ -230,7 +230,7 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                                         <tbody>
                                             {channels.map((channel) => {
                                                 const showActions =
-                                                    !channel.is_dc_setup_completed && channel.status === "active";
+                                                    !channel.category_exclusions_completed && channel.status === "active";
                                                 const isSkipping = skippingId === channel.channel_id;
 
                                                 return (
@@ -247,12 +247,12 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                                                         <td className="px-4 py-3">
                                                             <Badge
                                                                 className={
-                                                                    channel.is_dc_setup_completed
+                                                                    channel.category_exclusions_completed
                                                                         ? "bg-green-100 text-green-700"
                                                                         : "bg-amber-100 text-amber-700"
                                                                 }
                                                             >
-                                                                {channel.is_dc_setup_completed ? "Completed" : "Pending"}
+                                                                {channel.category_exclusions_completed ? "Completed" : "Pending"}
                                                             </Badge>
                                                         </td>
                                                         <td className="px-4 py-3">
