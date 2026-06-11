@@ -151,13 +151,24 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
 
   const handleTestOmsClick = (dc: DistributionCenter) => {
     setSelectedDC(dc);
-    /*  setFormData({
-       city: dc.city,
-       state: dc.state,
-       zip: dc.zip_code,
-       shipmentDate: new Date().toISOString().split("T")[0],
-     }); */
+    setFormData({
+      city: '',
+      state: '',
+      zip: '',
+      shipmentDate: '',
+    });
     setTestOmsDialogOpen(true);
+  };
+
+  const handleCloseTestOmsDialog = () => {
+    setSelectedDC(null);
+    setFormData({
+      city: "",
+      state: "",
+      zip: "",
+      shipmentDate: "",
+    });
+    setTestOmsDialogOpen(false);
   };
 
   const handleSubmitTestOms = () => {
@@ -380,7 +391,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
       </main>
 
       {/* Test OMS Dialog */}
-      <Dialog open={testOmsDialogOpen} onOpenChange={setTestOmsDialogOpen}>
+      <Dialog open={testOmsDialogOpen} onOpenChange={handleCloseTestOmsDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Test OMS Integration</DialogTitle>
