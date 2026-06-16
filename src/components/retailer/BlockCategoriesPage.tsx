@@ -355,9 +355,10 @@ function CategoryRow({
 interface BlockCategoriesPageProps {
     channelId: string;
     audienceId?: string;
+    hideHeader?: boolean;
 }
 
-export function BlockCategoriesPage({ channelId, audienceId }: BlockCategoriesPageProps) {
+export function BlockCategoriesPage({ channelId, audienceId, hideHeader = false }: BlockCategoriesPageProps) {
     const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState("");
@@ -434,16 +435,18 @@ export function BlockCategoriesPage({ channelId, audienceId }: BlockCategoriesPa
     const hasPendingChanges = pendingChanges.size > 0;
 
     return (
-        <main className="container mx-auto px-4 py-8">
+        <div>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Block Categories</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                        Manage allowed and blocked categories for your channel.
-                    </p>
+            {!hideHeader && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Block Categories</h1>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Manage allowed and blocked categories for your channel.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Search + count */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
@@ -557,6 +560,6 @@ export function BlockCategoriesPage({ channelId, audienceId }: BlockCategoriesPa
                 categoryId={sampleModal.categoryId}
                 categoryName={sampleModal.categoryName}
             />
-        </main>
+        </div>
     );
 }

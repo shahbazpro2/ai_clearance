@@ -55,8 +55,12 @@ export const skipCategorySelectionApi = (payload: { channel_id: string }) => {
  * 5.1 GET Distributor / Account Stats
  * Endpoint: GET /retailer/distributor/stats
  */
-export const getDistributorStatsApi = () => {
-  return universalApi("/retailer/distributor/stats", "get");
+export const getDistributorStatsApi = (isLive?: boolean) => {
+  let url = "/retailer/distributor/stats";
+  if (isLive !== undefined) {
+    url += `?is_live=${isLive}`;
+  }
+  return universalApi(url, "get");
 };
 
 /**
