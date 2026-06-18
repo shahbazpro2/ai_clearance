@@ -167,7 +167,7 @@ export function DistributionCenterForm({
   // Fetch distribution centers and states
   useEffect(() => {
     if (!channelId) return;
-    callFetchDCs(getDistributionCentersApi(channelId));
+    callFetchDCs(getDistributionCentersApi(channelId, allowRetailerRole ? true : undefined));
     callFetchStates(getUSStateCodesApi());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId]);
@@ -497,7 +497,7 @@ export function DistributionCenterForm({
             <Button
               variant="outline"
               onClick={() => {
-                callFetchDCs(getDistributionCentersApi(channelId));
+                callFetchDCs(getDistributionCentersApi(channelId, allowRetailerRole ? true : undefined));
                 callFetchStates(getUSStateCodesApi());
               }}
             >

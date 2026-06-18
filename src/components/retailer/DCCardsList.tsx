@@ -50,8 +50,8 @@ export function DCCardsList({
     totalAllocation !== 100 ? `Total must equal 100% (current: ${totalAllocation}%)` : null;
 
   return (
-    <div className="lg:col-span-1">
-      <div className="space-y-2">
+    <div className="lg:col-span-1 flex flex-col gap-3">
+      <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-2">
         {loadingDCs ? (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="sm" />
@@ -73,18 +73,21 @@ export function DCCardsList({
                 />
               );
             })}
-            <Button
-              onClick={onAddNew}
-              variant="outline"
-              className="w-full"
-              disabled={!canAddNew}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Distribution Center
-            </Button>
           </>
         )}
       </div>
+
+      {!loadingDCs && (
+        <Button
+          onClick={onAddNew}
+          variant="outline"
+          className="w-full"
+          disabled={!canAddNew}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Distribution Center
+        </Button>
+      )}
 
       {!loadingDCs && <AllocationSummary totalAllocation={totalAllocation} isValid={isAllocationValid} error={allocationError} />}
     </div>
