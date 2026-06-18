@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Tag, LogOut, Menu } from "lucide-react";
+import { Tag, LogOut, Menu, Warehouse } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { retailerMobileSidebarOpenAtom } from "@/store/ui";
@@ -15,6 +15,12 @@ const sidebarItems = [
         title: "Block Categories",
         href: "/retailer/block-categories",
         icon: Tag,
+        exact: false,
+    },
+    {
+        title: "Distribution Centers",
+        href: "/retailer/distribution-centers",
+        icon: Warehouse,
         exact: false,
     },
 ] as const;

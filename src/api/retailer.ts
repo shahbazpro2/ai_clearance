@@ -137,11 +137,12 @@ export const financialContactApi = (payload: {
  * 5.3 GET Distribution Centers by Channel
  * Endpoint: GET /retailer/audience-channel-distribution-centers?channel_id=...
  */
-export const getDistributionCentersApi = (channelId: string) => {
-  return universalApi(
-    `/retailer/audience-channel-distribution-centers?channel_id=${encodeURIComponent(channelId)}`,
-    "get"
-  );
+export const getDistributionCentersApi = (channelId: string, ignoreStatus?: boolean) => {
+  let url = `/retailer/audience-channel-distribution-centers?channel_id=${encodeURIComponent(channelId)}`;
+  if (ignoreStatus !== undefined) {
+    url += `&ignore_status=${ignoreStatus}`;
+  }
+  return universalApi(url, "get");
 };
 
 /**

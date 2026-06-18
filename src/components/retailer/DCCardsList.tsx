@@ -10,13 +10,15 @@ interface DistributionCenter {
   allocation_percentage: number;
   shipping_address_1: string;
   distribution_center_name: string;
+  localStatus?: "active" | "inactive";
 }
 
-interface DistributionCenter {
+interface DistributionCenterWithStatus {
   allocation_percentage: number;
   distribution_center_name: string;
   shipping_address_1: string;
   distribution_center_salesforce_id: string | null;
+  localStatus?: "active" | "inactive";
 }
 
 interface DCCardsListProps {
@@ -67,6 +69,7 @@ export function DCCardsList({
                   isSelected={selectedDCId === dcId}
                   onSelect={() => onSelectDC(dcId)}
                   onRemove={() => onRemoveDC(dcId)}
+                  status={dc.localStatus || "active"}
                 />
               );
             })}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Tag, LogOut, Menu, Settings } from "lucide-react";
+import { Tag, LogOut, Menu, Settings, Warehouse } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useMe";
 import { logout } from "@/lib/auth";
@@ -23,6 +23,11 @@ const baseNavItems = [
         title: "Block Categories",
         href: "/retailer/block-categories",
         icon: Tag,
+    },
+    {
+        title: "Distribution Centers",
+        href: "/retailer/distribution-centers",
+        icon: Warehouse,
     },
 ] as const;
 

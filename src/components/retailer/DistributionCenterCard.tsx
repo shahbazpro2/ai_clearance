@@ -11,6 +11,7 @@ interface DCCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onRemove: () => void;
+  status?: "active" | "inactive";
 }
 
 export function DistributionCenterCard({
@@ -20,6 +21,7 @@ export function DistributionCenterCard({
   isSelected,
   onSelect,
   onRemove,
+  status = "active",
 }: DCCardProps) {
   return (
     <div
@@ -30,7 +32,16 @@ export function DistributionCenterCard({
           : "bg-white border-gray-200 hover:border-gray-300"
       }`}
     >
-      <p className="font-medium text-sm text-gray-900 truncate">{name || "Untitled"}</p>
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <p className="font-medium text-sm text-gray-900 truncate">{name || "Untitled"}</p>
+        <Badge className={`text-xs whitespace-nowrap flex-shrink-0 ${
+          status === "active"
+            ? "bg-green-100 text-green-700"
+            : "bg-gray-100 text-gray-700"
+        }`}>
+          {status}
+        </Badge>
+      </div>
       <p className="text-xs text-gray-500 truncate mb-2">{address}</p>
       <div className="flex items-center justify-between mb-2">
         <Badge className="bg-blue-100 text-blue-700 text-xs">

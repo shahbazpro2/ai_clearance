@@ -45,6 +45,10 @@ interface DistributionCenter {
   zip_code: string;
 }
 
+interface DistributionCenterWithStatus extends DistributionCenter {
+  localStatus: "active" | "inactive";
+}
+
 interface StateCode {
   value: string;
   label: string;
@@ -77,11 +81,15 @@ type DCFormData = z.infer<typeof dcSchema>;
 interface DistributionCenterFormProps {
   audienceId: string;
   channelId: string;
+  allowRetailerRole?: boolean;
+  onSaveSuccess?: () => void;
 }
 
 export function DistributionCenterForm({
   audienceId,
   channelId,
+  allowRetailerRole = false,
+  onSaveSuccess,
 }: DistributionCenterFormProps) {
   const router = useRouter();
   const userData = useMe();
@@ -89,13 +97,11 @@ export function DistributionCenterForm({
   const setCtx = useSetAtom(retailerSetupContextAtom);
 
   // Store DCs as object with ID as key instead of array
-  const [distributionCentersMap, setDistributionCentersMap] = useState<Record<string, DistributionCenter>>({});
+  const [distributionCentersMap, setDistributionCentersMap] = useState<Record<string, DistributionCenterWithStatus>>({});
   const [selectedDCId, setSelectedDCId] = useState<string | null>(null);
   const [dcOrder, setDcOrder] = useState<string[]>([]); // Track order for display
   // Ref to suppress watch side-effects while programmatically loading a DC into the form
   const isLoadingFormData = useRef(false);
-  // Ref to track pending debounce timer so we can clear it when switching DCs
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   // Snapshot of saved form values for detecting unsaved changes
   const savedSnapshotRef = useRef<DCFormData | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -157,42 +163,6 @@ export function DistributionCenterForm({
     return () => subscription.unsubscribe();
   }, [watch, selectedDCId]);
 
-  // Watch allocation percentage for real-time validation with debounce
-  useEffect(() => {
-    const subscription = watch((data) => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      debounceTimerRef.current = setTimeout(() => {
-        if (!isLoadingFormData.current && selectedDCId !== null && data.allocation_percentage !== undefined) {
-          setDistributionCentersMap((prev) => ({
-            ...prev,
-            [selectedDCId]: {
-              ...prev[selectedDCId],
-              allocation_percentage: typeof data.allocation_percentage === "string"
-                ? parseFloat(data.allocation_percentage) || 0
-                : (data.allocation_percentage || 0),
-            },
-          }));
-        }
-      }, 300); // 300ms debounce delay
-    });
-    return () => {
-      subscription.unsubscribe();
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [watch, selectedDCId]);
-
-  // Clear pending debounce timer when switching DCs to prevent stale updates
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [selectedDCId]);
 
   // Fetch distribution centers and states
   useEffect(() => {
@@ -211,12 +181,15 @@ export function DistributionCenterForm({
   useEffect(() => {
     const dcs = dcsData?.distribution_centers ?? [];
     if (dcs.length > 0) {
-      const dcMap: Record<string, DistributionCenter> = {};
+      const dcMap: Record<string, DistributionCenterWithStatus> = {};
       const order: string[] = [];
 
       dcs.forEach((dc: DistributionCenter) => {
         const dcId = getDCId(dc);
-        dcMap[dcId] = dc;
+        dcMap[dcId] = {
+          ...dc,
+          localStatus: (dc.status?.toLowerCase() === "active" ? "active" : "inactive") as "active" | "inactive",
+        };
         order.push(dcId);
       });
 
@@ -272,8 +245,8 @@ export function DistributionCenterForm({
     setHasChanges(false);
   };
 
-  // Restrict access for retailer role
-  if (userData && userData.role === "retailer") {
+  // Restrict access for retailer role (unless explicitly allowed)
+  if (userData && userData.role === "retailer" && !allowRetailerRole) {
     return (
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-4 py-8">
@@ -297,15 +270,19 @@ export function DistributionCenterForm({
     );
   }
 
-  // Convert to array for calculations
-  const distributionCentersArray = dcOrder.map(id => distributionCentersMap[id]);
-  const totalAllocation = distributionCentersArray.reduce((sum: number, dc: DistributionCenter) => {
-    const allocation = typeof dc.allocation_percentage === "string"
-      ? parseFloat(dc.allocation_percentage) || 0
-      : (dc.allocation_percentage || 0);
+  // Compute total allocation live — read current DC's allocation directly from the form
+  // so we never need to update distributionCentersMap on every keystroke.
+  const liveAllocation = watch("allocation_percentage");
+  const totalAllocation = dcOrder.reduce((sum: number, id: string) => {
+    const dc = distributionCentersMap[id];
+    if (!dc || dc.localStatus !== "active") return sum;
+    const allocation = id === selectedDCId
+      ? (parseFloat(String(liveAllocation)) || 0)
+      : (typeof dc.allocation_percentage === "string" ? parseFloat(dc.allocation_percentage) || 0 : dc.allocation_percentage || 0);
     return sum + allocation;
   }, 0);
-  const isAllocationValid = totalAllocation === 100;
+  const activeCount = dcOrder.filter(id => distributionCentersMap[id]?.localStatus === "active").length;
+  const isAllocationValid = totalAllocation === 100 || (activeCount === 0 && dcOrder.length > 0);
   const allSaved = dcOrder.length > 0 && dcOrder.every(id => savedDCIds.has(id));
 
   const onSubmit: SubmitHandler<DCFormData> = (data) => {
@@ -314,20 +291,27 @@ export function DistributionCenterForm({
     // Save current form data to map before submitting
     saveCurrentDCData(data);
 
-    // Build final DCs array with all data from the map
-    const updatedDCs = dcOrder.map(id => {
-      const dc = distributionCentersMap[id];
-      return {
-        ...dc,
-        country_code: "US",
+    // Build final DCs array - only include active DCs
+    const updatedDCs = dcOrder
+      .map(id => distributionCentersMap[id])
+      .filter(dc => dc.localStatus === "active")
+      .map(dc => ({
+        allocation_percentage: typeof dc.allocation_percentage === "string"
+          ? parseFloat(dc.allocation_percentage) || 0
+          : (dc.allocation_percentage || 0),
+        city: dc.city,
+        country_code: dc.country_code,
+        distribution_center_name: dc.distribution_center_name,
+        distribution_center_salesforce_id: dc.distribution_center_salesforce_id,
+        inventory_contact: dc.inventory_contact,
+        ship_to_name: dc.ship_to_name,
+        shipping_address_1: dc.shipping_address_1,
+        shipping_address_2: dc.shipping_address_2,
+        shipping_instructions: dc.shipping_instructions,
+        state: dc.state,
         status: "active",
-      };
-    }).map(dc => ({
-      ...dc,
-      allocation_percentage: typeof dc.allocation_percentage === "string"
-        ? parseFloat(dc.allocation_percentage) || 0
-        : (dc.allocation_percentage || 0),
-    }));
+        zip_code: dc.zip_code,
+      }));
 
     callSubmit(
       distributionCenterSetupApi({
@@ -339,10 +323,14 @@ export function DistributionCenterForm({
         },
       }),
       () => {
-        if (ctx) {
-          setCtx({ ...ctx, currentStep: 4 });
+        if (onSaveSuccess) {
+          onSaveSuccess();
+        } else {
+          if (ctx) {
+            setCtx({ ...ctx, currentStep: 4 });
+          }
+          router.push(`/retailer/audiences/setup/step/${audienceId}/4`);
         }
-        router.push(`/retailer/audiences/setup/step/${audienceId}/4`);
       },
       ({ fullRes }: any) => {
         const validationErrors = fullRes?.validation_errors || {};
@@ -372,7 +360,7 @@ export function DistributionCenterForm({
       saveCurrentDCData(watch() as DCFormData);
     }
     const newId = `temp_${Math.random().toString(36).substr(2, 9)}`;
-    const newDC: DistributionCenter = {
+    const newDC: DistributionCenterWithStatus = {
       allocation_percentage: 0,
       city: "",
       country_code: "US",
@@ -390,6 +378,7 @@ export function DistributionCenterForm({
       shipping_instructions: "",
       state: "",
       status: "active",
+      localStatus: "active",
       zip_code: "",
     };
     setDistributionCentersMap(prev => ({ ...prev, [newId]: newDC }));
@@ -447,42 +436,45 @@ export function DistributionCenterForm({
           city: formData.city || "",
           state: formData.state || "",
           zip_code: formData.zip_code || "",
+          localStatus: prev[selectedDCId].localStatus,
         },
       }));
     }
   };
 
   const handleSelectDC = (dcId: string) => {
-    // If clicking on already selected card, don't reload
-    if (selectedDCId === dcId) {
-      return;
-    }
-
-    // Save current DC's form data before switching
+    if (selectedDCId === dcId) return;
     const currentFormData = watch();
     saveCurrentDCData(currentFormData as DCFormData);
-
-    // Switch to new DC
     setSelectedDCId(dcId);
     loadDCIntoForm(distributionCentersMap[dcId]);
   };
 
+  const handleStatusChange = (newStatus: "active" | "inactive") => {
+    if (!selectedDCId) return;
+    setDistributionCentersMap((prev) => ({
+      ...prev,
+      [selectedDCId]: { ...prev[selectedDCId], localStatus: newStatus },
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <SetupProgressHeader stepOverride={4} />
+      {!allowRetailerRole && <SetupProgressHeader stepOverride={4} />}
 
-      {/* Back button header */}
-      <div className="bg-white border-b sticky top-14 z-20">
-        <div className="container mx-auto px-4 py-3">
-          <button
-            onClick={() => router.push(`/retailer/audiences/setup/step/${audienceId}/4`)}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to Channels
-          </button>
+      {!allowRetailerRole && (
+        <div className="bg-white border-b sticky top-14 z-20">
+          <div className="container mx-auto px-4 py-3">
+            <button
+              onClick={() => router.push(`/retailer/audiences/setup/step/${audienceId}/4`)}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to Channels
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
@@ -494,9 +486,9 @@ export function DistributionCenterForm({
 
         {(loadingDCs || loadingStates) && !dcError && !stateError ? (
           <div className="flex items-center justify-center py-20">
-            <div className="text-center">
+            <div className="flex flex-col justify-center items-center">
               <LoadingSpinner size="lg" className="mb-4" />
-              <p className="text-sm text-gray-600">Loading distribution centers...</p>
+              <div className="text-sm text-gray-600">Loading distribution centers...</div>
             </div>
           </div>
         ) : (dcError || stateError) ? (
@@ -542,9 +534,11 @@ export function DistributionCenterForm({
                     loadingStates={loadingStates}
                     submitting={submitting}
                     isAllocationValid={isAllocationValid}
-                onSave={handleSaveCurrentDC}
-                disableSave={!hasChanges}
-              />
+                    onSave={handleSaveCurrentDC}
+                    disableSave={!hasChanges}
+                    dcStatus={distributionCentersMap[selectedDCId]?.localStatus || "active"}
+                    onStatusChange={handleStatusChange}
+                  />
                 </div>
               )}
 

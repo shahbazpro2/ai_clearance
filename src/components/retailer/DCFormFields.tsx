@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,8 @@ interface DCFormFieldsProps {
   isAllocationValid: boolean;
   onSave?: () => void;
   disableSave?: boolean;
+  dcStatus?: "active" | "inactive";
+  onStatusChange?: (status: "active" | "inactive") => void;
 }
 
 function FieldError({ message }: { message?: any }) {
@@ -44,7 +47,7 @@ function FieldError({ message }: { message?: any }) {
   );
 }
 
-export function DCFormFields({
+export const DCFormFields = memo(function DCFormFields({
   register,
   errors,
   watch,
@@ -55,39 +58,61 @@ export function DCFormFields({
   isAllocationValid,
   onSave,
   disableSave = true,
+  dcStatus = "active",
+  onStatusChange,
 }: DCFormFieldsProps) {
   return (
     <div className="space-y-5">
-      {/* DC Name */}
-      <div>
-        <Label className="text-sm font-medium mb-1.5 block">
-          Distribution Center Name <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          placeholder="e.g., Dallas DC"
-          {...register("distribution_center_name")}
-          disabled={submitting}
-        />
-        <FieldError message={errors.distribution_center_name?.message} />
-      </div>
-
-      {/* Allocation Percentage */}
-      <div>
-        <Label className="text-sm font-medium mb-1.5 block">
-          Allocation Percentage <span className="text-red-500">*</span>
-        </Label>
-        <div className="relative">
+      {/* Name, Status, Allocation in one row */}
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label className="text-sm font-medium mb-1.5 block">
+            DC Name <span className="text-red-500">*</span>
+          </Label>
           <Input
-            type="number"
-            min="0"
-            max="100"
-            placeholder="40"
-            {...register("allocation_percentage")}
+            placeholder="e.g., Dallas DC"
+            {...register("distribution_center_name")}
             disabled={submitting}
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+          <FieldError message={errors.distribution_center_name?.message} />
         </div>
-        <FieldError message={errors.allocation_percentage?.message} />
+
+        <div>
+          <Label className="text-sm font-medium mb-1.5 block">
+            Status <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={dcStatus}
+            onValueChange={(val) => onStatusChange?.(val as "active" | "inactive")}
+            disabled={submitting}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-sm font-medium mb-1.5 block">
+            Allocation % <span className="text-red-500">*</span>
+          </Label>
+          <div className="relative">
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              placeholder="40"
+              {...register("allocation_percentage")}
+              disabled={submitting}
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+          </div>
+          <FieldError message={errors.allocation_percentage?.message} />
+        </div>
       </div>
 
       {/* Inventory Contact */}
@@ -251,4 +276,4 @@ export function DCFormFields({
       </div>
     </div>
   );
-}
+});
