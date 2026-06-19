@@ -300,7 +300,7 @@ export function OrderManagementPage() {
         callOrders(getChannelOrdersApi(selectedChannelId), ({ data }: any) => {
             const m: Month[] = data?.months ?? [];
             setMonths(m);
-            setExpandedMonths(m.length > 0 ? new Set([m[0].booking_month]) : new Set());
+            setExpandedMonths(new Set());
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedChannelId]);
@@ -312,6 +312,14 @@ export function OrderManagementPage() {
             else next.add(bookingMonth);
             return next;
         });
+    };
+
+    const expandAll = () => {
+        setExpandedMonths(new Set(months.map((m) => m.booking_month)));
+    };
+
+    const collapseAll = () => {
+        setExpandedMonths(new Set());
     };
 
     // Group months by year, sorted descending
@@ -361,6 +369,21 @@ export function OrderManagementPage() {
                 </div>
             ) : (
                 <div>
+                    {/* Bulk actions */}
+                    <div className="flex items-center gap-2 mb-4">
+                        <button
+                            onClick={expandAll}
+                            className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                            Expand all
+                        </button>
+                        <button
+                            onClick={collapseAll}
+                            className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                            Collapse all
+                        </button>
+                    </div>
                     {years.map((year) => (
                         <div key={year} className="mb-6">
                             <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">
