@@ -1,0 +1,383 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useApi } from "use-hook-api";
+import { getChannelOrdersApi } from "@/api/retailer";
+import { useAudienceChannel } from "@/hooks/useAudienceChannel";
+import { AudienceChannelSelector } from "@/components/retailer/AudienceChannelSelector";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Order {
+    id: string;
+    order: string;
+    type: "collated_envelope_parent" | "collated_envelope_child" | "normal_order";
+    advertiser: string | null;
+    category: string | null;
+    qty_booked: number;
+    pacing_visualization: number;
+    manual_distributed: number;
+    rfid_distributed: number;
+    cpm: number | null;
+    total: number | null;
+    payment_status: string;
+    conversions: number | null;
+    cac: number | null;
+    children?: Order[];
+}
+
+interface MonthSummary {
+    paid_amount: number;
+    status: string;
+    total_amount: number;
+}
+
+interface Month {
+    booking_month: string;
+    orders: Order[];
+    summary: MonthSummary;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatMonth(ym: string): string {
+    const [year, month] = ym.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function formatCurrency(amount: number | null): string {
+    if (amount === null || amount === undefined) return "—";
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
+
+function formatNumber(n: number | null): string {
+    if (n === null || n === undefined) return "—";
+    return new Intl.NumberFormat("en-US").format(n);
+}
+
+function statusBadgeClass(status: string): string {
+    const s = status?.toLowerCase() ?? "";
+    if (s === "complete" || s === "completed") return "bg-green-100 text-green-700";
+    if (s.includes("progress")) return "bg-blue-100 text-blue-700";
+    return "bg-gray-100 text-gray-500";
+}
+
+function paymentBadgeClass(status: string): string {
+    if (status === "Paid") return "bg-green-100 text-green-700 border border-green-200";
+    if (status === "Unpaid") return "bg-red-100 text-red-700 border border-red-200";
+    return "bg-gray-100 text-gray-500";
+}
+
+// ─── Order Row ────────────────────────────────────────────────────────────────
+
+interface OrderRowProps {
+    order: Order;
+    isChild?: boolean;
+    expandedEnvelopes: Set<string>;
+    onToggleEnvelope: (id: string) => void;
+}
+
+function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope }: OrderRowProps) {
+    const isEnvelope = order.type === "collated_envelope_parent";
+    const isExpanded = expandedEnvelopes.has(order.id);
+    const qtyDist = (order.rfid_distributed ?? 0) + (order.manual_distributed ?? 0);
+    const pacing = Math.min(Math.max(order.pacing_visualization ?? 0, 0), 100);
+
+    return (
+        <>
+            <tr className={cn("border-b last:border-0", isChild ? "bg-gray-50/70" : "bg-white hover:bg-gray-50/50")}>
+                {/* ORDER */}
+                <td className={cn("px-4 py-3 text-sm font-semibold text-red-600 whitespace-nowrap", isChild && "pl-10")}>
+                    {order.order}
+                </td>
+
+                {/* ADVERTISER */}
+                <td className="px-4 py-3 text-sm text-gray-700">
+                    {isEnvelope ? (
+                        <button
+                            onClick={() => onToggleEnvelope(order.id)}
+                            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded border border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors select-none"
+                        >
+                            <span className="text-gray-400">◄</span>
+                            <span>ENVELOPE</span>
+                            <span className="text-gray-400">►</span>
+                        </button>
+                    ) : (
+                        <span>{order.advertiser ?? "—"}</span>
+                    )}
+                </td>
+
+                {/* CATEGORY */}
+                <td className="px-4 py-3 text-sm text-gray-600">{order.category ?? "—"}</td>
+
+                {/* QTY */}
+                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {formatNumber(order.qty_booked)}
+                </td>
+
+                {/* PACING */}
+                <td className="px-4 py-3">
+                    <div className="w-28">
+                        <div className="text-xs text-gray-500 mb-1">{Math.round(pacing)}%</div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                                className="bg-blue-500 h-1.5 rounded-full transition-all"
+                                style={{ width: `${pacing}%` }}
+                            />
+                        </div>
+                    </div>
+                </td>
+
+                {/* QTY DIST. */}
+                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {formatNumber(qtyDist)}
+                </td>
+
+                {/* CPM */}
+                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {order.cpm != null ? `$${order.cpm}` : "—"}
+                </td>
+
+                {/* TOTAL */}
+                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {formatCurrency(order.total)}
+                </td>
+
+                {/* PAYMENT */}
+                <td className="px-4 py-3 text-sm">
+                    {order.payment_status ? (
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded", paymentBadgeClass(order.payment_status))}>
+                            {order.payment_status}
+                        </span>
+                    ) : (
+                        "—"
+                    )}
+                </td>
+
+                {/* CONVERSIONS */}
+                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {order.conversions != null ? formatNumber(order.conversions) : "—"}
+                </td>
+
+                {/* CAC */}
+                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {order.cac != null ? `$${order.cac}` : "—"}
+                </td>
+            </tr>
+
+            {isEnvelope && isExpanded && order.children?.map((child) => (
+                <OrderRow
+                    key={child.id}
+                    order={child}
+                    isChild
+                    expandedEnvelopes={expandedEnvelopes}
+                    onToggleEnvelope={onToggleEnvelope}
+                />
+            ))}
+        </>
+    );
+}
+
+// ─── Month Accordion ──────────────────────────────────────────────────────────
+
+interface MonthAccordionProps {
+    month: Month;
+    isExpanded: boolean;
+    onToggle: () => void;
+}
+
+function MonthAccordion({ month, isExpanded, onToggle }: MonthAccordionProps) {
+    const [expandedEnvelopes, setExpandedEnvelopes] = useState<Set<string>>(new Set());
+
+    const toggleEnvelope = (id: string) => {
+        setExpandedEnvelopes((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    // Only top-level orders (children are embedded inside parent rows)
+    const topLevelOrders = month.orders.filter((o) => o.type !== "collated_envelope_child");
+
+    return (
+        <div className="border rounded-xl overflow-hidden mb-3 bg-white">
+            {/* Accordion header */}
+            <button
+                onClick={onToggle}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+            >
+                <div className="flex items-center gap-3">
+                    {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+                    ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+                    )}
+                    <span className="font-semibold text-gray-900">{formatMonth(month.booking_month)}</span>
+                    <span className={cn("text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide", statusBadgeClass(month.summary.status))}>
+                        {month.summary.status}
+                    </span>
+                </div>
+                <div className="text-right shrink-0 ml-4">
+                    <div className="text-sm font-bold text-gray-900">{formatCurrency(month.summary.total_amount)}</div>
+                    <div className="text-xs text-green-600 font-medium">{formatCurrency(month.summary.paid_amount)} Paid</div>
+                </div>
+            </button>
+
+            {/* Orders table */}
+            {isExpanded && (
+                <div className="border-t overflow-x-auto">
+                    <table className="w-full min-w-[900px]">
+                        <thead>
+                            <tr className="bg-gray-50 border-b">
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Advertiser</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Category</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pacing</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty Dist.</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">CPM</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Payment</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Conversions</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">CAC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {topLevelOrders.map((order) => (
+                                <OrderRow
+                                    key={order.id}
+                                    order={order}
+                                    expandedEnvelopes={expandedEnvelopes}
+                                    onToggleEnvelope={toggleEnvelope}
+                                />
+                            ))}
+                            {topLevelOrders.length === 0 && (
+                                <tr>
+                                    <td colSpan={11} className="px-4 py-8 text-center text-sm text-gray-400">
+                                        No orders for this month.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export function OrderManagementPage() {
+    const {
+        audiences,
+        selectedAudienceId,
+        selectedChannelId,
+        selectedAudience,
+        loading: loadingStats,
+        error,
+        setSelectedChannelId,
+        handleAudienceChange,
+        refresh,
+    } = useAudienceChannel();
+
+    const [months, setMonths] = useState<Month[]>([]);
+    const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+
+    const [callOrders, { loading: loadingOrders }] = useApi({ errMsg: true });
+
+    useEffect(() => {
+        if (!selectedChannelId) return;
+        setMonths([]);
+        callOrders(getChannelOrdersApi(selectedChannelId), ({ data }: any) => {
+            const m: Month[] = data?.months ?? [];
+            setMonths(m);
+            setExpandedMonths(m.length > 0 ? new Set([m[0].booking_month]) : new Set());
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedChannelId]);
+
+    const toggleMonth = (bookingMonth: string) => {
+        setExpandedMonths((prev) => {
+            const next = new Set(prev);
+            if (next.has(bookingMonth)) next.delete(bookingMonth);
+            else next.add(bookingMonth);
+            return next;
+        });
+    };
+
+    // Group months by year, sorted descending
+    const monthsByYear = months.reduce<Record<string, Month[]>>((acc, month) => {
+        const year = month.booking_month.split("-")[0];
+        if (!acc[year]) acc[year] = [];
+        acc[year].push(month);
+        return acc;
+    }, {});
+    const years = Object.keys(monthsByYear).sort((a, b) => parseInt(b) - parseInt(a));
+
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
+                <p className="text-sm text-gray-500 mt-0.5">
+                    View and track orders by audience and channel, grouped by month.
+                </p>
+            </div>
+
+            <div className="mb-6">
+                <AudienceChannelSelector
+                    audiences={audiences}
+                    selectedAudienceId={selectedAudienceId}
+                    selectedChannelId={selectedChannelId}
+                    selectedAudience={selectedAudience}
+                    loading={loadingStats}
+                    error={error}
+                    onAudienceChange={handleAudienceChange}
+                    onChannelChange={setSelectedChannelId}
+                    onRefresh={refresh}
+                />
+            </div>
+
+            {/* Orders section */}
+            {loadingOrders ? (
+                <div className="flex items-center justify-center py-20">
+                    <LoadingSpinner className="h-6 w-6" />
+                </div>
+            ) : !selectedChannelId ? (
+                <div className="text-center py-20 text-gray-400 text-sm">
+                    Select an audience and channel to view orders.
+                </div>
+            ) : months.length === 0 ? (
+                <div className="text-center py-20 text-gray-400 text-sm">
+                    No orders found for this channel.
+                </div>
+            ) : (
+                <div>
+                    {years.map((year) => (
+                        <div key={year} className="mb-6">
+                            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">
+                                {year}
+                            </div>
+                            {monthsByYear[year].map((month) => (
+                                <MonthAccordion
+                                    key={month.booking_month}
+                                    month={month}
+                                    isExpanded={expandedMonths.has(month.booking_month)}
+                                    onToggle={() => toggleMonth(month.booking_month)}
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}

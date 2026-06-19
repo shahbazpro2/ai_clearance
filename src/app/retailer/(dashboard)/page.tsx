@@ -1,7 +1,7 @@
 "use client";
 
 import { useMe } from "@/hooks/useMe";
-import { Tag } from "lucide-react";
+import { Tag, Warehouse, ClipboardList } from "lucide-react";
 import Link from "next/link";
 
 export default function RetailerDashboardPage() {
@@ -21,7 +21,7 @@ export default function RetailerDashboardPage() {
                 <p className="text-gray-500 text-sm">Retailer Portal</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Link
                     href="/retailer/block-categories"
                     className="flex items-start gap-4 p-5 bg-white border rounded-xl hover:shadow-md transition-shadow"
@@ -33,6 +33,36 @@ export default function RetailerDashboardPage() {
                         <h2 className="font-semibold text-gray-900 mb-1">Block Categories</h2>
                         <p className="text-sm text-gray-500">
                             Manage which categories are allowed or blocked for your channel.
+                        </p>
+                    </div>
+                </Link>
+
+                <Link
+                    href="/retailer/distribution-centers"
+                    className="flex items-start gap-4 p-5 bg-white border rounded-xl hover:shadow-md transition-shadow"
+                >
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <Warehouse className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="font-semibold text-gray-900 mb-1">Distribution Centers</h2>
+                        <p className="text-sm text-gray-500">
+                            Configure your distribution center locations and allocations.
+                        </p>
+                    </div>
+                </Link>
+
+                <Link
+                    href="/retailer/order-management"
+                    className="flex items-start gap-4 p-5 bg-white border rounded-xl hover:shadow-md transition-shadow"
+                >
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <ClipboardList className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="font-semibold text-gray-900 mb-1">Order Management</h2>
+                        <p className="text-sm text-gray-500">
+                            View and track orders by audience and channel, grouped by month.
                         </p>
                     </div>
                 </Link>

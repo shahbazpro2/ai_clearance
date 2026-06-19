@@ -254,3 +254,14 @@ export const verifyOMSIntegrationApi = (payload: {
     "get"
   );
 };
+
+/**
+ * 10.1 Get Orders by Channel
+ * Endpoint: GET /retailer/audience-channel/<channel_id>/orders
+ */
+export const getChannelOrdersApi = (channelId: string) => {
+  return universalApi(
+    `/retailer/audience-channel/${encodeURIComponent(channelId)}/orders`,
+    "get",
+  );
+};
