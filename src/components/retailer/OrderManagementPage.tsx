@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApi } from "use-hook-api";
 import { getChannelOrdersApi } from "@/api/retailer";
 import { useAudienceChannel } from "@/hooks/useAudienceChannel";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 interface Order {
     id: string;
+    order_id?: string;
     order: string;
     type: "collated_envelope_parent" | "collated_envelope_child" | "normal_order";
     advertiser: string | null;
@@ -81,9 +83,10 @@ interface OrderRowProps {
     isChild?: boolean;
     expandedEnvelopes: Set<string>;
     onToggleEnvelope: (id: string) => void;
+    onOpenSkids: (order: Order) => void;
 }
 
-function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope }: OrderRowProps) {
+function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope, onOpenSkids }: OrderRowProps) {
     const isEnvelope = order.type === "collated_envelope_parent";
     const isExpanded = expandedEnvelopes.has(order.id);
     const qtyDist = (order.rfid_distributed ?? 0) + (order.manual_distributed ?? 0);
@@ -93,8 +96,13 @@ function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope 
         <>
             <tr className={cn("border-b last:border-0", isChild ? "bg-gray-50/70" : "bg-white hover:bg-gray-50/50")}>
                 {/* ORDER */}
-                <td className={cn("px-4 py-3 text-sm font-semibold text-red-600 whitespace-nowrap", isChild && "pl-10")}>
-                    {order.order}
+                <td className={cn("px-4 py-3 text-sm font-semibold whitespace-nowrap", isChild && "pl-10")}>
+                    <button
+                        onClick={() => onOpenSkids(order)}
+                        className="font-semibold text-red-600 hover:text-red-700 hover:underline"
+                    >
+                        {order.order}
+                    </button>
                 </td>
 
                 {/* ADVERTISER */}
@@ -178,6 +186,7 @@ function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope 
                     isChild
                     expandedEnvelopes={expandedEnvelopes}
                     onToggleEnvelope={onToggleEnvelope}
+                    onOpenSkids={onOpenSkids}
                 />
             ))}
         </>
@@ -190,9 +199,10 @@ interface MonthAccordionProps {
     month: Month;
     isExpanded: boolean;
     onToggle: () => void;
+    onOpenSkids: (order: Order) => void;
 }
 
-function MonthAccordion({ month, isExpanded, onToggle }: MonthAccordionProps) {
+function MonthAccordion({ month, isExpanded, onToggle, onOpenSkids }: MonthAccordionProps) {
     const [expandedEnvelopes, setExpandedEnvelopes] = useState<Set<string>>(new Set());
 
     const toggleEnvelope = (id: string) => {
@@ -257,6 +267,7 @@ function MonthAccordion({ month, isExpanded, onToggle }: MonthAccordionProps) {
                                     order={order}
                                     expandedEnvelopes={expandedEnvelopes}
                                     onToggleEnvelope={toggleEnvelope}
+                                    onOpenSkids={onOpenSkids}
                                 />
                             ))}
                             {topLevelOrders.length === 0 && (
@@ -277,6 +288,7 @@ function MonthAccordion({ month, isExpanded, onToggle }: MonthAccordionProps) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function OrderManagementPage() {
+    const router = useRouter();
     const {
         audiences,
         selectedAudienceId,
@@ -320,6 +332,12 @@ export function OrderManagementPage() {
 
     const collapseAll = () => {
         setExpandedMonths(new Set());
+    };
+
+    const openSkids = (order: Order) => {
+        const orderId = order.order_id ?? order.id;
+        window.sessionStorage.setItem("retailer:selected-order", JSON.stringify(order));
+        router.push(`/retailer/order-management/orders/${encodeURIComponent(orderId)}/skids`);
     };
 
     // Group months by year, sorted descending
@@ -395,6 +413,7 @@ export function OrderManagementPage() {
                                     month={month}
                                     isExpanded={expandedMonths.has(month.booking_month)}
                                     onToggle={() => toggleMonth(month.booking_month)}
+                                    onOpenSkids={openSkids}
                                 />
                             ))}
                         </div>

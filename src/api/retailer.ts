@@ -137,7 +137,10 @@ export const financialContactApi = (payload: {
  * 5.3 GET Distribution Centers by Channel
  * Endpoint: GET /retailer/audience-channel-distribution-centers?channel_id=...
  */
-export const getDistributionCentersApi = (channelId: string, ignoreStatus?: boolean) => {
+export const getDistributionCentersApi = (
+  channelId: string,
+  ignoreStatus?: boolean,
+) => {
   let url = `/retailer/audience-channel-distribution-centers?channel_id=${encodeURIComponent(channelId)}`;
   if (ignoreStatus !== undefined) {
     url += `&ignore_status=${ignoreStatus}`;
@@ -197,7 +200,7 @@ export const verifyAudienceSetupStepApi = (payload: {
 }) => {
   return universalApi(
     `/retailer/audience/setup/step/verify?audience_id=${encodeURIComponent(payload.audience_id)}&current_step_name=${encodeURIComponent(payload.current_step_name)}`,
-    "get"
+    "get",
   );
 };
 
@@ -218,7 +221,7 @@ export const fetchOMSAudienceDetailsApi = (payload: {
   }
   return universalApi(
     `/retailer/audience/setup/step/fetch?${queryParams.toString()}`,
-    "get"
+    "get",
   );
 };
 
@@ -246,12 +249,10 @@ export const omsIntegrationApi = (payload: {
  * 9.2 Verify OMS Integration Step
  * Endpoint: GET /retailer/audience/setup/step/verify
  */
-export const verifyOMSIntegrationApi = (payload: {
-  audience_id: string;
-}) => {
+export const verifyOMSIntegrationApi = (payload: { audience_id: string }) => {
   return universalApi(
     `/retailer/audience/setup/step/verify?audience_id=${encodeURIComponent(payload.audience_id)}&current_step_name=oms_integration`,
-    "get"
+    "get",
   );
 };
 
@@ -262,6 +263,28 @@ export const verifyOMSIntegrationApi = (payload: {
 export const getChannelOrdersApi = (channelId: string) => {
   return universalApi(
     `/retailer/audience-channel/${encodeURIComponent(channelId)}/orders`,
+    "get",
+  );
+};
+
+/**
+ * 10.2 Get Skids by Order
+ * Endpoint: GET /retailer/orders/<order_id>/skids
+ */
+export const getOrderSkidsApi = (orderId: string) => {
+  return universalApi(
+    `/retailer/order/${encodeURIComponent(orderId)}/skid`,
+    "get",
+  );
+};
+
+/**
+ * 10.3 Get Skid Update Logs
+ * Endpoint: GET /retailer/skids/<skid_id>/update-logs
+ */
+export const getSkidUpdateLogsApi = (skidId: string) => {
+  return universalApi(
+    `/retailer/order/skid/${encodeURIComponent(skidId)}/update-logs`,
     "get",
   );
 };
