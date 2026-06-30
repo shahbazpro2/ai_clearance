@@ -8,6 +8,7 @@ import { getDistributorStatsApi } from "@/api/retailer";
 export interface AudienceChannel {
   channel_id: string;
   name: string;
+  channel_type: string;
   status: string;
   is_completed?: boolean;
 }

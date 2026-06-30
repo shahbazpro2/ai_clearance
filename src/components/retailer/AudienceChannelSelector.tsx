@@ -87,7 +87,7 @@ export function AudienceChannelSelector({
                                             : "bg-white border border-gray-200 hover:border-gray-300 text-gray-700"
                                     )}
                                 >
-                                    {channel.name}
+                                    {channel.channel_type}
                                     {showChannelStatus && (
                                         <Badge
                                             className={cn(

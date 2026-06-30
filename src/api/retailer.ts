@@ -205,6 +205,23 @@ export const verifyAudienceSetupStepApi = (payload: {
 };
 
 /**
+ * 11.1 Fetch Audience Profile Data (audience_data_collection)
+ * Endpoint: GET /retailer/audience/setup/step/fetch
+ */
+export const fetchAudienceProfileDataApi = (payload: {
+  audience_id: string;
+}) => {
+  const queryParams = new URLSearchParams({
+    audience_id: payload.audience_id,
+    current_step_name: "audience_data_collection",
+  });
+  return universalApi(
+    `/retailer/audience/setup/step/fetch?${queryParams.toString()}`,
+    "get",
+  );
+};
+
+/**
  * 9.1 Fetch OMS Audience Details
  * Endpoint: GET /retailer/audience/setup/step/fetch
  */

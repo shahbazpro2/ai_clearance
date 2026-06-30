@@ -19,7 +19,11 @@ export const useCategories = () => {
 
   useEffect(() => {
     if (data) {
-      const categoriesList = data?.categories || data || [];
+      const categoriesList = (data?.categories || data || []).slice().sort((a: any, b: any) => {
+        const labelA = (a.category || a.name || a.label || a.title || "").toLowerCase();
+        const labelB = (b.category || b.name || b.label || b.title || "").toLowerCase();
+        return labelA.localeCompare(labelB);
+      });
       setCategories(categoriesList);
 
       const categoryMap: Record<string, string> = {};

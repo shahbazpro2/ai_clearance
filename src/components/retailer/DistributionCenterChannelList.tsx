@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, Lock } from "lucide-react";
+import { RefreshCw, Lock, ChevronLeft } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -116,13 +116,31 @@ export function DistributionCenterChannelList({ audienceId }: DistributionCenter
         router.push(`/retailer/audiences/setup/step/${audienceId}/${nextStep}`);
       }
     );
-  };
+  };    const handleBack = () => {
+        if (ctx) {
+            setCtx({ ...ctx, currentStep: 2 });
+        }
+        router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
+    };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <SetupProgressHeader stepOverride={4} />
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <SetupProgressHeader stepOverride={4} />
 
-      <main className="container mx-auto px-4 py-8">
+            {/* Back navigation bar */}
+            <div className="bg-white border-b sticky top-14 z-20">
+                <div className="container mx-auto px-4 py-3">
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        Back to Category Exclusions
+                    </button>
+                </div>
+            </div>
+
+            <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Distribution Center Setup</h1>

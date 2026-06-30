@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { RefreshCw, Lock, AlertCircle } from "lucide-react";
+import { RefreshCw, Lock, AlertCircle, ChevronLeft } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -147,9 +147,29 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
         );
     };
 
+    const handleBack = () => {
+        if (ctx) {
+            setCtx({ ...ctx, currentStep: 1 });
+        }
+        router.push(`/retailer/audiences/setup/step/${audienceId}/1`);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <SetupProgressHeader stepOverride={2} />
+
+            {/* Back navigation bar */}
+            <div className="bg-white border-b sticky top-14 z-20">
+                <div className="container mx-auto px-4 py-3">
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        Back to Audience Profile
+                    </button>
+                </div>
+            </div>
 
             <main className="container mx-auto px-4 py-8">
                 <div className="flex items-center justify-between mb-6">

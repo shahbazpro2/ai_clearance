@@ -7,7 +7,7 @@ import { getChannelOrdersApi } from "@/api/retailer";
 import { useAudienceChannel } from "@/hooks/useAudienceChannel";
 import { AudienceChannelSelector } from "@/components/retailer/AudienceChannelSelector";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Order {
@@ -351,26 +351,38 @@ export function OrderManagementPage() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
-                <p className="text-sm text-gray-500 mt-0.5">
-                    View and track orders by audience and channel, grouped by month.
-                </p>
-            </div>
+            {!loadingStats && audiences.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                    <div className="rounded-full bg-gray-100 p-4 mb-4">
+                        <ClipboardList className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-1">No Audience Data Available</h2>
+                    <p className="text-sm text-gray-500 max-w-sm">
+                        This section will become available once account setup is complete.
+                    </p>
+                </div>
+            ) : (
+                <>
+                    <div className="mb-6">
+                        <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            View and track orders by audience and channel, grouped by month.
+                        </p>
+                    </div>
 
-            <div className="mb-6">
-                <AudienceChannelSelector
-                    audiences={audiences}
-                    selectedAudienceId={selectedAudienceId}
-                    selectedChannelId={selectedChannelId}
-                    selectedAudience={selectedAudience}
-                    loading={loadingStats}
-                    error={error}
-                    onAudienceChange={handleAudienceChange}
-                    onChannelChange={setSelectedChannelId}
-                    onRefresh={refresh}
-                />
-            </div>
+                    <div className="mb-6">
+                        <AudienceChannelSelector
+                            audiences={audiences}
+                            selectedAudienceId={selectedAudienceId}
+                            selectedChannelId={selectedChannelId}
+                            selectedAudience={selectedAudience}
+                            loading={loadingStats}
+                            error={error}
+                            onAudienceChange={handleAudienceChange}
+                            onChannelChange={setSelectedChannelId}
+                            onRefresh={refresh}
+                        />
+                    </div>
 
             {/* Orders section */}
             {loadingOrders ? (
@@ -419,6 +431,8 @@ export function OrderManagementPage() {
                         </div>
                     ))}
                 </div>
+            )}
+                </>
             )}
         </div>
     );

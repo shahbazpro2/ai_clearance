@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useApi } from "use-hook-api";
 import { useRouter } from "next/navigation";
 import { useSetAtom, useAtomValue } from "jotai";
-import { audienceSetupStep1Api, fetchAudienceCategoriesApi } from "@/api/retailer";
+import { audienceSetupStep1Api, fetchAudienceCategoriesApi, fetchAudienceProfileDataApi } from "@/api/retailer";
 import { retailerSetupContextAtom } from "@/store/retailerSetup";
 import { useMe } from "@/hooks/useMe";
 import { SetupProgressHeader } from "@/components/retailer/SetupProgressHeader";
@@ -23,7 +23,13 @@ import {
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Lock } from "lucide-react";
+import { AlertCircle, HelpCircle, Lock } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -52,6 +58,28 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+// ─── Help tooltip ─────────────────────────────────────────────────────────────
+
+function HelpTooltip({ text }: { text: string }) {
+    return (
+        <TooltipProvider delayDuration={200}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+                    >
+                        <HelpCircle className="h-4 w-4" />
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs">
+                    {text}
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+}
+
 // ─── Field helper ─────────────────────────────────────────────────────────────
 
 function FieldError({ message }: { message?: string }) {
@@ -78,6 +106,8 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
 
     const [callFetchCategories, { data: categoriesData, loading: loadingCategories, error: categoriesError }] =
         useApi({ errMsg: true });
+    const [callFetchProfile, { data: profileData, loading: loadingProfile }] =
+        useApi({ errMsg: true });
     const [callSubmit, { loading: submitting }] = useApi({ errMsg: true });
 
     const {
@@ -90,6 +120,57 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         resolver: zodResolver(schema) as any,
         mode: "onChange",
     });
+
+    // Shared pre-fill helper for cached or server data
+    function prefillFormData(formData: Record<string, any>) {
+        if (formData.Category__c !== undefined && formData.Category__c !== null) {
+            setValue("Category__c", formData.Category__c, { shouldValidate: true });
+        }
+        if (formData.Website__c !== undefined && formData.Website__c !== null) {
+            setValue("Website__c", formData.Website__c, { shouldValidate: true });
+        }
+        if (formData.Age__c !== undefined && formData.Age__c !== null) {
+            setValue("Age__c", formData.Age__c, { shouldValidate: true });
+        }
+        if (formData.Income__c !== undefined && formData.Income__c !== null) {
+            setValue("Income__c", formData.Income__c, { shouldValidate: true });
+        }
+        if (formData.Female__c !== undefined && formData.Female__c !== null) {
+            setValue("Female__c", formData.Female__c, { shouldValidate: true });
+        }
+        if (formData.Male__c !== undefined && formData.Male__c !== null) {
+            setValue("Male__c", formData.Male__c, { shouldValidate: true });
+        }
+        if (formData.Average_Order_Value__c !== undefined && formData.Average_Order_Value__c !== null) {
+            setValue("Average_Order_Value__c", formData.Average_Order_Value__c, { shouldValidate: true });
+        }
+        if (formData.Monthly_New_Customer_Percentage__c !== undefined && formData.Monthly_New_Customer_Percentage__c !== null) {
+            setValue("Monthly_New_Customer_Percentage__c", formData.Monthly_New_Customer_Percentage__c, { shouldValidate: true });
+        }
+        if (formData.Annual_Customer_Order_Frequency__c !== undefined && formData.Annual_Customer_Order_Frequency__c !== null) {
+            setValue("Annual_Customer_Order_Frequency__c", formData.Annual_Customer_Order_Frequency__c, { shouldValidate: true });
+        }
+    }
+
+    // On mount: pre-fill from client cache (going back), or fetch from server (continue setup)
+    useEffect(() => {
+        const cached = ctx?.stepData?.["1"];
+        if (cached) {
+            prefillFormData(cached);
+        } else {
+            // No client cache — fetch saved data from server for "Continue Setup" flow
+            callFetchProfile(fetchAudienceProfileDataApi({ audience_id: audienceId }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // When server profile data arrives, pre-fill the form
+    useEffect(() => {
+        const formData = profileData?.form_data;
+        if (formData) {
+            prefillFormData(formData);
+        }
+    }, [profileData]);
 
     useEffect(() => {
         callFetchCategories(fetchAudienceCategoriesApi("audience"));
@@ -121,7 +202,11 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         );
     }
 
-    const categories: any[] = categoriesData?.categories ?? categoriesData ?? [];
+    const categories: any[] = (categoriesData?.categories ?? categoriesData ?? []).slice().sort((a: any, b: any) => {
+        const labelA = (a.category ?? a.name ?? a.label ?? "").toLowerCase();
+        const labelB = (b.category ?? b.name ?? b.label ?? "").toLowerCase();
+        return labelA.localeCompare(labelB);
+    });
 
     const onSubmit: SubmitHandler<FormData> = (data) => {
         callSubmit(
@@ -131,9 +216,16 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                 form_data: data,
             }),
             () => {
-                // Advance step in atom
+                // Cache form data and advance step in atom
                 if (ctx) {
-                    setCtx({ ...ctx, currentStep: 2 });
+                    setCtx({
+                        ...ctx,
+                        currentStep: 2,
+                        stepData: {
+                            ...(ctx.stepData ?? {}),
+                            "1": data,
+                        },
+                    });
                 }
                 router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
             }
@@ -282,8 +374,9 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
 
                             {/* Monthly New Customer % */}
                             <div>
-                                <Label className="text-sm font-medium mb-1.5 block">
+                                <Label className="text-sm font-medium mb-1.5 block flex items-center gap-1">
                                     Monthly New Customer % <span className="text-red-500">*</span>
+                                    <HelpTooltip text="What is your percentage of new first-time customers each month on average?" />
                                 </Label>
                                 <Input
                                     type="number"
@@ -299,8 +392,9 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
 
                             {/* Annual Customer Order Frequency */}
                             <div className="sm:col-span-2">
-                                <Label className="text-sm font-medium mb-1.5 block">
+                                <Label className="text-sm font-medium mb-1.5 block flex items-center gap-1">
                                     Annual Customer Order Frequency <span className="text-red-500">*</span>
+                                    <HelpTooltip text="How many times does a customer order per year on average?" />
                                 </Label>
                                 <Input
                                     type="number"
@@ -317,7 +411,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                         <div className="flex justify-end pt-2">
                             <Button
                                 type="submit"
-                                disabled={submitting || loadingCategories}
+                                disabled={submitting || loadingCategories || loadingProfile}
                                 className="bg-blue-gradient text-white hover:bg-blue-gradient/90 min-w-28"
                             >
                                 {submitting ? (

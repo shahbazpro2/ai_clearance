@@ -212,15 +212,8 @@ export function AccountSetupPage() {
                             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
                                 Account Details
                             </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div>
-                                    <p className="text-xs text-gray-400 mb-0.5">Account Name</p>
-                                    <p className="text-sm font-medium text-gray-900">{account.account_name}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-400 mb-0.5">Account ID</p>
-                                    <p className="text-sm font-mono text-gray-700">{account.account_id}</p>
-                                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+
                                 <div>
                                     <p className="text-xs text-gray-400 mb-1">Status</p>
                                     <ActiveBadge status={account.status} />
