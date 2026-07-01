@@ -22,6 +22,7 @@ interface SelectedOrder {
 interface SkidRow {
   id?: string;
   skid_id: string;
+  skid_name: string;
   total_qty: number | null;
   pacing_visualization: number | null;
   rfid_distributed: number | null;
@@ -333,7 +334,7 @@ export function SkidTablePage() {
                             <table className="w-full min-w-[900px]">
                               <thead>
                                 <tr className="border-b bg-gray-100">
-                                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Skid ID</th>
+                                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Skid Name</th>
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Total Qty</th>
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Pacing</th>
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">RFID</th>
@@ -347,7 +348,7 @@ export function SkidTablePage() {
                                   const pacing = getPacingPercent(skid.pacing_visualization);
                                   return (
                                     <tr key={skid.id ?? skid.id} className="border-b last:border-0 hover:bg-gray-50">
-                                      <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">{skid.id}</td>
+                                      <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">{skid.skid_name}</td>
                                       <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-700">{formatNumber(skid.total_qty)}</td>
                                       <td className="px-4 py-3">
                                         <div className="h-1.5 w-full max-w-sm rounded-full bg-gray-200">

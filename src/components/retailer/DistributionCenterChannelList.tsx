@@ -19,6 +19,7 @@ import { RefreshCw, Lock, ChevronLeft } from "lucide-react";
 interface Channel {
   channel_id: string;
   name: string;
+  channel_type: string;
   status: "active" | "inactive";
   is_completed: boolean;
   is_dc_setup_completed: boolean;
@@ -116,31 +117,31 @@ export function DistributionCenterChannelList({ audienceId }: DistributionCenter
         router.push(`/retailer/audiences/setup/step/${audienceId}/${nextStep}`);
       }
     );
-  };    const handleBack = () => {
-        if (ctx) {
-            setCtx({ ...ctx, currentStep: 2 });
-        }
-        router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
-    };
+  }; const handleBack = () => {
+    if (ctx) {
+      setCtx({ ...ctx, currentStep: 2 });
+    }
+    router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
+  };
 
-    return (
-        <div className="min-h-screen bg-gray-50">
-            <SetupProgressHeader stepOverride={4} />
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <SetupProgressHeader stepOverride={4} />
 
-            {/* Back navigation bar */}
-            <div className="bg-white border-b sticky top-14 z-20">
-                <div className="container mx-auto px-4 py-3">
-                    <button
-                        onClick={handleBack}
-                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                        Back to Category Exclusions
-                    </button>
-                </div>
-            </div>
+      {/* Back navigation bar */}
+      <div className="bg-white border-b sticky top-14 z-20">
+        <div className="container mx-auto px-4 py-3">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back to Category Exclusions
+          </button>
+        </div>
+      </div>
 
-            <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Distribution Center Setup</h1>
@@ -208,8 +209,7 @@ export function DistributionCenterChannelList({ audienceId }: DistributionCenter
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       <tr>
-                        <th className="px-4 py-3">Channel Name</th>
-                        <th className="px-4 py-3">Channel ID</th>
+                        <th className="px-4 py-3">Channel</th>
                         <th className="px-4 py-3">Status</th>
                         <th className="px-4 py-3">DC Setup</th>
                         <th className="px-4 py-3">Updated At</th>
@@ -218,15 +218,13 @@ export function DistributionCenterChannelList({ audienceId }: DistributionCenter
                     </thead>
                     <tbody>
                       {channels.map((channel) => {
-                        const showButton = !channel.is_dc_setup_completed && channel.status === "active";
+                        /*  const showButton = !channel.is_dc_setup_completed && channel.status === "active"; */
+                        const showButton = true;
 
                         return (
                           <tr key={channel.channel_id} className="border-t hover:bg-gray-50 transition-colors">
                             <td className="px-4 py-3 font-medium text-gray-900">
-                              {channel.name}
-                            </td>
-                            <td className="px-4 py-3 text-xs font-mono text-gray-500">
-                              {channel.channel_id}
+                              {channel.channel_type}
                             </td>
                             <td className="px-4 py-3">
                               <Badge className={channel.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>

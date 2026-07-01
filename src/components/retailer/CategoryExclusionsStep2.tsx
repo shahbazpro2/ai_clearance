@@ -23,6 +23,7 @@ import { RefreshCw, Lock, AlertCircle, ChevronLeft } from "lucide-react";
 interface Channel {
     channel_id: string;
     name: string;
+    channel_type: string;
     status: "active" | "inactive";
     category_exclusions_completed: boolean;
     created_at: string;
@@ -176,7 +177,7 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">Category Exclusions</h1>
                         <p className="text-sm text-gray-500 mt-1">
-                            For each channel, skip or select blocked categories.
+                            For each channel, allow all categories or select blocked categories.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -239,8 +240,7 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                                     <table className="w-full text-sm">
                                         <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                                             <tr>
-                                                <th className="px-4 py-3">Channel Name</th>
-                                                <th className="px-4 py-3">Channel ID</th>
+                                                <th className="px-4 py-3">Channel</th>
                                                 <th className="px-4 py-3">Completed</th>
                                                 <th className="px-4 py-3">Status</th>
                                                 <th className="px-4 py-3">Updated At</th>
@@ -249,8 +249,10 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                                         </thead>
                                         <tbody>
                                             {channels.map((channel) => {
-                                                const showActions =
-                                                    !channel.category_exclusions_completed && channel.status === "active";
+                                                /*   const showActions =
+                                                      !channel.category_exclusions_completed && channel.status === "active"; */
+                                                const showActions = true;
+
                                                 const isSkipping = skippingId === channel.channel_id;
 
                                                 return (
@@ -259,10 +261,7 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                                                         className="border-t hover:bg-gray-50 transition-colors"
                                                     >
                                                         <td className="px-4 py-3 font-medium text-gray-900">
-                                                            {channel.name}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-xs font-mono text-gray-500">
-                                                            {channel.channel_id}
+                                                            {channel.channel_type}
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <Badge
@@ -301,10 +300,10 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                                                                         {isSkipping ? (
                                                                             <>
                                                                                 <LoadingSpinner size="sm" className="mr-1" />
-                                                                                Skipping...
+                                                                                All Allowing...
                                                                             </>
                                                                         ) : (
-                                                                            "Skip"
+                                                                            "Allow All Categories"
                                                                         )}
                                                                     </Button>
                                                                     <Button
@@ -332,7 +331,7 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2 items-start">
                                 <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
                                 <p className="text-sm text-blue-700">
-                                    You can skip channels you don&apos;t need to configure, or select block categories for them. Use the refresh button to reload channel status after changes.
+                                    You can allow all categories for some channels, or select block categories for them. Use the refresh button to reload channel status after changes.
                                 </p>
                             </div>
                         )}

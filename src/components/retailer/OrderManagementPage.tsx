@@ -89,7 +89,8 @@ interface OrderRowProps {
 function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope, onOpenSkids }: OrderRowProps) {
     const isEnvelope = order.type === "collated_envelope_parent";
     const isExpanded = expandedEnvelopes.has(order.id);
-    const qtyDist = (order.rfid_distributed ?? 0) + (order.manual_distributed ?? 0);
+    const qtyDist = order.manual_distributed ?? 0
+    const rfidDist = order.rfid_distributed ?? 0
     const pacing = Math.min(Math.max(order.pacing_visualization ?? 0, 0), 100);
 
     return (
@@ -145,6 +146,11 @@ function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope,
                 {/* QTY DIST. */}
                 <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
                     {formatNumber(qtyDist)}
+                </td>
+
+                {/* RFID */}
+                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {formatNumber(rfidDist)}
                 </td>
 
                 {/* CPM */}
@@ -253,6 +259,7 @@ function MonthAccordion({ month, isExpanded, onToggle, onOpenSkids }: MonthAccor
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pacing</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty Dist.</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">RFID</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">CPM</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Payment</th>
@@ -314,7 +321,7 @@ export function OrderManagementPage() {
             setMonths(m);
             setExpandedMonths(new Set());
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedChannelId]);
 
     const toggleMonth = (bookingMonth: string) => {
@@ -384,54 +391,54 @@ export function OrderManagementPage() {
                         />
                     </div>
 
-            {/* Orders section */}
-            {loadingOrders ? (
-                <div className="flex items-center justify-center py-20">
-                    <LoadingSpinner className="h-6 w-6" />
-                </div>
-            ) : !selectedChannelId ? (
-                <div className="text-center py-20 text-gray-400 text-sm">
-                    Select an audience and channel to view orders.
-                </div>
-            ) : months.length === 0 ? (
-                <div className="text-center py-20 text-gray-400 text-sm">
-                    No orders found for this channel.
-                </div>
-            ) : (
-                <div>
-                    {/* Bulk actions */}
-                    <div className="flex items-center gap-2 mb-4">
-                        <button
-                            onClick={expandAll}
-                            className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
-                        >
-                            Expand all
-                        </button>
-                        <button
-                            onClick={collapseAll}
-                            className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
-                        >
-                            Collapse all
-                        </button>
-                    </div>
-                    {years.map((year) => (
-                        <div key={year} className="mb-6">
-                            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">
-                                {year}
+                    {/* Orders section */}
+                    {loadingOrders ? (
+                        <div className="flex items-center justify-center py-20">
+                            <LoadingSpinner className="h-6 w-6" />
+                        </div>
+                    ) : !selectedChannelId ? (
+                        <div className="text-center py-20 text-gray-400 text-sm">
+                            Select an audience and channel to view orders.
+                        </div>
+                    ) : months.length === 0 ? (
+                        <div className="text-center py-20 text-gray-400 text-sm">
+                            No orders found for this channel.
+                        </div>
+                    ) : (
+                        <div>
+                            {/* Bulk actions */}
+                            <div className="flex items-center gap-2 mb-4">
+                                <button
+                                    onClick={expandAll}
+                                    className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                                >
+                                    Expand all
+                                </button>
+                                <button
+                                    onClick={collapseAll}
+                                    className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                                >
+                                    Collapse all
+                                </button>
                             </div>
-                            {monthsByYear[year].map((month) => (
-                                <MonthAccordion
-                                    key={month.booking_month}
-                                    month={month}
-                                    isExpanded={expandedMonths.has(month.booking_month)}
-                                    onToggle={() => toggleMonth(month.booking_month)}
-                                    onOpenSkids={openSkids}
-                                />
+                            {years.map((year) => (
+                                <div key={year} className="mb-6">
+                                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">
+                                        {year}
+                                    </div>
+                                    {monthsByYear[year].map((month) => (
+                                        <MonthAccordion
+                                            key={month.booking_month}
+                                            month={month}
+                                            isExpanded={expandedMonths.has(month.booking_month)}
+                                            onToggle={() => toggleMonth(month.booking_month)}
+                                            onOpenSkids={openSkids}
+                                        />
+                                    ))}
+                                </div>
                             ))}
                         </div>
-                    ))}
-                </div>
-            )}
+                    )}
                 </>
             )}
         </div>

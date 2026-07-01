@@ -34,8 +34,9 @@ export default function SetupBlockCategoriesRoute({
                     </Button>
                 </div>
             )}
-
-            <BlockCategoriesPage channelId={channelId} audienceId={audienceId} />
+            <div className="container mx-auto px-4 pt-4">
+                <BlockCategoriesPage channelId={channelId} audienceId={audienceId} />
+            </div>
         </div>
     );
 }

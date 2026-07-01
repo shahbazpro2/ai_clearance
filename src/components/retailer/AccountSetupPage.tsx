@@ -212,8 +212,11 @@ export function AccountSetupPage() {
                             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
                                 Account Details
                             </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div>
+                                    <p className="text-xs text-gray-400 mb-0.5">Account Name</p>
+                                    <p className="text-sm font-medium text-gray-900">{account.account_name}</p>
+                                </div>
                                 <div>
                                     <p className="text-xs text-gray-400 mb-1">Status</p>
                                     <ActiveBadge status={account.status} />
@@ -251,7 +254,6 @@ export function AccountSetupPage() {
                                         <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                                             <tr>
                                                 <th className="px-4 py-3">Audience Name</th>
-                                                <th className="px-4 py-3">Audience ID</th>
                                                 <th className="px-4 py-3">Setup Status</th>
                                                 <th className="px-4 py-3">Current Step</th>
                                                 <th className="px-4 py-3">Status</th>
@@ -270,9 +272,6 @@ export function AccountSetupPage() {
                                                     <tr key={audience.audience_id} className="border-t hover:bg-gray-50 transition-colors">
                                                         <td className="px-4 py-3 font-medium text-gray-900">
                                                             {audience.name}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-xs font-mono text-gray-500">
-                                                            {audience.audience_id}
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <SetupStatusBadge status={setupStatus} />

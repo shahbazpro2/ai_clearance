@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 interface SelectedSkid {
   id?: string;
   skid_id?: string;
+  skid_name?: string;
   order_id?: string;
   distribution_center?: string | null;
 }
@@ -62,7 +63,7 @@ export function PacingHistoryLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skidId]);
 
-  const displayedSkidId = selectedSkid?.skid_id ?? skidId;
+  const displayedSkidName = selectedSkid?.skid_name ?? skidId;
   const distributionCenter = selectedSkid?.distribution_center;
 
   return (
@@ -76,7 +77,7 @@ export function PacingHistoryLogPage() {
       </button>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{displayedSkidId} - Pacing History Log</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{displayedSkidName} - Pacing History Log</h1>
         {distributionCenter && (
           <p className="text-sm text-gray-500 mt-0.5">{distributionCenter}</p>
         )}

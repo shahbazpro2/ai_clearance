@@ -117,7 +117,10 @@ export const DCFormFields = memo(function DCFormFields({
 
       {/* Inventory Contact */}
       <div className="border-t pt-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Inventory Contact</h3>
+        <h3 className="text-sm font-semibold text-gray-900">Inventory Contact</h3>
+        <p className="text-sm text-gray-500 mt-1 mb-4">
+          Must be the contact responsible for receiving material in the distribution center and providing inventory updates.
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-sm font-medium mb-1.5 block">
