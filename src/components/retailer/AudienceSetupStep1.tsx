@@ -124,7 +124,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
     // Shared pre-fill helper for cached or server data
     function prefillFormData(formData: Record<string, any>) {
         if (formData.Category__c !== undefined && formData.Category__c !== null) {
-            setValue("Category__c", formData.Category__c, { shouldValidate: true });
+            setValue("Category__c", String(formData.Category__c), { shouldValidate: true });
         }
         if (formData.Website__c !== undefined && formData.Website__c !== null) {
             setValue("Website__c", formData.Website__c, { shouldValidate: true });
@@ -166,10 +166,12 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
 
     // When server profile data arrives, pre-fill the form
     useEffect(() => {
-        const formData = profileData?.form_data;
+        const profilePayload = profileData?.data ?? profileData;
+        const formData = profilePayload?.form_data;
         if (formData) {
             prefillFormData(formData);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [profileData]);
 
     useEffect(() => {

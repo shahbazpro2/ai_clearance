@@ -255,9 +255,9 @@ export function DistributionCenterChannelList({ audienceId }: DistributionCenter
                                   Setup Distribution Center
                                 </Button>
                               )}
-                              {channel.is_dc_setup_completed && (
+                              {/*  {channel.is_dc_setup_completed && (
                                 <span className="text-xs text-gray-500 font-medium">Completed</span>
-                              )}
+                              )} */}
                             </td>
                           </tr>
                         );

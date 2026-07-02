@@ -1,5 +1,5 @@
 import { universalApi } from "@/lib/universal-api";
-import { responseApi } from "use-hook-api";
+import { responseApi, Axios } from "use-hook-api";
 
 /**
  * 4.1 Get Channel Category Status
@@ -269,6 +269,48 @@ export const omsIntegrationApi = (payload: {
 export const verifyOMSIntegrationApi = (payload: { audience_id: string }) => {
   return universalApi(
     `/retailer/audience/setup/step/verify?audience_id=${encodeURIComponent(payload.audience_id)}&current_step_name=oms_integration`,
+    "get",
+  );
+};
+
+/**
+ * 9.3 Download OMS DC Details PDF
+ * Endpoint: POST /retailer/oms/pdf/download
+ */
+export const downloadOmsDcDetailsPdfApi = (
+  audienceId: string,
+): (() => Promise<any>) => {
+  return () =>
+    Axios.post<Blob>(
+      "/retailer/oms/pdf/download",
+      { audience_id: audienceId },
+      { responseType: "blob" },
+    ).then((res) => {
+      const disposition = res.headers["content-disposition"];
+      const match =
+        typeof disposition === "string"
+          ? disposition.match(/filename[*]?=(?:UTF-8'')?["']?([^"'\s]+)["']?/i)
+          : null;
+      const filename = match?.[1] ?? `oms_integration_${audienceId}.pdf`;
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return res;
+    });
+};
+
+/**
+ * 9.4 Fetch DC Shipment Logs
+ * Endpoint: GET /retailer/oms/logs?distribution_center_id=...
+ */
+export const fetchDcShipmentLogsApi = (distributionCenterId: string) => {
+  return universalApi(
+    `/retailer/oms/logs?distribution_center_id=${encodeURIComponent(distributionCenterId)}`,
     "get",
   );
 };
