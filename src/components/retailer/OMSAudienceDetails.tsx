@@ -106,9 +106,9 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Order Management System</h1>
+            <h1 className="text-xl font-bold text-gray-900">Shipment Log Data Feeds</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Verify OMS integration for all distribution centers.
+              Set up and verify shipment log data feeds for all distribution centers.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -123,11 +123,11 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
             <Button
               onClick={handleDownloadDCRecords}
               disabled={downloadingPdf}
-              variant="outline"
               size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
             >
               <FileDown className="h-4 w-4 mr-2" />
-              {downloadingPdf ? "Downloading..." : "Download DC Records"}
+              {downloadingPdf ? "Downloading..." : "OMS Integration Guide"}
             </Button>
             <Button
               onClick={handleVerify}
