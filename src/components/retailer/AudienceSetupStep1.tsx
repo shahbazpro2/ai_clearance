@@ -112,6 +112,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
 
     const {
         register,
+        reset,
         handleSubmit,
         setValue,
         watch,
@@ -154,12 +155,11 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
 
     // On mount: pre-fill from client cache (going back), or fetch from server (continue setup)
     useEffect(() => {
+        callFetchCategories(fetchAudienceCategoriesApi("audience"))
+        callFetchProfile(fetchAudienceProfileDataApi({ audience_id: audienceId }));
         const cached = ctx?.stepData?.["1"];
         if (cached) {
             prefillFormData(cached);
-        } else {
-            // No client cache — fetch saved data from server for "Continue Setup" flow
-            callFetchProfile(fetchAudienceProfileDataApi({ audience_id: audienceId }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -169,15 +169,11 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         const profilePayload = profileData?.data ?? profileData;
         const formData = profilePayload?.form_data;
         if (formData) {
-            prefillFormData(formData);
+            /* prefillFormData(formData); */
+            reset(formData);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profileData, categoriesData]);
-
-    useEffect(() => {
-        callFetchCategories(fetchAudienceCategoriesApi("audience"));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [profileData]);
 
     // Restrict access for retailer role
     if (userData && userData.role === "retailer") {
