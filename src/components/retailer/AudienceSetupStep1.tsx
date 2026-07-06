@@ -155,8 +155,10 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
 
     // On mount: pre-fill from client cache (going back), or fetch from server (continue setup)
     useEffect(() => {
-        callFetchCategories(fetchAudienceCategoriesApi("audience"))
-        callFetchProfile(fetchAudienceProfileDataApi({ audience_id: audienceId }));
+        callFetchCategories(fetchAudienceCategoriesApi("audience"), () => {
+            callFetchProfile(fetchAudienceProfileDataApi({ audience_id: audienceId }));
+        })
+
         const cached = ctx?.stepData?.["1"];
         if (cached) {
             prefillFormData(cached);
