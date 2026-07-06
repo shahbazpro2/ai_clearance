@@ -19,6 +19,7 @@ export const getChannelCategoryStatusApi = (channelId: string) => {
 export const updateChannelCategoryStatusApi = (payload: {
   channel_id: string;
   category_ids: Array<{ id: string; is_blocked: boolean }>;
+  send_email?: boolean;
 }) => {
   return responseApi(
     "/retailer/channels/category-status/update",

@@ -413,7 +413,7 @@ export function BlockCategoriesPage({ channelId, audienceId, hideHeader = false 
             ([id, is_blocked]) => ({ id, is_blocked })
         );
         callUpdate(
-            updateChannelCategoryStatusApi({ channel_id: channelId, category_ids }),
+            updateChannelCategoryStatusApi({ channel_id: channelId, category_ids, send_email: true }),
             () => {
                 setPendingChanges(new Map());
                 // Redirect back to step 2 channels list after save
