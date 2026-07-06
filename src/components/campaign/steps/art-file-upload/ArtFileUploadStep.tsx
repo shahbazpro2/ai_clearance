@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -7,6 +8,7 @@ import { useArtFileUpload } from "./useArtFileUpload";
 import { Statistics } from "./Statistics";
 import { TableHeader } from "./TableHeader";
 import { ProgramRow } from "./ProgramRow";
+import { Month } from "./types";
 
 interface ArtFileUploadStepProps {
   onBack: () => void;
@@ -24,6 +26,18 @@ export function ArtFileUploadStep({ onBack, onNext }: ArtFileUploadStepProps) {
     handleUpload,
     allFilesUploaded,
   } = useArtFileUpload();
+
+  const allMonths: Month[] = useMemo(() => {
+    const map = new Map<number, Month>();
+    artFilesDetails?.programs?.forEach((program) => {
+      program.months?.forEach((month) => {
+        if (!map.has(month.month_number)) {
+          map.set(month.month_number, month);
+        }
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => a.month_number - b.month_number);
+  }, [artFilesDetails]);
 
   if (loadingDetails) {
     return (
@@ -53,12 +67,13 @@ export function ArtFileUploadStep({ onBack, onNext }: ArtFileUploadStepProps) {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <TableHeader months={artFilesDetails.programs[0]?.months || []} />
+              <TableHeader months={allMonths} />
               <tbody className="bg-white divide-y divide-gray-200">
                 {artFilesDetails.programs.map((program) => (
                   <ProgramRow
                     key={program.id}
                     program={program}
+                    months={allMonths}
                     fileUploadState={fileUploadState}
                     requiresCsv={artFilesDetails.get_csv_files}
                     uploadingFiles={uploadingFiles}

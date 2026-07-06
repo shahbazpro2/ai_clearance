@@ -1,9 +1,10 @@
-import { Program, MonthFileState, FileUploadState } from "./types";
+import { Program, Month, MonthFileState, FileUploadState } from "./types";
 import { ProgramInfo } from "./ProgramInfo";
 import { MonthCell } from "./MonthCell";
 
 interface ProgramRowProps {
   program: Program;
+  months: Month[];
   fileUploadState: FileUploadState;
   requiresCsv: boolean;
   uploadingFiles: Set<string>;
@@ -14,6 +15,7 @@ interface ProgramRowProps {
 
 export function ProgramRow({
   program,
+  months,
   fileUploadState,
   requiresCsv,
   uploadingFiles,
@@ -38,6 +40,10 @@ export function ProgramRow({
     };
   };
 
+  const programMonthsByNumber = new Map<number, Month>(
+    (program.months ?? []).map((m) => [m.month_number, m])
+  );
+
   return (
     <tr
       className={`hover:bg-gray-50 ${isProgramComplete ? "bg-green-50/30" : ""}`}
@@ -53,22 +59,36 @@ export function ProgramRow({
         />
       </td>
 
-      {program.months.map((month) => {
-        const state = getMonthState(month);
-        const uploadKey = `${program.id}-${month.month_number}`;
+      {months.map((month) => {
+        const programMonth = programMonthsByNumber.get(month.month_number);
+        if (!programMonth) {
+          return (
+            <td
+              key={month.month_number}
+              className="px-3 py-4 border-l bg-gray-50/30"
+            />
+          );
+        }
+
+        const state = getMonthState(programMonth);
+        const uploadKey = `${program.id}-${programMonth.month_number}`;
         const isUploading = uploadingFiles.has(uploadKey);
 
         return (
           <MonthCell
-            key={month.month_number}
+            key={programMonth.month_number}
             programId={program.id}
-            month={month}
+            month={programMonth}
             state={state}
             requiresCsv={requiresCsv}
             isUploading={isUploading}
-            onFileSelect={(fileType, e) => onFileSelect(program.id, month.month_number, fileType, e)}
-            onRemoveFile={(fileType) => onRemoveFile(program.id, month.month_number, fileType)}
-            onUpload={() => onUpload(program.id, month.month_number)}
+            onFileSelect={(fileType, e) =>
+              onFileSelect(program.id, programMonth.month_number, fileType, e)
+            }
+            onRemoveFile={(fileType) =>
+              onRemoveFile(program.id, programMonth.month_number, fileType)
+            }
+            onUpload={() => onUpload(program.id, programMonth.month_number)}
           />
         );
       })}

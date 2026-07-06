@@ -172,7 +172,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
             prefillFormData(formData);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profileData]);
+    }, [profileData, categoriesData]);
 
     useEffect(() => {
         callFetchCategories(fetchAudienceCategoriesApi("audience"));
