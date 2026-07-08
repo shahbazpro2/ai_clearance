@@ -16,6 +16,7 @@ export interface DistributionCenter {
 
 export interface Channel {
   channel_id: string;
+  record_type: string;
   channel_name: string;
   distribution_centers: DistributionCenter[];
   distribution_centers_count: number;

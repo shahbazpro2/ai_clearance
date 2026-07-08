@@ -16,7 +16,7 @@ export function OMSChannelCard({ channel, onViewShipmentLogs }: OMSChannelCardPr
       <div className="bg-gray-50 px-6 py-4 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h3 className="font-semibold text-gray-900">{channel.channel_name}</h3>
+            <h3 className="font-semibold text-gray-900">{channel?.record_type || channel.channel_name}</h3>
             <Badge className="bg-green-100 text-green-700">
               {channel.status.charAt(0).toUpperCase() + channel.status.slice(1)}
             </Badge>
@@ -80,7 +80,7 @@ export function OMSChannelCard({ channel, onViewShipmentLogs }: OMSChannelCardPr
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {isCompleted ? (
+                    {dc.oms_record_count > 0 ? (
                       <Button
                         size="sm"
                         variant="outline"

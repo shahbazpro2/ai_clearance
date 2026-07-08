@@ -108,7 +108,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
           <div>
             <h1 className="text-xl font-bold text-gray-900">Shipment Log Data Feeds</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Set up and verify shipment log data feeds for all distribution centers.
+              Set up and verify shipment log data feeds for all distribution centers using the Data Feed Integration Guide.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
               className="bg-emerald-600 text-white hover:bg-emerald-700"
             >
               <FileDown className="h-4 w-4 mr-2" />
-              {downloadingPdf ? "Downloading..." : "OMS Integration Guide"}
+              {downloadingPdf ? "Downloading..." : "Data Feed Integration Guide"}
             </Button>
             <Button
               onClick={handleVerify}
@@ -190,7 +190,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
             {omsData.channels.length > 0 && !omsData.all_oms_feed_received && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2 items-start">
                 <p className="text-sm text-blue-700">
-                  OMS shipment data must be completed for all distribution centers to finish this step.
+                  Shipment log data feeds must be completed for all distribution centers to finish this step.
                 </p>
               </div>
             )}
