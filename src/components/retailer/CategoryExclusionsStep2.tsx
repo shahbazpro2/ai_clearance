@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RefreshCw, Lock, AlertCircle, ChevronLeft } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -28,6 +29,12 @@ interface Channel {
     category_exclusions_completed: boolean;
     created_at: string;
     updated_at: string;
+    blocked_categories_count?: number;
+    blocked_category_count?: number;
+    blocked_category_names?: string[];
+    blocked_categories?: Array<string | { name?: string; category?: string; label?: string }>;
+    excluded_categories?: Array<string | { name?: string; category?: string; label?: string }>;
+    categories?: Array<{ name?: string; category?: string; label?: string; is_blocked?: boolean }>;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -42,6 +49,52 @@ function formatDate(dateString: string) {
     } catch {
         return dateString;
     }
+}
+
+function getBlockedCategoryNames(channel: Channel) {
+    const names = new Set<string>();
+
+    const collectNames = (items?: Array<string | { name?: string; category?: string; label?: string }>) => {
+        items?.forEach((item) => {
+            if (typeof item === "string") {
+                const trimmed = item.trim();
+                if (trimmed) {
+                    names.add(trimmed);
+                }
+                return;
+            }
+
+            const label = item.name || item.category || item.label || "";
+            const trimmed = label.trim();
+            if (trimmed) {
+                names.add(trimmed);
+            }
+        });
+    };
+
+    collectNames(channel.blocked_categories);
+    collectNames(channel.excluded_categories);
+    collectNames(channel.blocked_category_names);
+
+    channel.categories?.forEach((category) => {
+        if (!category.is_blocked) return;
+        const label = category.name || category.category || category.label || "";
+        const trimmed = label.trim();
+        if (trimmed) {
+            names.add(trimmed);
+        }
+    });
+
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+}
+
+function getBlockedCategoryCount(channel: Channel) {
+    const names = getBlockedCategoryNames(channel);
+    if (names.length > 0) {
+        return names.length;
+    }
+
+    return channel.blocked_categories_count ?? channel.blocked_category_count ?? 0;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -236,93 +289,138 @@ export function CategoryExclusionsStep2({ audienceId }: CategoryExclusionsStep2P
                             </div>
                         ) : (
                             <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            <tr>
-                                                <th className="px-4 py-3">Channel</th>
-                                                <th className="px-4 py-3">Completed</th>
-                                                <th className="px-4 py-3">Status</th>
-                                                <th className="px-4 py-3">Updated At</th>
-                                                <th className="px-4 py-3">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {channels.map((channel) => {
-                                                /*   const showActions =
-                                                      !channel.category_exclusions_completed && channel.status === "active"; */
-                                                const showActions = true;
+                                <TooltipProvider delayDuration={150}>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                <tr>
+                                                    <th className="px-4 py-3">Channel</th>
+                                                    <th className="px-4 py-3">Blocked Categories</th>
+                                                    <th className="px-4 py-3">Completed</th>
+                                                    <th className="px-4 py-3">Status</th>
+                                                    <th className="px-4 py-3">Updated At</th>
+                                                    <th className="px-4 py-3">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {channels.map((channel) => {
+                                                    /*   const showActions =
+                                                          !channel.category_exclusions_completed && channel.status === "active"; */
+                                                    const showActions = true;
 
-                                                const isSkipping = skippingId === channel.channel_id;
+                                                    const isSkipping = skippingId === channel.channel_id;
+                                                    const blockedCategoryNames = getBlockedCategoryNames(channel);
+                                                    const blockedCategoryCount = getBlockedCategoryCount(channel);
 
-                                                return (
-                                                    <tr
-                                                        key={channel.channel_id}
-                                                        className="border-t hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <td className="px-4 py-3 font-medium text-gray-900">
-                                                            {channel.channel_type}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <Badge
-                                                                className={
-                                                                    channel.category_exclusions_completed
-                                                                        ? "bg-green-100 text-green-700"
-                                                                        : "bg-amber-100 text-amber-700"
-                                                                }
-                                                            >
-                                                                {channel.category_exclusions_completed ? "Completed" : "Pending"}
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <Badge
-                                                                className={
-                                                                    channel.status === "active"
-                                                                        ? "bg-green-100 text-green-700"
-                                                                        : "bg-gray-100 text-gray-500"
-                                                                }
-                                                            >
-                                                                {channel.status.charAt(0).toUpperCase() + channel.status.slice(1)}
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-500">
-                                                            {formatDate(channel.updated_at)}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            {showActions && (
-                                                                <div className="flex items-center gap-2">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        onClick={() => handleSkip(channel.channel_id)}
-                                                                        disabled={isSkipping || !!skippingId}
-                                                                    >
-                                                                        {isSkipping ? (
-                                                                            <>
-                                                                                <LoadingSpinner size="sm" className="mr-1" />
-                                                                                All Allowing...
-                                                                            </>
-                                                                        ) : (
-                                                                            "Allow All Categories"
-                                                                        )}
-                                                                    </Button>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        onClick={() => handleSelectBlockCategory(channel)}
-                                                                        disabled={!!skippingId}
-                                                                        className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-                                                                    >
-                                                                        Select Block Category
-                                                                    </Button>
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                    return (
+                                                        <tr
+                                                            key={channel.channel_id}
+                                                            className="border-t hover:bg-gray-50 transition-colors"
+                                                        >
+                                                            <td className="px-4 py-3 font-medium text-gray-900">
+                                                                {channel.channel_type}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                {blockedCategoryCount > 0 && blockedCategoryNames.length > 0 ? (
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <button
+                                                                                type="button"
+                                                                                className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 text-sm font-medium text-violet-700 hover:bg-violet-100 transition-colors"
+                                                                            >
+                                                                                {blockedCategoryCount} blocked
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent
+                                                                            side="top"
+                                                                            align="start"
+                                                                            className="max-w-sm rounded-xl px-4 py-3"
+                                                                        >
+                                                                            <div className="space-y-2">
+                                                                                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                                    Blocked Categories
+                                                                                </div>
+                                                                                <div className="max-h-60 overflow-y-auto pr-1">
+                                                                                    <ul className="space-y-1 text-sm text-gray-900">
+                                                                                        {blockedCategoryNames.map((name) => (
+                                                                                            <li key={name}>{name}</li>
+                                                                                        ))}
+                                                                                    </ul>
+                                                                                </div>
+                                                                            </div>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                ) : blockedCategoryCount > 0 ? (
+                                                                    <span className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 text-sm font-medium text-violet-700">
+                                                                        {blockedCategoryCount} blocked
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-500">
+                                                                        0 blocked
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <Badge
+                                                                    className={
+                                                                        channel.category_exclusions_completed
+                                                                            ? "bg-green-100 text-green-700"
+                                                                            : "bg-amber-100 text-amber-700"
+                                                                    }
+                                                                >
+                                                                    {channel.category_exclusions_completed ? "Completed" : "Pending"}
+                                                                </Badge>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <Badge
+                                                                    className={
+                                                                        channel.status === "active"
+                                                                            ? "bg-green-100 text-green-700"
+                                                                            : "bg-gray-100 text-gray-500"
+                                                                    }
+                                                                >
+                                                                    {channel.status.charAt(0).toUpperCase() + channel.status.slice(1)}
+                                                                </Badge>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-sm text-gray-500">
+                                                                {formatDate(channel.updated_at)}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                {showActions && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => handleSkip(channel.channel_id)}
+                                                                            disabled={isSkipping || !!skippingId}
+                                                                        >
+                                                                            {isSkipping ? (
+                                                                                <>
+                                                                                    <LoadingSpinner size="sm" className="mr-1" />
+                                                                                    All Allowing...
+                                                                                </>
+                                                                            ) : (
+                                                                                "Allow All Categories"
+                                                                            )}
+                                                                        </Button>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={() => handleSelectBlockCategory(channel)}
+                                                                            disabled={!!skippingId}
+                                                                            className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+                                                                        >
+                                                                            Select Block Category
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </TooltipProvider>
                             </div>
                         )}
 
