@@ -10,6 +10,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { syncSpecificSalesforceRetailerApi } from "@/api/admin";
 import { ArrowLeft, Building2, ChevronRight, CircleDot, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -218,6 +225,7 @@ export function RetailerAccountDetailView({
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
     account.audiences[0]?.channels[0]?.channel_id ?? null
   );
+  const [distributionCentersDrawerOpen, setDistributionCentersDrawerOpen] = useState(false);
   const [selectedDistributionCenterId, setSelectedDistributionCenterId] = useState<string | null>(
     account.audiences[0]?.channels[0]?.distribution_centers?.[0]?.distribution_center_id ||
     account.audiences[0]?.channels[0]?.distribution_centers?.[0]?.distribution_center_salesforce_id ||
@@ -307,6 +315,11 @@ export function RetailerAccountDetailView({
     syncUsers(syncSpecificSalesforceRetailerApi({ account_id: account.account_id }));
   };
 
+  const handleOpenDistributionCenters = (channelId: string) => {
+    setSelectedChannelId(channelId);
+    setDistributionCentersDrawerOpen(true);
+  };
+
   const renderOverview = () => {
     return (
       <div className="grid gap-4 md:grid-cols-3">
@@ -377,7 +390,7 @@ export function RetailerAccountDetailView({
 
   const renderAudiences = () => {
     return (
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_520px] xl:grid-cols-[minmax(0,1fr)_460px]">
+      <>
         <div className="space-y-6">
           {account.audiences.length > 1 && (
             <Card className="gap-4 py-5">
@@ -438,7 +451,7 @@ export function RetailerAccountDetailView({
                                 <Button
                                   variant={selectedChannelId === channel.channel_id ? "default" : "outline"}
                                   size="sm"
-                                  onClick={() => setSelectedChannelId(channel.channel_id)}
+                                  onClick={() => handleOpenDistributionCenters(channel.channel_id)}
                                 >
                                   View Distribution Centers
                                   <ChevronRight className="h-4 w-4" />
@@ -466,11 +479,11 @@ export function RetailerAccountDetailView({
           )}
         </div>
 
-        <div>
-          <Card className="sticky top-6 gap-5 py-6 shadow-sm">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-xl">Distribution Centers</CardTitle>
-              <CardDescription>
+        <Sheet open={distributionCentersDrawerOpen} onOpenChange={setDistributionCentersDrawerOpen}>
+          <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
+            <SheetHeader className="border-b pb-4">
+              <SheetTitle className="text-xl">Distribution Centers</SheetTitle>
+              <SheetDescription>
                 {selectedChannel ? (
                   <>
                     Channel: <span className="font-medium text-violet-600">{selectedChannel.name}</span>
@@ -478,9 +491,10 @@ export function RetailerAccountDetailView({
                 ) : (
                   "Select a channel to inspect distribution centers."
                 )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="space-y-6 p-4">
               <div className="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/40 p-5">
                 <div className="text-base font-semibold text-gray-900">
                   Distribution Centers ({selectedChannel?.distribution_centers?.length ?? 0})
@@ -597,10 +611,10 @@ export function RetailerAccountDetailView({
               <Separator />
 
               <InventoryUserPanel user={selectedInventoryUser} />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </>
     );
   };
 

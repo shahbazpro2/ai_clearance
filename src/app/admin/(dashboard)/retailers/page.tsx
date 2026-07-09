@@ -225,7 +225,6 @@ export default function RetailersManagementPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-3 w-12"></th>
                 <th className="px-4 py-3">Account Id</th>
                 <th className="px-4 py-3">Account Name</th>
                 <th className="px-4 py-3">Status</th>
@@ -237,7 +236,7 @@ export default function RetailersManagementPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center">
+                  <td colSpan={6} className="py-10 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-sm text-gray-500">
                       <LoadingSpinner size="lg" />
                       Fetching retailer accounts...
@@ -248,7 +247,7 @@ export default function RetailersManagementPage() {
 
               {!loading && error && (
                 <tr>
-                  <td colSpan={7} className="py-4 text-center text-red-600">
+                  <td colSpan={6} className="py-4 text-center text-red-600">
                     Failed to load retailer accounts.
                   </td>
                 </tr>
@@ -256,7 +255,7 @@ export default function RetailersManagementPage() {
 
               {!loading && !error && accounts.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="py-10 text-center text-sm text-gray-500">
                     No retailer accounts found.
                   </td>
                 </tr>

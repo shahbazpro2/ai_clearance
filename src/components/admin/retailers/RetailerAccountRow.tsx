@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useApi } from "use-hook-api";
 import { syncSpecificSalesforceRetailerApi, deleteRetailerRecordApi } from "@/api/admin";
@@ -70,12 +70,22 @@ export function RetailerAccountRow({
 
   return (
     <>
-      <tr className="cursor-pointer border-t hover:bg-gray-50" onClick={() => onSelect(account)}>
-        <td className="px-4 py-3 align-top text-gray-400">
-          <ChevronRight size={18} />
-        </td>
+      <tr
+        className="group cursor-pointer border-t transition-colors hover:bg-violet-50/60"
+        onClick={() => onSelect(account)}
+        title={`Open ${account.account_name} details`}
+      >
         <td className="px-4 py-3 align-top text-sm">{account.account_id}</td>
-        <td className="px-4 py-3 align-top font-medium">{account.account_name}</td>
+        <td className="px-4 py-3 align-top">
+          <div className="space-y-1">
+            <div className="font-medium text-gray-900 group-hover:text-violet-700">
+              {account.account_name}
+            </div>
+            <div className="text-xs font-medium text-violet-600">
+              Click to view details
+            </div>
+          </div>
+        </td>
         <td className="px-4 py-3 align-top">
           <Badge className={getStatusBadgeColor(account.status)}>
             {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
