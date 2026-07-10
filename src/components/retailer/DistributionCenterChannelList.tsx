@@ -119,9 +119,9 @@ export function DistributionCenterChannelList({ audienceId }: DistributionCenter
     );
   }; const handleBack = () => {
     if (ctx) {
-      setCtx({ ...ctx, currentStep: 3 });
+      setCtx({ ...ctx, currentStep: 2 });
     }
-    router.push(`/retailer/audiences/setup/step/${audienceId}/3`);
+    router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
   };
 
   return (
@@ -136,7 +136,7 @@ export function DistributionCenterChannelList({ audienceId }: DistributionCenter
             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Financial Contact
+            Back to Category Exclusions
           </button>
         </div>
       </div>

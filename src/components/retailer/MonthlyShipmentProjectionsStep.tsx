@@ -120,6 +120,23 @@ function buildProjectionPayload(
   }, {} as MonthlyProjectionPayload);
 }
 
+function extractMonthlyProjections(
+  response: any,
+  channelId?: string,
+): Partial<Record<MonthName, number | null>> | undefined {
+  const payload = response?.data ?? response;
+
+  if (payload?.monthly_projections) {
+    return payload.monthly_projections;
+  }
+
+  const channelData =
+    payload?.channels?.find((entry: any) => entry.channel_id === channelId) ??
+    payload?.channels?.[0];
+
+  return channelData?.monthly_projections;
+}
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
 
@@ -172,13 +189,11 @@ function MonthlyShipmentProjectionsDialog({
     callFetchProjections(
       getMonthlyShipmentProjectionsByChannelApi(channel.channel_id),
       ({ data }: any) => {
-        const payload = data?.data ?? data;
-        const channelData =
-          payload?.channels?.find(
-            (entry: any) => entry.channel_id === channel.channel_id,
-          ) ?? payload?.channels?.[0];
-
-        reset(normalizeProjectionValues(channelData?.monthly_projections));
+        reset(
+          normalizeProjectionValues(
+            extractMonthlyProjections(data, channel.channel_id),
+          ),
+        );
       },
       () => {
         reset(createEmptyFormValues());
@@ -236,15 +251,10 @@ function MonthlyShipmentProjectionsDialog({
                 callFetchProjections(
                   getMonthlyShipmentProjectionsByChannelApi(channel.channel_id),
                   ({ data }: any) => {
-                    const payload = data?.data ?? data;
-                    const channelData =
-                      payload?.channels?.find(
-                        (entry: any) =>
-                          entry.channel_id === channel.channel_id,
-                      ) ?? payload?.channels?.[0];
-
                     reset(
-                      normalizeProjectionValues(channelData?.monthly_projections),
+                      normalizeProjectionValues(
+                        extractMonthlyProjections(data, channel.channel_id),
+                      ),
                     );
                   },
                 );
@@ -282,8 +292,7 @@ function MonthlyShipmentProjectionsDialog({
 
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
               <p className="text-sm text-blue-700">
-                Enter values in increments of 25,000. Leave a month blank if no
-                projection is available yet.
+                Enter values in increments of 25,000.
               </p>
             </div>
 
@@ -586,19 +595,13 @@ export function MonthlyShipmentProjectionsStep({
                             {formatDateTime(channel.updated_at)}
                           </td>
                           <td className="px-4 py-3">
-                            {channel.monthly_projections_completed ? (
-                              <span className="text-xs font-medium text-gray-500">
-                                Completed
-                              </span>
-                            ) : (
-                              <Button
-                                size="sm"
-                                onClick={() => handleOpenDialog(channel)}
-                                className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-                              >
-                                Set Projections
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              onClick={() => handleOpenDialog(channel)}
+                              className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+                            >
+                              Set Projections
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -608,14 +611,7 @@ export function MonthlyShipmentProjectionsStep({
               </div>
             )}
 
-            {channels.length > 0 && pendingCount > 0 && !verifyMessage && (
-              <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <p className="text-sm text-blue-700">
-                  Complete monthly shipment projections for all channels before
-                  moving to OMS Integration.
-                </p>
-              </div>
-            )}
+
           </>
         )}
       </main>
