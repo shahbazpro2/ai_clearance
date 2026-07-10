@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { OMSAudienceDetails } from "@/components/retailer/OMSAudienceDetails";
+import { MonthlyShipmentProjectionsStep } from "@/components/retailer/MonthlyShipmentProjectionsStep";
 
 export default function Step5Page({
     params,
@@ -10,5 +10,5 @@ export default function Step5Page({
 }) {
     const { audienceId } = use(params);
 
-    return <OMSAudienceDetails audienceId={audienceId} />;
+  return <MonthlyShipmentProjectionsStep audienceId={audienceId} />;
 }

@@ -5,7 +5,7 @@ import { retailerSetupContextAtom } from "@/store/retailerSetup";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 interface SetupProgressHeaderProps {
     /** Override step shown — used when the step hasn't been committed to the atom yet */

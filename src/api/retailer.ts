@@ -223,6 +223,64 @@ export const fetchAudienceProfileDataApi = (payload: {
 };
 
 /**
+ * 12.1 Get Monthly Shipment Projections by Channel
+ * Endpoint: GET /retailer/audience/setup/monthly-shipment-projections/<channel_id>
+ */
+export const getMonthlyShipmentProjectionsByChannelApi = (
+  channelId: string,
+) => {
+  return universalApi(
+    `/retailer/audience/setup/monthly-shipment-projections/${encodeURIComponent(channelId)}`,
+    "get",
+  );
+};
+
+/**
+ * 12.2 Save Monthly Shipment Projections
+ * Endpoint: POST /retailer/audience/setup/step
+ */
+export const saveMonthlyShipmentProjectionsApi = (payload: {
+  audience_id: string;
+  channel_id: string;
+  monthly_projections: {
+    January: number | null;
+    February: number | null;
+    March: number | null;
+    April: number | null;
+    May: number | null;
+    June: number | null;
+    July: number | null;
+    August: number | null;
+    September: number | null;
+    October: number | null;
+    November: number | null;
+    December: number | null;
+  };
+}) => {
+  return responseApi("/retailer/audience/setup/step", "post", {
+    audience_id: payload.audience_id,
+    current_step_name: "monthly_shipment_projections",
+    form_data: {
+      channel_id: payload.channel_id,
+      monthly_projections: payload.monthly_projections,
+    },
+  });
+};
+
+/**
+ * 12.3 Verify Monthly Shipment Projections Step
+ * Endpoint: GET /retailer/audience/setup/step/verify
+ */
+export const verifyMonthlyShipmentProjectionsStepApi = (payload: {
+  audience_id: string;
+}) => {
+  return universalApi(
+    `/retailer/audience/setup/step/verify?audience_id=${encodeURIComponent(payload.audience_id)}&current_step_name=monthly_shipment_projections`,
+    "get",
+  );
+};
+
+/**
  * 9.1 Fetch OMS Audience Details
  * Endpoint: GET /retailer/audience/setup/step/fetch
  */

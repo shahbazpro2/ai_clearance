@@ -69,9 +69,9 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
 
   const handleBack = () => {
     if (ctx) {
-      setCtx({ ...ctx, currentStep: 4 });
+      setCtx({ ...ctx, currentStep: 5 });
     }
-    router.push(`/retailer/audiences/setup/step/${audienceId}/4`);
+    router.push(`/retailer/audiences/setup/step/${audienceId}/5`);
   };
 
   const handleDownloadDCRecords = () => {
@@ -89,7 +89,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SetupProgressHeader stepOverride={5} />
+      <SetupProgressHeader stepOverride={6} />
 
       <div className="bg-white border-b sticky top-14 z-20">
         <div className="container mx-auto px-4 py-3">
@@ -98,7 +98,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Distribution Center Setup
+            Back to Monthly Shipment Projections
           </button>
         </div>
       </div>
