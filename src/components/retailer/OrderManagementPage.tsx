@@ -92,6 +92,7 @@ function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope,
     const qtyDist = order.manual_distributed ?? 0
     const rfidDist = order.rfid_distributed ?? 0
     const pacing = Math.min(Math.max(order.pacing_visualization ?? 0, 0), 100);
+    const shouldHideChildEnvelopeMetrics = isChild;
 
     return (
         <>
@@ -132,25 +133,29 @@ function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope,
 
                 {/* PACING */}
                 <td className="px-4 py-3">
-                    <div className="w-28">
-                        <div className="text-xs text-gray-500 mb-1">{Math.round(pacing)}%</div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div
-                                className="bg-blue-500 h-1.5 rounded-full transition-all"
-                                style={{ width: `${pacing}%` }}
-                            />
+                    {shouldHideChildEnvelopeMetrics ? (
+                        "—"
+                    ) : (
+                        <div className="w-28">
+                            <div className="text-xs text-gray-500 mb-1">{Math.round(pacing)}%</div>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                <div
+                                    className="bg-blue-500 h-1.5 rounded-full transition-all"
+                                    style={{ width: `${pacing}%` }}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </td>
 
                 {/* QTY DIST. */}
                 <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                    {formatNumber(qtyDist)}
+                    {shouldHideChildEnvelopeMetrics ? "—" : formatNumber(qtyDist)}
                 </td>
 
                 {/* RFID */}
                 <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                    {formatNumber(rfidDist)}
+                    {shouldHideChildEnvelopeMetrics ? "—" : formatNumber(rfidDist)}
                 </td>
 
                 {/* CPM */}
@@ -223,6 +228,20 @@ function MonthAccordion({ month, isExpanded, onToggle, onOpenSkids }: MonthAccor
     // Only top-level orders (children are embedded inside parent rows)
     const topLevelOrders = month.orders.filter((o) => o.type !== "collated_envelope_child");
 
+    useEffect(() => {
+        if (!isExpanded) {
+            return;
+        }
+
+        setExpandedEnvelopes(
+            new Set(
+                month.orders
+                    .filter((order) => order.type === "collated_envelope_parent")
+                    .map((order) => order.id)
+            )
+        );
+    }, [isExpanded, month.orders]);
+
     return (
         <div className="border rounded-xl overflow-hidden mb-3 bg-white">
             {/* Accordion header */}
@@ -256,10 +275,10 @@ function MonthAccordion({ month, isExpanded, onToggle, onOpenSkids }: MonthAccor
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Advertiser</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Category</th>
-                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Quantity Booked</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pacing</th>
-                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty Dist.</th>
-                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">RFID</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty Distributed (Manual)</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Qty Distributed (RFID)</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">CPM</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Payment</th>
@@ -348,12 +367,14 @@ export function OrderManagementPage() {
     };
 
     // Group months by year, sorted descending
-    const monthsByYear = months.reduce<Record<string, Month[]>>((acc, month) => {
-        const year = month.booking_month.split("-")[0];
-        if (!acc[year]) acc[year] = [];
-        acc[year].push(month);
-        return acc;
-    }, {});
+    const monthsByYear = [...months]
+        .sort((a, b) => b.booking_month.localeCompare(a.booking_month))
+        .reduce<Record<string, Month[]>>((acc, month) => {
+            const year = month.booking_month.split("-")[0];
+            if (!acc[year]) acc[year] = [];
+            acc[year].push(month);
+            return acc;
+        }, {});
     const years = Object.keys(monthsByYear).sort((a, b) => parseInt(b) - parseInt(a));
 
     return (

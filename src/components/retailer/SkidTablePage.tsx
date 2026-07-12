@@ -279,8 +279,8 @@ export function SkidTablePage() {
             <div className="mb-6 grid gap-3 md:grid-cols-4">
               <SummaryCard label="Total Skids" value={formatNumber(pageSummary.totalSkids)} />
               <SummaryCard label="Total Quantity" value={formatNumber(pageSummary.totalQty)} />
-              <SummaryCard label="RFID" value={formatNumber(pageSummary.rfid)} showHelp />
-              <SummaryCard label="Manual" value={formatNumber(pageSummary.manual)} showHelp />
+              <SummaryCard label="Total Qty Distributed (RFID)" value={formatNumber(pageSummary.rfid)} />
+              <SummaryCard label="Total Qty Distributed (Manual)" value={formatNumber(pageSummary.manual)} />
             </div>
 
             <div className="space-y-3">
@@ -308,9 +308,7 @@ export function SkidTablePage() {
                                   {groupSummary.status}
                                 </span>
                               </div>
-                              <div className="mt-0.5 text-sm font-medium text-gray-500">
-                                {groupSummary.skidCount} {groupSummary.skidCount === 1 ? "skid" : "skids"} - {formatReceivedDate(group.received_date)}
-                              </div>
+
                             </div>
                           </div>
 
@@ -337,8 +335,8 @@ export function SkidTablePage() {
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Skid Name</th>
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Total Qty</th>
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Pacing</th>
-                                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">RFID</th>
-                                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Manual</th>
+                                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Qty Distributed (RFID)</th>
+                                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Qty Distributed (Manual)</th>
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</th>
                                   <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">History</th>
                                 </tr>
