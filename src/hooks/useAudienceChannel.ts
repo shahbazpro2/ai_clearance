@@ -2,8 +2,13 @@
 
 import { useEffect } from "react";
 import { useState } from "react";
+import { useAtom } from "jotai";
 import { useApi } from "use-hook-api";
 import { getDistributorStatsApi } from "@/api/retailer";
+import {
+  retailerAudienceChannelSelectionAtomFamily,
+  type RetailerAudienceChannelSelectionScope,
+} from "@/store/retailerAudienceChannel";
 
 export interface AudienceChannel {
   channel_id: string;
@@ -31,14 +36,15 @@ export interface UseAudienceChannelReturn {
   refresh: () => void;
 }
 
-export function useAudienceChannel(): UseAudienceChannelReturn {
+export function useAudienceChannel(
+  scope: RetailerAudienceChannelSelectionScope,
+): UseAudienceChannelReturn {
   const [audiences, setAudiences] = useState<Audience[]>([]);
-  const [selectedAudienceId, setSelectedAudienceId] = useState<string | null>(
-    null,
+  const [selection, setSelection] = useAtom(
+    retailerAudienceChannelSelectionAtomFamily(scope),
   );
-  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
-    null,
-  );
+  const selectedAudienceId = selection.audienceId;
+  const selectedChannelId = selection.channelId;
 
   const [callFetch, { loading, data: audienceData, error }] = useApi({
     errMsg: true,
@@ -52,12 +58,34 @@ export function useAudienceChannel(): UseAudienceChannelReturn {
     const accountData = audienceData?.data ?? audienceData;
     const audienceList: Audience[] = accountData?.audiences ?? [];
     setAudiences(audienceList);
-    if (audienceList.length > 0) {
-      const first = audienceList[0];
-      setSelectedAudienceId(first.audience_id);
-      setSelectedChannelId(first.channels[0]?.channel_id ?? null);
+
+    if (audienceList.length === 0) {
+      setSelection({ audienceId: null, channelId: null });
+      return;
     }
-  }, [audienceData]);
+
+    const nextAudience =
+      audienceList.find(
+        (audience) => audience.audience_id === selectedAudienceId,
+      ) ?? audienceList[0];
+
+    const preferredChannelId =
+      nextAudience.audience_id === selectedAudienceId
+        ? selectedChannelId
+        : null;
+
+    const nextChannelId =
+      nextAudience.channels.find(
+        (channel) => channel.channel_id === preferredChannelId,
+      )?.channel_id ??
+      nextAudience.channels[0]?.channel_id ??
+      null;
+
+    setSelection({
+      audienceId: nextAudience.audience_id,
+      channelId: nextChannelId,
+    });
+  }, [audienceData, selectedAudienceId, selectedChannelId, setSelection]);
 
   const refresh = () => {
     callFetch(getDistributorStatsApi(true));
@@ -68,10 +96,20 @@ export function useAudienceChannel(): UseAudienceChannelReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const updateSelectedChannelId = (id: string | null) => {
+    setSelection({
+      audienceId: selectedAudienceId,
+      channelId: id,
+    });
+  };
+
   const handleAudienceChange = (audienceId: string) => {
-    setSelectedAudienceId(audienceId);
     const audience = audiences.find((a) => a.audience_id === audienceId);
-    setSelectedChannelId(audience?.channels[0]?.channel_id ?? null);
+    const nextChannelId = audience?.channels[0]?.channel_id ?? null;
+    setSelection({
+      audienceId,
+      channelId: nextChannelId,
+    });
   };
 
   const selectedAudience = audiences.find(
@@ -85,7 +123,7 @@ export function useAudienceChannel(): UseAudienceChannelReturn {
     selectedAudience,
     loading,
     error,
-    setSelectedChannelId,
+    setSelectedChannelId: updateSelectedChannelId,
     handleAudienceChange,
     refresh,
   };

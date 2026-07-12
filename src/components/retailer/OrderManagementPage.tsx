@@ -306,7 +306,7 @@ export function OrderManagementPage() {
         setSelectedChannelId,
         handleAudienceChange,
         refresh,
-    } = useAudienceChannel();
+    } = useAudienceChannel("order-management");
 
     const [months, setMonths] = useState<Month[]>([]);
     const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());

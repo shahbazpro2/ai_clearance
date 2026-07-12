@@ -16,7 +16,7 @@ export default function BlockCategoriesRoute() {
         setSelectedChannelId,
         handleAudienceChange,
         refresh,
-    } = useAudienceChannel();
+    } = useAudienceChannel("block-categories");
 
     return (
         <main className="container mx-auto px-4 py-8">

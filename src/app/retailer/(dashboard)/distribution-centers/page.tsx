@@ -19,7 +19,7 @@ export default function DistributionCentersRoute() {
         setSelectedChannelId,
         handleAudienceChange,
         refresh,
-    } = useAudienceChannel();
+    } = useAudienceChannel("distribution-centers");
 
     return (
         <main className="container mx-auto px-4 py-8">
