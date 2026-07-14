@@ -53,6 +53,14 @@ export const skipCategorySelectionApi = (payload: { channel_id: string }) => {
 };
 
 /**
+ * 5.5 Get Account Audiences
+ * Endpoint: GET /retailer/account-audiences
+ */
+export const getAccountAudiencesApi = () => {
+  return universalApi("/retailer/account-audiences", "get");
+};
+
+/**
  * 5.1 GET Distributor / Account Stats
  * Endpoint: GET /retailer/distributor/stats
  */

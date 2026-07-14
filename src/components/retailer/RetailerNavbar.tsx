@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Tag, LogOut, Menu, Settings, Warehouse, ClipboardList } from "lucide-react";
+import { Tag, LogOut, Menu, Settings, Warehouse, ClipboardList, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useMe";
 import { logout } from "@/lib/auth";
@@ -19,6 +19,11 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useState } from "react";
 
 const baseNavItems = [
+    {
+        title: "Audience Profile",
+        href: "/retailer/audience-profile",
+        icon: UserCircle,
+    },
     {
         title: "Block Categories",
         href: "/retailer/block-categories",
