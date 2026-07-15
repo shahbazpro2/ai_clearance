@@ -1,7 +1,7 @@
 "use client";
 
 import { useMe } from "@/hooks/useMe";
-import { Tag, Warehouse, ClipboardList } from "lucide-react";
+import { Tag, Warehouse, ClipboardList, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 export default function RetailerDashboardPage() {
@@ -63,6 +63,21 @@ export default function RetailerDashboardPage() {
                         <h2 className="font-semibold text-gray-900 mb-1">Order Management</h2>
                         <p className="text-sm text-gray-500">
                             View and track orders by audience and channel, grouped by month.
+                        </p>
+                    </div>
+                </Link>
+
+                <Link
+                    href="/retailer/projection-shipment-logs"
+                    className="flex items-start gap-4 p-5 bg-white border rounded-xl hover:shadow-md transition-shadow"
+                >
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <BarChart3 className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="font-semibold text-gray-900 mb-1">Projection &amp; Shipment Logs</h2>
+                        <p className="text-sm text-gray-500">
+                            View monthly shipment projections and log history by channel.
                         </p>
                     </div>
                 </Link>

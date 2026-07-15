@@ -383,6 +383,32 @@ export const fetchDcShipmentLogsApi = (distributionCenterId: string) => {
 };
 
 /**
+ * 13.1 Get Monthly Projections and Shipment Logs by Channel
+ * Endpoint: GET /retailer/projection-shipment-logs?channel_id=...
+ */
+export const getProjectionShipmentLogsByChannelApi = (channelId: string) => {
+  return universalApi(
+    `/retailer/projection-shipment-logs?channel_id=${encodeURIComponent(channelId)}`,
+    "get",
+  );
+};
+
+/**
+ * 13.2 Submit Monthly Shipment Projection Change Request
+ * Endpoint: POST /retailer/projection-shipment-logs/change-request
+ */
+export const submitProjectionChangeRequestApi = (payload: {
+  channel_id: string;
+  monthly_projections: Record<string, number>;
+}) => {
+  return responseApi(
+    "/retailer/projection-shipment-logs/change-request",
+    "post",
+    payload,
+  );
+};
+
+/**
  * 10.1 Get Orders by Channel
  * Endpoint: GET /retailer/audience-channel/<channel_id>/orders
  */

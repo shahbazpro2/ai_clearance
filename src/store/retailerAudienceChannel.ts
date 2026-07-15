@@ -8,7 +8,8 @@ export interface RetailerAudienceChannelSelection {
 export type RetailerAudienceChannelSelectionScope =
   | "block-categories"
   | "distribution-centers"
-  | "order-management";
+  | "order-management"
+  | "projection-shipment-logs";
 
 const AUDIENCE_CHANNEL_SELECTION_KEY = "retailer:audience-channel-selection";
 
