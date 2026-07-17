@@ -143,6 +143,72 @@ export const financialContactApi = (payload: {
 };
 
 /**
+ * 14.1 Create User (user_management)
+ * Endpoint: POST /retailer/audience/setup/step
+ */
+export const createAccountUserApi = (payload: {
+  audience_id: string;
+  current_step_name: "user_management";
+  form_data: {
+    contact_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    role: "retailer" | "finance";
+    status: string;
+  };
+}) => {
+  return responseApi("/retailer/audience/setup/step", "post", payload);
+};
+
+/**
+ * 14.2 Update User Status (user_management)
+ * Endpoint: POST /retailer/audience/setup/step
+ */
+export const updateAccountUserStatusApi = (payload: {
+  audience_id: string;
+  current_step_name: "user_management";
+  form_data: {
+    contact_id: string;
+    role: "retailer" | "finance";
+    status: "active" | "inactive";
+  };
+}) => {
+  return responseApi("/retailer/audience/setup/step", "post", payload);
+};
+
+/**
+ * 14.3 Fetch Account Users (user_management)
+ * Endpoint: GET /retailer/audience/setup/step/fetch
+ */
+export const fetchAccountUsersApi = (audienceId: string) => {
+  const queryParams = new URLSearchParams({
+    audience_id: audienceId,
+    current_step_name: "user_management",
+  });
+  return universalApi(
+    `/retailer/audience/setup/step/fetch?${queryParams.toString()}`,
+    "get",
+  );
+};
+
+/**
+ * 14.4 Verify User Management Step
+ * Endpoint: GET /retailer/audience/setup/step/verify
+ */
+export const verifyUserManagementStepApi = (audienceId: string) => {
+  const queryParams = new URLSearchParams({
+    audience_id: audienceId,
+    current_step_name: "user_management",
+  });
+  return universalApi(
+    `/retailer/audience/setup/step/verify?${queryParams.toString()}`,
+    "get",
+  );
+};
+
+/**
  * 5.3 GET Distribution Centers by Channel
  * Endpoint: GET /retailer/audience-channel-distribution-centers?channel_id=...
  */

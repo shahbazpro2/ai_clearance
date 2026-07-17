@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Tag, LogOut, Menu, Settings, Warehouse, ClipboardList, UserCircle, BarChart3 } from "lucide-react";
+import { Tag, LogOut, Menu, Settings, Warehouse, ClipboardList, UserCircle, BarChart3, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useMe";
 import { logout } from "@/lib/auth";
@@ -51,6 +51,11 @@ const setupUserNavItems = [
         title: "Account Setup",
         href: "/retailer/audiences/setup/step",
         icon: Settings,
+    },
+    {
+        title: "User Management",
+        href: "/retailer/user-management",
+        icon: Users,
     },
     ...baseNavItems,
 ] as const;

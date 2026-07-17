@@ -9,7 +9,8 @@ export type RetailerAudienceChannelSelectionScope =
   | "block-categories"
   | "distribution-centers"
   | "order-management"
-  | "projection-shipment-logs";
+  | "projection-shipment-logs"
+  | "user-management";
 
 const AUDIENCE_CHANNEL_SELECTION_KEY = "retailer:audience-channel-selection";
 

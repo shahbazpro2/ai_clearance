@@ -67,7 +67,7 @@ export function FinancialContactStep3({ audienceId }: FinancialContactStep3Props
   if (userData && userData.role === "retailer") {
     return (
       <div className="min-h-screen bg-gray-50">
-        <main className="container mx-auto px-4 py-8 max-w-2xl">
+        <main className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto mt-12">
             <Card>
               <CardContent className="pt-12 pb-12 flex flex-col items-center justify-center text-center gap-4">
