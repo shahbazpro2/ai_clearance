@@ -82,6 +82,8 @@ interface DistributionCenterFormProps {
   audienceId: string;
   channelId: string;
   allowRetailerRole?: boolean;
+  /** Salesforce ID of the DC to pre-select when the form first loads (e.g. when navigating from Projection & Shipment Logs). */
+  initialSelectedDCId?: string;
   onSaveSuccess?: () => void;
 }
 
@@ -89,6 +91,7 @@ export function DistributionCenterForm({
   audienceId,
   channelId,
   allowRetailerRole = false,
+  initialSelectedDCId,
   onSaveSuccess,
 }: DistributionCenterFormProps) {
   const router = useRouter();
@@ -177,7 +180,7 @@ export function DistributionCenterForm({
     return dc.distribution_center_salesforce_id || `temp_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Load DCs from API and select first one
+  // Load DCs from API and select first one (or the pre-requested DC)
   useEffect(() => {
     const dcs = dcsData?.distribution_centers ?? [];
     if (dcs.length > 0) {
@@ -199,9 +202,19 @@ export function DistributionCenterForm({
       setSavedDCIds(new Set(order));
 
       if (selectedDCId === null && order.length > 0) {
-        const firstId = order[0];
-        setSelectedDCId(firstId);
-        loadDCIntoForm(dcMap[firstId]);
+        // If an initialSelectedDCId was provided, try to match by salesforce ID first
+        const preferredId = initialSelectedDCId
+          ? order.find((id) => {
+            const dc = dcMap[id];
+            return (
+              dc.distribution_center_salesforce_id === initialSelectedDCId ||
+              id === initialSelectedDCId
+            );
+          }) ?? order[0]
+          : order[0];
+
+        setSelectedDCId(preferredId);
+        loadDCIntoForm(dcMap[preferredId]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

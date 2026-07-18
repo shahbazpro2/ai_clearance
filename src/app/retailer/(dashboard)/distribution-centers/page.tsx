@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Warehouse } from "lucide-react";
 import { DistributionCenterForm } from "@/components/retailer/DistributionCenterForm";
 import { AudienceChannelSelector } from "@/components/retailer/AudienceChannelSelector";
@@ -8,6 +9,12 @@ import { useAudienceChannel } from "@/hooks/useAudienceChannel";
 
 export default function DistributionCentersRoute() {
     const [formKey, setFormKey] = useState(0);
+    const searchParams = useSearchParams();
+
+    // dc param is set when navigating from Projection & Shipment Logs — pre-selects the DC
+    const [initialDCId, setInitialDCId] = useState<string | null>(
+        () => searchParams.get("dc"),
+    );
 
     const {
         audiences,
@@ -20,6 +27,16 @@ export default function DistributionCentersRoute() {
         handleAudienceChange,
         refresh,
     } = useAudienceChannel("distribution-centers");
+
+    // Clear the initialDCId after the form has mounted so it doesn't re-apply on
+    // subsequent channel changes initiated by the user.
+    useEffect(() => {
+        if (initialDCId && selectedChannelId) {
+            // Give the form one render cycle to consume the value, then clear it.
+            const id = setTimeout(() => setInitialDCId(null), 0);
+            return () => clearTimeout(id);
+        }
+    }, [initialDCId, selectedChannelId]);
 
     return (
         <main className="container mx-auto px-4 py-8">
@@ -62,6 +79,7 @@ export default function DistributionCentersRoute() {
                             audienceId={selectedAudienceId}
                             channelId={selectedChannelId}
                             allowRetailerRole={true}
+                            initialSelectedDCId={initialDCId ?? undefined}
                             onSaveSuccess={() => setFormKey((k) => k + 1)}
                         />
                     )}

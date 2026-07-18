@@ -5,18 +5,27 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useApi } from "use-hook-api";
+import { useRouter } from "next/navigation";
+import { useSetAtom } from "jotai";
 import {
     getProjectionShipmentLogsByChannelApi,
     submitProjectionChangeRequestApi,
 } from "@/api/retailer";
 import { useAudienceChannel } from "@/hooks/useAudienceChannel";
+import { retailerAudienceChannelSelectionAtomFamily } from "@/store/retailerAudienceChannel";
 import { AudienceChannelSelector } from "@/components/retailer/AudienceChannelSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { cn } from "@/lib/utils";
-import { AlertCircle, ChevronDown, ChevronRight, Pencil, RefreshCw, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertCircle, ChevronDown, ChevronRight, Clock, Pencil, RefreshCw, X } from "lucide-react";
 import { BarChart3 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -75,9 +84,23 @@ interface ShipmentLogMonth {
     year: number;
 }
 
+interface PendingRequestChange {
+    current_projection: number;
+    projection_month: string;
+    requested_projection: number;
+}
+
+interface PendingRequest {
+    changes: PendingRequestChange[];
+    created_at: string;
+    status: string;
+}
+
 interface ProjectionData {
     audience_id: string;
     channel_id: string;
+    has_pending_request: boolean;
+    pending_requests: PendingRequest[];
     projection: Record<MonthName, number>;
     shipment_logs_data: ShipmentLogMonth[];
 }
@@ -115,20 +138,133 @@ function FieldError({ message }: { message?: string }) {
     );
 }
 
+function formatDateTime(iso: string): string {
+    try {
+        return new Date(iso).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    } catch {
+        return iso;
+    }
+}
+
+// ─── Pending Requests Modal ───────────────────────────────────────────────────
+
+interface PendingRequestsModalProps {
+    open: boolean;
+    onClose: () => void;
+    requests: PendingRequest[];
+}
+
+function PendingRequestsModal({ open, onClose, requests }: PendingRequestsModalProps) {
+    return (
+        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-amber-500" />
+                        Pending Projection Requests
+                    </DialogTitle>
+                </DialogHeader>
+
+                {requests.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-4 text-center">
+                        No pending requests found.
+                    </p>
+                ) : (
+                    <div className="space-y-4 mt-2">
+                        {requests.map((req, i) => (
+                            <div
+                                key={i}
+                                className="rounded-xl border border-amber-200 bg-amber-50/40 overflow-hidden"
+                            >
+                                {/* Request header */}
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-amber-200 bg-amber-50">
+                                    <span className="text-xs text-gray-500">
+                                        Submitted {formatDateTime(req.created_at)}
+                                    </span>
+                                    <Badge className="bg-amber-100 text-amber-700 capitalize">
+                                        {req.status}
+                                    </Badge>
+                                </div>
+
+                                {/* Changes table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-amber-100">
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Month
+                                                </th>
+                                                <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Current
+                                                </th>
+                                                <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Requested
+                                                </th>
+                                                <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Difference
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {req.changes.map((change, j) => {
+                                                const diff = change.requested_projection - change.current_projection;
+                                                return (
+                                                    <tr
+                                                        key={j}
+                                                        className="border-b last:border-0 hover:bg-amber-50/60 transition-colors"
+                                                    >
+                                                        <td className="px-4 py-3 font-medium text-gray-900">
+                                                            {change.projection_month}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right text-gray-600">
+                                                            {formatNumber(change.current_projection)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                                                            {formatNumber(change.requested_projection)}
+                                                        </td>
+                                                        <td className={`px-4 py-3 text-right font-semibold ${diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : "text-gray-500"}`}>
+                                                            {diff > 0 ? "+" : ""}{formatNumber(diff)}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 // ─── Monthly Projections Section ──────────────────────────────────────────────
 
 interface MonthlyProjectionsSectionProps {
     projection: Record<MonthName, number>;
     channelId: string;
+    hasPendingRequest: boolean;
+    pendingRequests: PendingRequest[];
     onSaved: () => void;
 }
 
 function MonthlyProjectionsSection({
     projection,
     channelId,
+    hasPendingRequest,
+    pendingRequests,
     onSaved,
 }: MonthlyProjectionsSectionProps) {
     const [editing, setEditing] = useState(false);
+    const [pendingModalOpen, setPendingModalOpen] = useState(false);
     const originalRef = useRef<ProjectionFormValues>({} as ProjectionFormValues);
 
     const [callSubmit, { loading: saving }] = useApi({ errMsg: true });
@@ -194,7 +330,17 @@ function MonthlyProjectionsSection({
                 <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
                     Monthly Projections
                 </h2>
-                {!editing ? (
+                {hasPendingRequest ? (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPendingModalOpen(true)}
+                        className="gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50"
+                    >
+                        <Clock className="h-3.5 w-3.5" />
+                        View Pending Request
+                    </Button>
+                ) : !editing ? (
                     <Button
                         size="sm"
                         variant="outline"
@@ -234,6 +380,16 @@ function MonthlyProjectionsSection({
                     </div>
                 )}
             </div>
+
+            {/* Pending notice banner */}
+            {hasPendingRequest && (
+                <div className="flex items-center gap-2 px-5 py-3 bg-amber-50 border-b border-amber-200">
+                    <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                    <p className="text-sm text-amber-700">
+                        A projection change request is pending approval. Editing is disabled until it is reviewed.
+                    </p>
+                </div>
+            )}
 
             {/* Grid */}
             <div className="p-5">
@@ -287,6 +443,12 @@ function MonthlyProjectionsSection({
                     </div>
                 )}
             </div>
+
+            <PendingRequestsModal
+                open={pendingModalOpen}
+                onClose={() => setPendingModalOpen(false)}
+                requests={pendingRequests}
+            />
         </div>
     );
 }
@@ -295,9 +457,10 @@ function MonthlyProjectionsSection({
 
 interface ShipmentLogsSectionProps {
     data: ShipmentLogMonth[];
+    onDistributionCenterClick?: (dcSalesforceId: string) => void;
 }
 
-function ShipmentLogsSection({ data }: ShipmentLogsSectionProps) {
+function ShipmentLogsSection({ data, onDistributionCenterClick }: ShipmentLogsSectionProps) {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
     // Expand all by default on first render / data change
@@ -395,7 +558,16 @@ function ShipmentLogsSection({ data }: ShipmentLogsSectionProps) {
                                                             className="border-b last:border-0 hover:bg-gray-50 transition-colors"
                                                         >
                                                             <td className="px-4 py-3 font-medium text-gray-900">
-                                                                {dc.distribution_center_name}
+                                                                {onDistributionCenterClick && dc.distribution_center_salesforce_id ? (
+                                                                    <button
+                                                                        onClick={() => onDistributionCenterClick(dc.distribution_center_salesforce_id)}
+                                                                        className="text-blue-600 hover:text-blue-800 hover:underline text-left transition-colors"
+                                                                    >
+                                                                        {dc.distribution_center_name}
+                                                                    </button>
+                                                                ) : (
+                                                                    dc.distribution_center_name
+                                                                )}
                                                             </td>
                                                             <td className="px-4 py-3 text-right text-gray-600">
                                                                 {dc.allocation_percentage}%
@@ -422,6 +594,11 @@ function ShipmentLogsSection({ data }: ShipmentLogsSectionProps) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function ProjectionShipmentLogsPage() {
+    const router = useRouter();
+    const setDCSelection = useSetAtom(
+        retailerAudienceChannelSelectionAtomFamily("distribution-centers"),
+    );
+
     const {
         audiences,
         selectedAudienceId,
@@ -457,6 +634,15 @@ export function ProjectionShipmentLogsPage() {
         if (selectedChannelId) {
             fetchProjectionData(selectedChannelId);
         }
+    };
+
+    const handleDCClick = (dcSalesforceId: string) => {
+        // Sync the distribution-centers scope selection to the current audience + channel,
+        // then navigate to the Distribution Centers page with the target DC highlighted.
+        if (selectedAudienceId && selectedChannelId) {
+            setDCSelection({ audienceId: selectedAudienceId, channelId: selectedChannelId });
+        }
+        router.push(`/retailer/distribution-centers?dc=${encodeURIComponent(dcSalesforceId)}`);
     };
 
     return (
@@ -530,9 +716,14 @@ export function ProjectionShipmentLogsPage() {
                             <MonthlyProjectionsSection
                                 projection={projectionData.projection as Record<MonthName, number>}
                                 channelId={projectionData.channel_id}
+                                hasPendingRequest={projectionData.has_pending_request ?? false}
+                                pendingRequests={projectionData.pending_requests ?? []}
                                 onSaved={handleSaved}
                             />
-                            <ShipmentLogsSection data={projectionData.shipment_logs_data} />
+                            <ShipmentLogsSection
+                                data={projectionData.shipment_logs_data}
+                                onDistributionCenterClick={handleDCClick}
+                            />
                         </div>
                     ) : null}
                 </>
