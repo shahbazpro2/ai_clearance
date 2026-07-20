@@ -84,7 +84,6 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
 
                 <div>
                     <UserManagementContent
-                        audienceId={audienceId}
                         toolbar={
                             <Button
                                 onClick={handleNext}
