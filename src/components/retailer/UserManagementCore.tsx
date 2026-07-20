@@ -98,11 +98,10 @@ export function RoleBadge({ role }: { role: UserRole }) {
 interface AddUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    audienceId: string;
     onSuccess: () => void;
 }
 
-export function AddUserDialog({ open, onOpenChange, audienceId, onSuccess }: AddUserDialogProps) {
+export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogProps) {
     const [callCreateUser, { loading: creatingUser }] = useApi({ errMsg: true });
 
     const {
@@ -128,7 +127,6 @@ export function AddUserDialog({ open, onOpenChange, audienceId, onSuccess }: Add
     const onSubmit: SubmitHandler<AddUserFormData> = (formData) => {
         callCreateUser(
             createAccountUserApi({
-                audience_id: audienceId,
                 current_step_name: "user_management",
                 form_data: {
                     contact_id: "",
@@ -385,11 +383,8 @@ export function UsersTable({ users, onStatusToggle }: UsersTableProps) {
 
 // ─── useUserManagement hook ───────────────────────────────────────────────────
 
-interface UseUserManagementOptions {
-    audienceId: string | null;
-}
 
-export function useUserManagement({ audienceId }: UseUserManagementOptions) {
+export function useUserManagement() {
     const [users, setUsers] = useState<AccountUser[]>([]);
     const [addUserOpen, setAddUserOpen] = useState(false);
     const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
@@ -398,24 +393,21 @@ export function useUserManagement({ audienceId }: UseUserManagementOptions) {
         newStatus: UserStatus;
     } | null>(null);
 
-    const [callFetchUsers, { loading: loadingUsers }] = useApi({ errMsg: true });
+    const [callFetchUsers, { loading: loadingUsers, data }] = useApi({ errMsg: true });
     const [callUpdateStatus, { loading: updatingStatus }] = useApi({ errMsg: true });
 
-    const loadUsers = (id: string) => {
+    useEffect(() => {
+        if (!data)
+            loadUsers()
+    }, [])
+
+    const loadUsers = () => {
         callFetchUsers(
-            fetchAccountUsersApi(id),
+            fetchAccountUsersApi(),
             ({ data }: any) => setUsers(data?.users ?? [])
         );
     };
 
-    useEffect(() => {
-        if (audienceId) {
-            loadUsers(audienceId);
-        } else {
-            setUsers([]);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [audienceId]);
 
     const handleStatusToggleRequest = (user: AccountUser) => {
         setPendingStatusChange({
@@ -426,18 +418,17 @@ export function useUserManagement({ audienceId }: UseUserManagementOptions) {
     };
 
     const handleStatusConfirm = () => {
-        if (!pendingStatusChange || !audienceId) return;
+        if (!pendingStatusChange) return;
         const { user, newStatus } = pendingStatusChange;
         callUpdateStatus(
             updateAccountUserStatusApi({
-                audience_id: audienceId,
                 current_step_name: "user_management",
                 form_data: { contact_id: user.contact_id, role: user.role, status: newStatus },
             }),
             () => {
                 setStatusConfirmOpen(false);
                 setPendingStatusChange(null);
-                loadUsers(audienceId);
+                loadUsers();
             }
         );
     };
@@ -447,11 +438,8 @@ export function useUserManagement({ audienceId }: UseUserManagementOptions) {
         setPendingStatusChange(null);
     };
 
-    const refreshUsers = () => {
-        if (audienceId) loadUsers(audienceId);
-    };
-
     return {
+        loadUsers,
         users,
         loadingUsers,
         addUserOpen,
@@ -462,20 +450,18 @@ export function useUserManagement({ audienceId }: UseUserManagementOptions) {
         updatingStatus,
         handleStatusToggleRequest,
         handleStatusConfirm,
-        handleStatusCancel,
-        refreshUsers,
+        handleStatusCancel
     };
 }
 
 // ─── Shared content block (toolbar + table/empty states + dialogs) ────────────
 
 interface UserManagementContentProps {
-    audienceId: string;
     /** Optional extra element rendered to the right of the Add User button (e.g. Next button in setup) */
     toolbar?: React.ReactNode;
 }
 
-export function UserManagementContent({ audienceId, toolbar }: UserManagementContentProps) {
+export function UserManagementContent({ toolbar }: UserManagementContentProps) {
     const {
         users,
         loadingUsers,
@@ -488,8 +474,8 @@ export function UserManagementContent({ audienceId, toolbar }: UserManagementCon
         handleStatusToggleRequest,
         handleStatusConfirm,
         handleStatusCancel,
-        refreshUsers,
-    } = useUserManagement({ audienceId });
+        loadUsers
+    } = useUserManagement();
 
     return (
         <>
@@ -526,8 +512,7 @@ export function UserManagementContent({ audienceId, toolbar }: UserManagementCon
             <AddUserDialog
                 open={addUserOpen}
                 onOpenChange={setAddUserOpen}
-                audienceId={audienceId}
-                onSuccess={refreshUsers}
+                onSuccess={loadUsers}
             />
             <StatusConfirmDialog
                 open={statusConfirmOpen}

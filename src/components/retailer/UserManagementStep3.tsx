@@ -1,15 +1,12 @@
 "use client";
 
-import { useApi } from "use-hook-api";
 import { useRouter } from "next/navigation";
 import { useSetAtom, useAtomValue } from "jotai";
-import { verifyUserManagementStepApi } from "@/api/retailer";
 import { retailerSetupContextAtom } from "@/store/retailerSetup";
 import { useMe } from "@/hooks/useMe";
 import { SetupProgressHeader } from "@/components/retailer/SetupProgressHeader";
 import { UserManagementContent } from "@/components/retailer/UserManagementCore";
 import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Lock } from "lucide-react";
 
@@ -22,8 +19,6 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
     const userData = useMe();
     const ctx = useAtomValue(retailerSetupContextAtom);
     const setCtx = useSetAtom(retailerSetupContextAtom);
-    const [callVerify, { loading: verifying }] = useApi({ errMsg: true });
-
     // ─── Access guard ─────────────────────────────────────────────────────────────
 
     if (userData && userData.role === "retailer") {
@@ -56,14 +51,8 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
     };
 
     const handleNext = () => {
-        callVerify(
-            verifyUserManagementStepApi(audienceId),
-            ({ data }: any) => {
-                const nextStep = data?.next_step ?? 4;
-                if (ctx) setCtx({ ...ctx, currentStep: nextStep });
-                router.push(`/retailer/audiences/setup/step/${audienceId}/${nextStep}`);
-            }
-        );
+        if (ctx) setCtx({ ...ctx, currentStep: 4 });
+        router.push(`/retailer/audiences/setup/step/${audienceId}/4`);
     };
 
     // ─── Render ──────────────────────────────────────────────────────────────────
@@ -99,17 +88,9 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
                         toolbar={
                             <Button
                                 onClick={handleNext}
-                                disabled={verifying}
                                 className="bg-blue-gradient text-white hover:bg-blue-gradient/90 min-w-28"
                             >
-                                {verifying ? (
-                                    <>
-                                        <LoadingSpinner size="sm" className="mr-2" />
-                                        Verifying...
-                                    </>
-                                ) : (
-                                    "Next"
-                                )}
+                                Next
                             </Button>
                         }
                     />

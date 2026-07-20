@@ -1,23 +1,12 @@
 "use client";
 
 import { useMe } from "@/hooks/useMe";
-import { useAudienceChannel } from "@/hooks/useAudienceChannel";
-import { AudienceChannelSelector } from "@/components/retailer/AudienceChannelSelector";
 import { UserManagementContent } from "@/components/retailer/UserManagementCore";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Users } from "lucide-react";
+import { Lock } from "lucide-react";
 
 export function UserManagementPage() {
     const userData = useMe();
-
-    const {
-        audiences,
-        selectedAudienceId,
-        loading: loadingAudiences,
-        error: audienceError,
-        handleAudienceChange,
-        refresh,
-    } = useAudienceChannel("user-management");
 
     // ─── Access guard ─────────────────────────────────────────────────────────────
 
@@ -41,23 +30,6 @@ export function UserManagementPage() {
         );
     }
 
-    // ─── No audiences empty state ─────────────────────────────────────────────────
-
-    if (!loadingAudiences && audiences.length === 0) {
-        return (
-            <main className="container mx-auto px-4 py-8">
-                <div className="flex flex-col items-center justify-center py-24 text-center">
-                    <div className="rounded-full bg-gray-100 p-4 mb-4">
-                        <Users className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-1">No Audience Data Available</h2>
-                    <p className="text-sm text-gray-500 max-w-sm">
-                        This section will become available once account setup is complete.
-                    </p>
-                </div>
-            </main>
-        );
-    }
 
     // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -70,35 +42,13 @@ export function UserManagementPage() {
                 </p>
             </div>
 
-            {/* Audience selector */}
-            <div className="mb-5">
-                <AudienceChannelSelector
-                    audiences={audiences}
-                    selectedAudienceId={selectedAudienceId}
-                    selectedChannelId={null}
-                    selectedAudience={undefined}
-                    loading={loadingAudiences}
-                    error={audienceError}
-                    onAudienceChange={handleAudienceChange}
-                    onChannelChange={() => { }}
-                    onRefresh={refresh}
-                    showChannelStatus={false}
-                />
-            </div>
 
             {/* Users content */}
-            {selectedAudienceId ? (
-                <div className="bg-white rounded-xl border shadow-sm p-6">
-                    <UserManagementContent audienceId={selectedAudienceId} />
-                </div>
-            ) : (
-                !loadingAudiences && (
-                    <div className="bg-white rounded-xl border shadow-sm p-6 flex flex-col items-center justify-center py-12 text-center">
-                        <p className="text-sm font-medium text-gray-700">Select an audience above</p>
-                        <p className="text-xs text-gray-400 mt-1">Users will appear here after you select an audience.</p>
-                    </div>
-                )
-            )}
+
+            <div className="bg-white rounded-xl border shadow-sm p-6">
+                <UserManagementContent />
+            </div>
+
         </main>
     );
 }

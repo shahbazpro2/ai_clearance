@@ -147,7 +147,7 @@ export const financialContactApi = (payload: {
  * Endpoint: POST /retailer/audience/setup/step
  */
 export const createAccountUserApi = (payload: {
-  audience_id: string;
+  audience_id?: string;
   current_step_name: "user_management";
   form_data: {
     contact_id: string;
@@ -167,7 +167,7 @@ export const createAccountUserApi = (payload: {
  * Endpoint: POST /retailer/audience/setup/step
  */
 export const updateAccountUserStatusApi = (payload: {
-  audience_id: string;
+  audience_id?: string;
   current_step_name: "user_management";
   form_data: {
     contact_id: string;
@@ -182,9 +182,8 @@ export const updateAccountUserStatusApi = (payload: {
  * 14.3 Fetch Account Users (user_management)
  * Endpoint: GET /retailer/audience/setup/step/fetch
  */
-export const fetchAccountUsersApi = (audienceId: string) => {
+export const fetchAccountUsersApi = () => {
   const queryParams = new URLSearchParams({
-    audience_id: audienceId,
     current_step_name: "user_management",
   });
   return universalApi(
