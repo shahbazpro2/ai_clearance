@@ -176,8 +176,8 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="retailer">Stakeholder</SelectItem>
-                                <SelectItem value="finance">Standard</SelectItem>
+                                <SelectItem value="retailer">Standard User</SelectItem>
+                                <SelectItem value="finance">Finance User</SelectItem>
                             </SelectContent>
                         </Select>
                         <FieldError message={errors.role?.message} />
