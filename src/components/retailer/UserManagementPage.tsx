@@ -38,8 +38,12 @@ export function UserManagementPage() {
             <div className="mb-6">
                 <h1 className="text-xl font-bold text-gray-900">User Management</h1>
                 <p className="text-sm text-gray-500 mt-1">
-                    Manage Stakeholder and Finance users for your account.
+                    Manage Stakeholder and Standard users for your account.
                 </p>
+                <ul className="mt-2 space-y-1 text-sm text-gray-500">
+                    <li><span className="font-medium text-gray-700">Standard users</span> have access to all modules.</li>
+                    <li><span className="font-medium text-gray-700">Finance users</span> have access to the order management and finance modules only.</li>
+                </ul>
             </div>
 
 

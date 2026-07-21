@@ -63,8 +63,9 @@ type MonthlyProjectionPayload = Record<MonthName, number | null>;
 
 const quantityFieldSchema = z
   .string()
+  .min(1, "Required")
   .refine(
-    (value) => value === "" || Number(value) % 25000 === 0,
+    (value) => Number(value) % 25000 === 0,
     "Quantity must be entered in increments of 25,000",
   );
 
@@ -169,34 +170,53 @@ function MonthlyShipmentProjectionsDialog({
     errMsg: true,
   });
 
+  const [originalValues, setOriginalValues] = useState<ProjectionFormValues | null>(null);
+
   const {
     register,
     reset,
     handleSubmit,
-    formState: { errors },
+    watch,
+    formState: { errors, isValid },
   } = useForm<ProjectionFormValues>({
     resolver: zodResolver(monthlyProjectionSchema) as any,
     mode: "onChange",
     defaultValues: createEmptyFormValues(),
   });
 
+  const watchedValues = watch();
+
+  const hasChanges = useMemo(() => {
+    if (!originalValues) return false; // No original data yet — keep disabled
+    return MONTHS.some((month) => {
+      const orig = originalValues[month];
+      const curr = watchedValues[month];
+      return String(orig ?? "") !== String(curr ?? "");
+    });
+  }, [watchedValues, originalValues]);
+
   useEffect(() => {
     if (!open || !channel) {
+      setOriginalValues(null);
       reset(createEmptyFormValues());
       return;
     }
 
+    setOriginalValues(null);
+
     callFetchProjections(
       getMonthlyShipmentProjectionsByChannelApi(channel.channel_id),
       ({ data }: any) => {
-        reset(
-          normalizeProjectionValues(
-            extractMonthlyProjections(data, channel.channel_id),
-          ),
+        const normalized = normalizeProjectionValues(
+          extractMonthlyProjections(data, channel.channel_id),
         );
+        setOriginalValues(normalized);
+        reset(normalized);
       },
       () => {
-        reset(createEmptyFormValues());
+        const empty = createEmptyFormValues();
+        setOriginalValues(empty);
+        reset(empty);
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -204,6 +224,12 @@ function MonthlyShipmentProjectionsDialog({
 
   const onSubmit: SubmitHandler<ProjectionFormValues> = (formValues) => {
     if (!channel) return;
+
+    // If nothing changed, just close the dialog without saving
+    if (originalValues && !hasChanges) {
+      onClose();
+      return;
+    }
 
     callSave(
       saveMonthlyShipmentProjectionsApi({
@@ -251,11 +277,11 @@ function MonthlyShipmentProjectionsDialog({
                 callFetchProjections(
                   getMonthlyShipmentProjectionsByChannelApi(channel.channel_id),
                   ({ data }: any) => {
-                    reset(
-                      normalizeProjectionValues(
-                        extractMonthlyProjections(data, channel.channel_id),
-                      ),
+                    const normalized = normalizeProjectionValues(
+                      extractMonthlyProjections(data, channel.channel_id),
                     );
+                    setOriginalValues(normalized);
+                    reset(normalized);
                   },
                 );
               }}
@@ -315,8 +341,15 @@ function MonthlyShipmentProjectionsDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={saving}
+                disabled={saving || !hasChanges || !isValid}
                 className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+                title={
+                  !hasChanges
+                    ? "No changes made yet — modify a value to enable saving"
+                    : !isValid
+                      ? "Fill in all required fields correctly"
+                      : ""
+                }
               >
                 {saving ? (
                   <>

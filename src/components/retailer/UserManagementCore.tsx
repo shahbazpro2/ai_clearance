@@ -88,7 +88,7 @@ export function StatusBadge({ status }: { status: UserStatus }) {
 export function RoleBadge({ role }: { role: UserRole }) {
     return (
         <Badge variant="outline" className="capitalize text-xs">
-            {role === "finance" ? "Finance" : "Stakeholder"}
+            {role === "finance" ? "standard" : "Stakeholder"}
         </Badge>
     );
 }
@@ -176,8 +176,8 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="retailer">Stakeholder User</SelectItem>
-                                <SelectItem value="finance">Finance User</SelectItem>
+                                <SelectItem value="retailer">Stakeholder</SelectItem>
+                                <SelectItem value="finance">Standard</SelectItem>
                             </SelectContent>
                         </Select>
                         <FieldError message={errors.role?.message} />
@@ -501,7 +501,7 @@ export function UserManagementContent({ toolbar }: UserManagementContentProps) {
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                     <p className="text-sm font-medium text-gray-700">No users yet</p>
                     <p className="text-xs text-gray-400 mt-1">
-                        Click "Add User" to create Stakeholder or Finance users.
+                        Click "Add User" to create Stakeholder or Standard users.
                     </p>
                 </div>
             ) : (

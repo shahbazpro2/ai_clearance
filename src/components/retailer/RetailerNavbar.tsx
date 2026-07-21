@@ -107,7 +107,7 @@ export function RetailerNavbar() {
                             onClick={() => router.push("/retailer/block-categories")}
                             className="text-lg font-bold text-gray-900 hover:text-primary transition-colors"
                         >
-                            Ai Clearance
+                            Insert Media
                         </button>
 
                         {/* Desktop nav links */}
@@ -176,7 +176,7 @@ export function RetailerNavbar() {
                 <SheetContent side="left" className="w-60 p-0 bg-white">
                     <div className="flex flex-col h-full">
                         <div className="px-5 py-4 border-b">
-                            <p className="text-lg font-bold text-gray-900">Ai Clearance</p>
+                            <p className="text-lg font-bold text-gray-900">Insert Media</p>
                             <p className="text-xs text-gray-500">Retailer Portal</p>
                         </div>
                         <nav className="flex-1 px-3 py-3 space-y-1">

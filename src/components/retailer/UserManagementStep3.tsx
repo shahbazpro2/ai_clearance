@@ -78,8 +78,12 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
                 <div className="mb-6">
                     <h1 className="text-xl font-bold text-gray-900">User Management</h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        Add and manage Stakeholder and Finance users for this account.
+                        Add and manage Stakeholder and Standard users for this account.
                     </p>
+                    <ul className="mt-2 space-y-1 text-sm text-gray-500">
+                        <li><span className="font-medium text-gray-700">Standard users</span> have access to all modules.</li>
+                        <li><span className="font-medium text-gray-700">Finance users</span> have access to the order management and finance modules only.</li>
+                    </ul>
                 </div>
 
                 <div>

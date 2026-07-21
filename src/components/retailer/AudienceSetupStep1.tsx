@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -116,11 +116,28 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         handleSubmit,
         setValue,
         watch,
-        formState: { errors },
+        trigger,
+        formState: { errors, isValid },
     } = useForm<FormData>({
         resolver: zodResolver(schema) as any,
         mode: "onChange",
     });
+
+    // ── Change detection ────────────────────────────────────────────────────
+
+    /** Snapshot of the server-saved form data — null when this is a first-time visit */
+    const [originalValues, setOriginalValues] = useState<FormData | null>(null);
+    const formValues = watch();
+
+    /** True when at least one field differs from the saved original */
+    const hasChanges = useMemo(() => {
+        if (!originalValues) return true; // First visit — no original to compare against
+        return (Object.keys(schema.shape) as Array<keyof FormData>).some((key) => {
+            const orig = originalValues[key];
+            const curr = formValues[key];
+            return String(orig ?? "") !== String(curr ?? "");
+        });
+    }, [formValues, originalValues]);
 
     // Shared pre-fill helper for cached or server data
     function prefillFormData(formData: Record<string, any>) {
@@ -153,8 +170,11 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         }
     }
 
-    // On mount: pre-fill from client cache (going back), or fetch from server (continue setup)
+    // On mount: validate all fields so isValid is accurate, pre-fill from cache
     useEffect(() => {
+        // Trigger validation so isValid is computed immediately
+        trigger();
+
         callFetchCategories(fetchAudienceCategoriesApi("audience"), () => {
             callFetchProfile(fetchAudienceProfileDataApi({ audience_id: audienceId }));
         })
@@ -166,12 +186,12 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // When server profile data arrives, pre-fill the form
+    // When server profile data arrives, pre-fill the form AND snapshot original values
     useEffect(() => {
         const profilePayload = profileData?.data ?? profileData;
         const formData = profilePayload?.form_data;
         if (formData) {
-            /* prefillFormData(formData); */
+            setOriginalValues(formData);
             reset(formData);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,6 +229,22 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
     });
 
     const onSubmit: SubmitHandler<FormData> = (data) => {
+        // If nothing changed, just navigate forward without re-saving
+        if (originalValues && !hasChanges) {
+            if (ctx) {
+                setCtx({
+                    ...ctx,
+                    currentStep: 2,
+                    stepData: {
+                        ...(ctx.stepData ?? {}),
+                        "1": data,
+                    },
+                });
+            }
+            router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
+            return;
+        }
+
         callSubmit(
             audienceSetupStep1Api({
                 audience_id: audienceId,
@@ -411,8 +447,13 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                         <div className="flex justify-end pt-2">
                             <Button
                                 type="submit"
-                                disabled={submitting || loadingCategories || loadingProfile}
+                                disabled={!isValid || submitting || loadingCategories || loadingProfile}
                                 className="bg-blue-gradient text-white hover:bg-blue-gradient/90 min-w-28"
+                                title={
+                                    !isValid
+                                        ? "Please fill in all required fields first"
+                                        : ""
+                                }
                             >
                                 {submitting ? (
                                     <>
@@ -420,7 +461,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                         Saving...
                                     </>
                                 ) : (
-                                    "Continue"
+                                    originalValues && !hasChanges ? "Next" : originalValues ? "Save Changes" : "Continue"
                                 )}
                             </Button>
                         </div>

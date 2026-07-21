@@ -46,7 +46,7 @@ export function useAudienceChannel(
   const selectedAudienceId = selection.audienceId;
   const selectedChannelId = selection.channelId;
 
-  const [callFetch, { loading, data: audienceData, error }] = useApi({
+  const [callFetch, { apiLoading: loading, data: audienceData, error }] = useApi({
     errMsg: true,
     cache: "audience_channel",
   });
@@ -57,7 +57,7 @@ export function useAudienceChannel(
     }
     const accountData = audienceData?.data ?? audienceData;
     const audienceList: Audience[] = accountData?.audiences ?? [];
-    setAudiences(audienceList);
+    setAudiences([...audienceList]);
 
     if (audienceList.length === 0) {
       setSelection({ audienceId: null, channelId: null });
