@@ -339,3 +339,24 @@ export const deleteRetailerRecordApi = (
   const query = new URLSearchParams(params as Record<string, string>).toString();
   return responseApi(`/admin/retailer-account?${query}`, "delete", {});
 };
+
+// 11.1 Fetch Monthly Projection Change Requests
+export const fetchMonthlyProjectionRequestsApi = (params?: {
+  status?: "pending" | "approved" | "rejected";
+}) => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) {
+    queryParams.append("status", params.status);
+  }
+  const queryString = queryParams.toString();
+  const url = `/admin/projection-requests${queryString ? `?${queryString}` : ""}`;
+  return universalApi(url, "get");
+};
+
+// 11.2 Update Monthly Shipment Projection Request Status
+export const updateProjectionRequestStatusApi = (payload: {
+  request_id: string;
+  status: number; // 1 = Approved, 0 = Rejected
+}) => {
+  return responseApi("/admin/projection-requests/status", "patch", payload);
+};

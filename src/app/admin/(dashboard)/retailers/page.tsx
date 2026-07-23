@@ -3,6 +3,7 @@
 import { fetchRetailerAccountsUsersApi, syncAllSalesforceRetailingApi, fetchSyncSalesforceJobStatsApi } from "@/api/admin";
 import { RetailerAccountDetailView } from "@/components/admin/retailers/RetailerAccountDetailView";
 import { RetailerAccountRow } from "@/components/admin/retailers/RetailerAccountRow";
+import { MonthlyProjectionRequestsSection } from "@/components/admin/retailers/MonthlyProjectionRequestsSection";
 import { SyncStatusDashboard } from "@/components/admin/retailers/SyncStatusDashboard";
 import { RetailerAccount, RetailerStatus, UserStatus } from "@/components/admin/retailers/types";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -36,7 +37,10 @@ interface SyncJobStats {
 const STATUS_OPTIONS: RetailerStatus[] = ["active", "inactive"];
 const USER_STATUS_OPTIONS: UserStatus[] = ["active", "inactive"];
 
+type ActiveTab = "accounts" | "projections";
+
 export default function RetailersManagementPage() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>("accounts");
   const [accountStatusFilter, setAccountStatusFilter] = useState<RetailerStatus | "all">("all");
   const [userStatusFilter, setUserStatusFilter] = useState<UserStatus | "all">("all");
   const [syncJobId, setSyncJobId] = useState<string | null>(null);
@@ -176,106 +180,137 @@ export default function RetailersManagementPage() {
         </Button>
       </div>
 
-      <div className="mb-8">
-        <SyncStatusDashboard
-          stats={syncStats}
-          onRefresh={handleRefreshSyncStatus}
-          isRefreshing={refreshingStats}
-        />
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-8">
+        <nav className="-mb-px flex space-x-8">
+          {(
+            [
+              { key: "accounts", label: "Retailer Accounts" },
+              { key: "projections", label: "Monthly Projection Requests" },
+            ] as { key: ActiveTab; label: string }[]
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        <Select
-          value={accountStatusFilter}
-          onValueChange={(value) => setAccountStatusFilter(value as RetailerStatus | "all")}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by account status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All account statuses</SelectItem>
-            {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Retailer Accounts tab */}
+      {activeTab === "accounts" && (
+        <>
+          <div className="mb-8">
+            <SyncStatusDashboard
+              stats={syncStats}
+              onRefresh={handleRefreshSyncStatus}
+              isRefreshing={refreshingStats}
+            />
+          </div>
 
-        <Select
-          value={userStatusFilter}
-          onValueChange={(value) => setUserStatusFilter(value as UserStatus | "all")}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by user status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All user statuses</SelectItem>
-            {USER_STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-4 py-3">Account Id</th>
-                <th className="px-4 py-3">Account Name</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Created At</th>
-                <th className="px-4 py-3">Updated At</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={6} className="py-10 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2 text-sm text-gray-500">
-                      <LoadingSpinner size="lg" />
-                      Fetching retailer accounts...
-                    </div>
-                  </td>
-                </tr>
-              )}
-
-              {!loading && error && (
-                <tr>
-                  <td colSpan={6} className="py-4 text-center text-red-600">
-                    Failed to load retailer accounts.
-                  </td>
-                </tr>
-              )}
-
-              {!loading && !error && accounts.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-10 text-center text-sm text-gray-500">
-                    No retailer accounts found.
-                  </td>
-                </tr>
-              )}
-
-              {!loading &&
-                !error &&
-                accounts.map((account) => (
-                  <RetailerAccountRow
-                    key={account.account_id}
-                    account={account}
-                    onSelect={(selected) => setSelectedAccountId(selected.account_id)}
-                    onDeleted={refreshAccounts}
-                  />
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+            <Select
+              value={accountStatusFilter}
+              onValueChange={(value) => setAccountStatusFilter(value as RetailerStatus | "all")}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by account status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All account statuses</SelectItem>
+                {STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </SelectItem>
                 ))}
-            </tbody>
-          </table>
-        </div>
-        <PaginationBar {...paginationBarProps} />
-      </div>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={userStatusFilter}
+              onValueChange={(value) => setUserStatusFilter(value as UserStatus | "all")}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by user status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All user statuses</SelectItem>
+                {USER_STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3">Account Id</th>
+                    <th className="px-4 py-3">Account Name</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Created At</th>
+                    <th className="px-4 py-3">Updated At</th>
+                    <th className="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading && (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center">
+                        <div className="flex flex-col items-center justify-center gap-2 text-sm text-gray-500">
+                          <LoadingSpinner size="lg" />
+                          Fetching retailer accounts...
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
+                  {!loading && error && (
+                    <tr>
+                      <td colSpan={6} className="py-4 text-center text-red-600">
+                        Failed to load retailer accounts.
+                      </td>
+                    </tr>
+                  )}
+
+                  {!loading && !error && accounts.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-sm text-gray-500">
+                        No retailer accounts found.
+                      </td>
+                    </tr>
+                  )}
+
+                  {!loading &&
+                    !error &&
+                    accounts.map((account) => (
+                      <RetailerAccountRow
+                        key={account.account_id}
+                        account={account}
+                        onSelect={(selected) => setSelectedAccountId(selected.account_id)}
+                        onDeleted={refreshAccounts}
+                      />
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            <PaginationBar {...paginationBarProps} />
+          </div>
+        </>
+      )}
+
+      {/* Monthly Projection Requests tab */}
+      {activeTab === "projections" && <MonthlyProjectionRequestsSection />}
     </main>
   );
 }

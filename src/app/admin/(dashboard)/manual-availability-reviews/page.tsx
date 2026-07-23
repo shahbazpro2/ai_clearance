@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 import { fetchManualAvailabilityRequestsApi } from "@/api/admin";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -213,9 +214,18 @@ export default function ManualAvailabilityReviewPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {record.updated_at ? formatDate(record.updated_at) : "—"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {record.status ? (
-                            <span className="capitalize">{record.status}</span>
+                            <Badge
+                              variant="outline"
+                              style={
+                                record.status.toLowerCase() === "pending"
+                                  ? { backgroundColor: "#fef9c3", color: "#854d0e", borderColor: "#fde047" }
+                                  : { backgroundColor: "#dbeafe", color: "#1e40af", borderColor: "#93c5fd" }
+                              }
+                            >
+                              {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                            </Badge>
                           ) : (
                             "—"
                           )}
