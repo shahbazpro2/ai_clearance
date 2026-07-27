@@ -88,7 +88,7 @@ export function StatusBadge({ status }: { status: UserStatus }) {
 export function RoleBadge({ role }: { role: UserRole }) {
     return (
         <Badge variant="outline" className="capitalize text-xs">
-            {role === "finance" ? "standard" : "Stakeholder"}
+            {role === "finance" ? "Finance" : "Standard"}
         </Badge>
     );
 }
