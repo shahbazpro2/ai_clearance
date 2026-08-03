@@ -27,7 +27,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-type AuthRole = "user" | "admin" | "retailer" | "setup_user";
+type AuthRole = "user" | "admin" | "retailer" | "setup_user" | "finance";
 
 export function LoginScreen({
     defaultRole = "user",
@@ -63,6 +63,7 @@ export function LoginScreen({
         // Redirect to role-based dashboard, let MeWrapper/ProtectedRoute handle setup_user redirect
         if (role === "admin") return "/admin";
         if (role === "retailer") return "/retailer";
+        if (role === "finance") return "/finance";
         return "/";
     };
 
@@ -90,7 +91,8 @@ export function LoginScreen({
                 // Fetch user data to get actual role
                 try {
                     const meResponse = await universalApi('/auth/me', 'get')();
-                    const userRole = meResponse?.role;
+                    const rawRole = meResponse?.role;
+                    const userRole = typeof rawRole === "string" ? rawRole.toLowerCase() : rawRole;
 
                     // Redirect based on actual user role
                     const requestedRedirect = searchParams.get("redirect");
@@ -102,6 +104,8 @@ export function LoginScreen({
                         window.location.href = '/retailer/block-categories';
                     } else if (userRole === 'admin' || userRole === 'super_admin') {
                         window.location.href = '/admin';
+                    } else if (userRole === 'finance') {
+                        window.location.href = '/finance';
                     } else {
                         window.location.href = '/';
                     }
@@ -149,7 +153,7 @@ export function LoginScreen({
                     <AuthHeader title={title || "Welcome Back"} />
                     <div className="text-center mb-6">
                         <p className="text-sm text-gray-600 mb-1">Sign in to your Ai Clearance account</p>
-                        <div className="mt-3 grid grid-cols-3 rounded-lg bg-gray-100 p-1">
+                        <div className="mt-3 grid grid-cols-4 rounded-lg bg-gray-100 p-1">
                             <Button
                                 type="button"
                                 size="sm"
@@ -191,6 +195,20 @@ export function LoginScreen({
                                 }}
                             >
                                 Retailer
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={role === "finance" ? "default" : "ghost"}
+                                className="w-full"
+                                onClick={() => {
+                                    setRole("finance");
+                                    const next = new URLSearchParams(searchParams.toString());
+                                    next.set("role", "finance");
+                                    router.replace(`/login?${next.toString()}`);
+                                }}
+                            >
+                                Finance
                             </Button>
                         </div>
                     </div>
@@ -246,7 +264,7 @@ export function LoginScreen({
                 </div>
 
                 <div className="mt-auto pt-4">
-                    {showSignup && role !== "retailer" ? (
+                    {showSignup && role !== "retailer" && role !== "finance" ? (
                         <div className="text-center">
                             <p className="text-sm text-gray-600">
                                 Don&apos;t have an account?{" "}

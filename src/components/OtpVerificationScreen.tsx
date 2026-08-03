@@ -154,9 +154,26 @@ export function OtpVerificationScreen({
                 setRefreshToken(data.refresh_token);
                 if (role) setAuthRole(role);
                 Axios.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
-                window.location.href = ["admin", "super_admin"].includes(role || "") ? "/admin" : "/";
-            } else
-                window.location.href = ["admin", "super_admin"].includes(role || "") ? "/admin/login" : "/login";
+                const normalizedRole = typeof role === "string" ? role.toLowerCase() : role;
+                if (["admin", "super_admin"].includes(normalizedRole || "")) {
+                    window.location.href = "/admin";
+                } else if (normalizedRole === "retailer") {
+                    window.location.href = "/retailer/block-categories";
+                } else if (normalizedRole === "finance") {
+                    window.location.href = "/finance";
+                } else {
+                    window.location.href = "/";
+                }
+            } else {
+                const normalizedRole = typeof role === "string" ? role.toLowerCase() : role;
+                if (["admin", "super_admin"].includes(normalizedRole || "")) {
+                    window.location.href = "/admin/login";
+                } else if (normalizedRole === "finance") {
+                    window.location.href = "/login?role=finance";
+                } else {
+                    window.location.href = "/login";
+                }
+            }
         });
     };
 

@@ -22,7 +22,7 @@ export function ForgotPasswordScreen() {
     const router = useRouter();
     const searchParams = useSearchParams()
     const roleParam = searchParams.get("role") || (searchParams.get("admin") === "true" ? "admin" : "");
-    const role = roleParam === "admin" || roleParam === "retailer" ? roleParam : "";
+    const role = roleParam === "admin" || roleParam === "retailer" || roleParam === "finance" ? roleParam : "";
     const [step, setStep] = useState<"email" | "otp" | "success">("email");
     const [email, setEmail] = useState("");
 

@@ -37,15 +37,19 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                     return;
                 }
 
-                const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+                const allowedRolesRaw = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+                const allowedRoles = allowedRolesRaw.map(r => typeof r === "string" ? r.toLowerCase() : r);
+                const userRole = typeof userData.role === "string" ? userData.role.toLowerCase() : userData.role;
 
                 // Check role
-                if (!userData.role || !allowedRoles.includes(userData.role)) {
+                if (!userRole || !allowedRoles.includes(userRole)) {
                     // Redirect to appropriate home based on role
-                    if (['admin', 'super_admin'].includes(userData.role)) {
+                    if (['admin', 'super_admin'].includes(userRole)) {
                         router.push("/admin");
-                    } else if (['retailer', 'setup_user'].includes(userData.role)) {
+                    } else if (['retailer', 'setup_user'].includes(userRole)) {
                         router.push("/retailer/block-categories");
+                    } else if (userRole === 'finance') {
+                        router.push("/finance");
                     } else {
                         router.push("/");
                     }

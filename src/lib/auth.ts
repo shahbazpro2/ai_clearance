@@ -92,11 +92,19 @@ export function isAuthenticated(): boolean {
 
 // Logout user
 export function logout(): void {
+  const authRole = getAuthRole();
+  const normalizedRole = typeof authRole === "string" ? authRole.toLowerCase() : authRole;
   clearAuthTokens();
   setTimeout(() => {
     if (typeof window !== "undefined") {
-      //if url have admin in it, redirect to login
-      if (window.location.href.includes("admin")) {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith("/admin")) {
+        window.location.href = "/admin/login";
+      } else if (pathname.startsWith("/finance") || normalizedRole === "finance") {
+        window.location.href = "/login?role=finance";
+      } else if (pathname.startsWith("/retailer") || normalizedRole === "retailer" || normalizedRole === "setup_user") {
+        window.location.href = "/login?role=retailer";
+      } else if (normalizedRole === "admin" || normalizedRole === "super_admin") {
         window.location.href = "/admin/login";
       } else {
         window.location.href = "/login";

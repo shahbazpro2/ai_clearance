@@ -45,8 +45,13 @@ export const useMe = () => {
       console.log("🔑 errorData:", errorData);
       if (errorData?.status === 401) {
         clearAuthTokens();
-        if (ROUTES.ADMIN.includes(pathname as any)) {
+        const path = pathname || "";
+        if (ROUTES.ADMIN.some(r => path === r || path.startsWith(`${r}/`))) {
           window.location.href = "/admin/login";
+        } else if (ROUTES.FINANCE.some(r => path === r || path.startsWith(`${r}/`))) {
+          window.location.href = "/login?role=finance";
+        } else if (ROUTES.RETAILER.some(r => path === r || path.startsWith(`${r}/`))) {
+          window.location.href = "/login?role=retailer";
         } else {
           window.location.href = "/login";
         }

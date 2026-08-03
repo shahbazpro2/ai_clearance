@@ -21,6 +21,10 @@ export const ROUTES = {
     "/retailer/audiences/setup/step",
   ],
 
+  FINANCE: [
+    "/finance",
+  ],
+
   // Routes that should redirect authenticated users to dashboard
   AUTH: [
     "/login",

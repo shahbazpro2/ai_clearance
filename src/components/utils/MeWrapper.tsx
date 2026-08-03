@@ -20,12 +20,15 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
         console.log('mmmaa', meData, meData?.role)
         if (pathname !== '/') return;
         if (!meData?.role) return;
-        if (['admin', 'super_admin'].includes(meData.role)) {
+        const role = typeof meData.role === "string" ? meData.role.toLowerCase() : meData.role;
+        if (['admin', 'super_admin'].includes(role)) {
             router.replace('/admin');
-        } else if (meData.role === 'retailer') {
+        } else if (role === 'retailer') {
             router.replace('/retailer/block-categories');
-        } else if (meData.role === 'setup_user') {
+        } else if (role === 'setup_user') {
             router.push('/retailer/audiences/setup/step');
+        } else if (role === 'finance') {
+            router.replace('/finance');
         }
     }, [meData, pathname, router]);
 
@@ -61,7 +64,9 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
     const shouldRedirectAdminFromRoot =
         pathname === '/' &&
         !!meData?.role &&
-        ['admin', 'super_admin', 'retailer', 'setup_user'].includes(meData.role);
+        ['admin', 'super_admin', 'retailer', 'setup_user', 'finance'].includes(
+            typeof meData.role === "string" ? meData.role.toLowerCase() : meData.role
+        );
 
     useEffect(() => {
         if (!shouldGate || meData) {
