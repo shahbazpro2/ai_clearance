@@ -8,6 +8,7 @@ export async function middleware(request: NextRequest) {
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
   const isFinancePath = pathname === "/finance" || pathname.startsWith("/finance/");
   const isRetailerPath = pathname === "/retailer" || pathname.startsWith("/retailer/");
+  const isInventoryPortalPath = pathname === "/inventory-portal" || pathname.startsWith("/inventory-portal/");
   const roleQuery = request.nextUrl.searchParams.get("role");
   const isAdminRoleQuery = roleQuery === "admin" || roleQuery === "super_admin";
   const isAdminContext = isAdminPath || isAdminRoleQuery;
@@ -36,6 +37,15 @@ export async function middleware(request: NextRequest) {
   const isAdminProtectedRoute = ROUTES.ADMIN.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
+  // Check inventory portal protected routes
+  const isInventoryPortalProtectedRoute = ROUTES.INVENTORY_PORTAL.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+  // Inventory portal auth pages are not protected
+  const isInventoryPortalAuthPage =
+    pathname === "/inventory-portal/login" ||
+    pathname === "/inventory-portal/forgot-password" ||
+    pathname.startsWith("/inventory-portal/forgot-password");
 
   const isPublicRoute = ROUTES.PUBLIC.includes(pathname as any);
 
@@ -47,11 +57,16 @@ export async function middleware(request: NextRequest) {
   // Check if current path is an auth route
   const isAuthRoute = ROUTES.AUTH.includes(pathname as any);
 
-  const anyProtected = isProtectedRoute || isFinanceProtectedRoute || isRetailerProtectedRoute || isAdminProtectedRoute;
+  const anyProtected = isProtectedRoute || isFinanceProtectedRoute || isRetailerProtectedRoute || isAdminProtectedRoute || (isInventoryPortalProtectedRoute && !isInventoryPortalAuthPage);
 
   // Redirect unauthenticated users from protected routes to login
   if (anyProtected && !accessToken) {
     console.log("🚫 Redirecting to login from protected route:", pathname);
+    if (isInventoryPortalProtectedRoute && !isInventoryPortalAuthPage) {
+      const loginUrl = new URL("/inventory-portal/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     if (isFinanceProtectedRoute) {
@@ -83,6 +98,8 @@ export async function middleware(request: NextRequest) {
       redirectPath = "/finance";
     } else if (isRetailerPath) {
       redirectPath = "/retailer/block-categories";
+    } else if (isInventoryPortalPath) {
+      redirectPath = "/inventory-portal";
     }
     return NextResponse.redirect(new URL(redirectPath, request.url));
   }

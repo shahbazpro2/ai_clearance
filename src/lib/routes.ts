@@ -25,6 +25,10 @@ export const ROUTES = {
     "/finance",
   ],
 
+  INVENTORY_PORTAL: [
+    "/inventory-portal",
+  ],
+
   // Routes that should redirect authenticated users to dashboard
   AUTH: [
     "/login",
@@ -33,6 +37,8 @@ export const ROUTES = {
     "/admin/signup",
     "/verify-otp",
     "/forgot-password",
+    "/inventory-portal/login",
+    "/inventory-portal/forgot-password",
   ],
   PUBLIC: ["/payment/success"],
 } as const;

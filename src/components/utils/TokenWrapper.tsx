@@ -57,7 +57,8 @@ const TokenWrapper: React.FC = () => {
                             {
                                 "grant_type": "refresh_token",
                                 refresh_token: refresh,
-                                ...(getAuthRole() === "retailer" ? { role: "retailer" } : {}),
+                                ...(getAuthRole() === "retailer" ? { role: "retailer" } :
+                                    getAuthRole() === "inventory" ? { role: "inventory" } : {}),
                             },
                         )();
 
@@ -69,10 +70,11 @@ const TokenWrapper: React.FC = () => {
                             }
                         }
                         else {
-                            //clear all cookies
                             clearAuthTokens();
                             if (window.location.href.includes('admin')) {
                                 window.location.href = '/admin/login';
+                            } else if (window.location.href.includes('inventory-portal')) {
+                                window.location.href = '/inventory-portal/login';
                             } else if (window.location.href.includes('retailer')) {
                                 window.location.href = '/login?role=retailer';
                             } else {

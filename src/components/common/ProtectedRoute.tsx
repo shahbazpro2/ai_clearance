@@ -22,9 +22,13 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
             const authenticated = isAuthenticated();
 
             if (!authenticated) {
-                // Get current path for redirect
                 const currentPath = window.location.pathname;
-                router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+                // Send inventory users to their own login page
+                if (currentPath.startsWith("/inventory-portal")) {
+                    router.push(`/inventory-portal/login?redirect=${encodeURIComponent(currentPath)}`);
+                } else {
+                    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+                }
                 setIsAuth(false);
                 setIsLoading(false);
                 return;
@@ -50,6 +54,8 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                         router.push("/retailer/block-categories");
                     } else if (userRole === 'finance') {
                         router.push("/finance");
+                    } else if (userRole === 'inventory') {
+                        router.push("/inventory-portal");
                     } else {
                         router.push("/");
                     }

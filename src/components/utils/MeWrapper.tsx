@@ -29,6 +29,8 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
             router.push('/retailer/audiences/setup/step');
         } else if (role === 'finance') {
             router.replace('/finance');
+        } else if (role === 'inventory') {
+            router.replace('/inventory-portal');
         }
     }, [meData, pathname, router]);
 
@@ -64,7 +66,7 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
     const shouldRedirectAdminFromRoot =
         pathname === '/' &&
         !!meData?.role &&
-        ['admin', 'super_admin', 'retailer', 'setup_user', 'finance'].includes(
+        ['admin', 'super_admin', 'retailer', 'setup_user', 'finance', 'inventory'].includes(
             typeof meData.role === "string" ? meData.role.toLowerCase() : meData.role
         );
 

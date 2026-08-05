@@ -98,7 +98,9 @@ export function logout(): void {
   setTimeout(() => {
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
-      if (pathname.startsWith("/admin")) {
+      if (pathname.startsWith("/inventory-portal") || normalizedRole === "inventory") {
+        window.location.href = "/inventory-portal/login";
+      } else if (pathname.startsWith("/admin")) {
         window.location.href = "/admin/login";
       } else if (pathname.startsWith("/finance") || normalizedRole === "finance") {
         window.location.href = "/login?role=finance";

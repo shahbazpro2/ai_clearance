@@ -52,6 +52,8 @@ export const useMe = () => {
           window.location.href = "/login?role=finance";
         } else if (ROUTES.RETAILER.some(r => path === r || path.startsWith(`${r}/`))) {
           window.location.href = "/login?role=retailer";
+        } else if (ROUTES.INVENTORY_PORTAL.some(r => path === r || path.startsWith(`${r}/`))) {
+          window.location.href = "/inventory-portal/login";
         } else {
           window.location.href = "/login";
         }
