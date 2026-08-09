@@ -12,6 +12,25 @@ interface OMSShipmentLogsDialogProps {
   open: boolean;
 }
 
+function formatAverageOrderValue(value?: number) {
+  if (value == null || isNaN(Number(value))) return "—";
+  return `$${Number(value).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatShipmentDate(dateString?: string) {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function OMSShipmentLogsDialog({
   data,
   error,
@@ -40,26 +59,36 @@ export function OMSShipmentLogsDialog({
           <div className="py-8 text-sm text-red-600">{error}</div>
         ) : data?.logs?.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[960px] text-sm">
               <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-3">Address1</th>
-                  <th className="px-4 py-3">Address2</th>
+                  <th className="px-4 py-3">First Name</th>
+                  <th className="px-4 py-3">Last Name</th>
+                  <th className="px-4 py-3">Address 1</th>
+                  <th className="px-4 py-3">Address 2</th>
                   <th className="px-4 py-3">City</th>
                   <th className="px-4 py-3">State</th>
                   <th className="px-4 py-3">Zip</th>
+                  <th className="px-4 py-3">Average Order Value</th>
                   <th className="px-4 py-3">Shipment Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {data.logs.map((log, index) => (
                   <tr key={`${log.received_at}-${index}`} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-700">{log.first_name || "—"}</td>
+                    <td className="px-4 py-3 text-gray-700">{log.last_name || "—"}</td>
                     <td className="px-4 py-3 text-gray-700">{log.address1 || "—"}</td>
                     <td className="px-4 py-3 text-gray-700">{log.address2 || "—"}</td>
                     <td className="px-4 py-3 text-gray-700">{log.city || "—"}</td>
                     <td className="px-4 py-3 text-gray-700">{log.state || "—"}</td>
                     <td className="px-4 py-3 text-gray-700">{log.zip_code || "—"}</td>
-                    <td className="px-4 py-3 text-gray-700">{log.shipment_date || "—"}</td>
+                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                      {formatAverageOrderValue(log.average_order_value)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                      {formatShipmentDate(log.shipment_date)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

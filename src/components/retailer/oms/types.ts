@@ -35,6 +35,9 @@ export interface OMSAudienceDetailsData {
 export interface ShipmentLog {
   received_at: string;
   shipment_date: string;
+  first_name: string;
+  last_name: string;
+  average_order_value: number;
   address1: string;
   address2: string;
   city: string;
