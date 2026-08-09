@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useApi } from "use-hook-api";
 import {
     getAuthorizedDistributionCentersApi,
@@ -11,13 +11,35 @@ import { cn } from "@/lib/utils";
 import {
     ChevronDown,
     ChevronRight,
+    ChevronLeft,
     AlertTriangle,
     Package2,
     Loader2,
     Layers,
+    RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "react-toastify";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -52,6 +74,17 @@ interface BookingMonth {
     status: "not_started" | "in_progress";
     total_skids: number;
     orders: Order[];
+}
+
+interface InventoryPagination {
+    has_next: boolean;
+    has_previous: boolean;
+    page: number;
+    page_size: number;
+    returned_groups: number;
+    scope: string;
+    total_groups: number;
+    total_pages: number;
 }
 
 // Map of skid.id → user-entered cartons_remaining value
@@ -124,7 +157,12 @@ function SkidTable({ skids, edits, onEdit }: SkidTableProps) {
                         return (
                             <tr
                                 key={skid.id}
-                                className="border-b last:border-b-0 hover:bg-gray-50/60 transition-colors"
+                                className={cn(
+                                    "border-b last:border-b-0 transition-colors",
+                                    hasEdit && !exceedsMax
+                                        ? "bg-blue-50/60"
+                                        : "hover:bg-gray-50/60",
+                                )}
                             >
                                 <td className="px-4 py-3 font-mono text-xs text-gray-700">
                                     {skid.skid_id}
@@ -181,33 +219,112 @@ function SkidTable({ skids, edits, onEdit }: SkidTableProps) {
     );
 }
 
+// ─── Skid Drawer ─────────────────────────────────────────────────────────────
+
+interface SkidDrawerProps {
+    order: Order | null;
+    open: boolean;
+    edits: SkidEdits;
+    onEdit: (skidId: string, value: number | undefined) => void;
+    onClose: () => void;
+}
+
+function SkidDrawer({ order, open, edits, onEdit, onClose }: SkidDrawerProps) {
+    return (
+        <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+            <SheetContent
+                side="right"
+                className="w-full sm:w-[680px] max-w-full p-0 flex flex-col overflow-hidden"
+            >
+                {/* Header */}
+                <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+                    <SheetTitle className="text-lg font-bold text-gray-900">
+                        Skids
+                    </SheetTitle>
+                    {order && (
+                        <div className="flex items-center gap-2 mt-0.5">
+                            {order.is_envelope_order ? (
+                                <>
+                                    <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+                                        <Layers className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                                        <span className="text-xs font-semibold text-amber-700">
+                                            Envelope
+                                        </span>
+                                    </div>
+                                    <span className="text-sm text-gray-700 font-medium">
+                                        {order.name}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-sm font-medium text-gray-700">
+                                        {order.advertiser}
+                                    </span>
+                                    {order.category && (
+                                        <span className="text-xs text-gray-400">
+                                            · {order.category}
+                                        </span>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </SheetHeader>
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto">
+                    {order && order.skids.length > 0 ? (
+                        <SkidTable
+                            skids={order.skids}
+                            edits={edits}
+                            onEdit={onEdit}
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+                            No skids for this order.
+                        </div>
+                    )}
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}
+
 // ─── Order Row ────────────────────────────────────────────────────────────────
 
 interface OrderRowProps {
     order: Order;
     edits: SkidEdits;
-    onEdit: (skidId: string, value: number | undefined) => void;
+    onOpen: (order: Order) => void;
 }
 
-function OrderRow({ order, edits, onEdit }: OrderRowProps) {
-    const [expanded, setExpanded] = useState(false);
+function OrderRow({ order, edits, onOpen }: OrderRowProps) {
     const totalSkids = order.skids.length;
+    const hasSkids = totalSkids > 0;
+    const editedCount = order.skids.filter(
+        (skid) => edits[skid.id] !== undefined,
+    ).length;
 
     return (
         <div className="border-b last:border-b-0">
-            {/* Row header */}
             <button
-                onClick={() => setExpanded((v) => !v)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                onClick={() => hasSkids && onOpen(order)}
+                disabled={!hasSkids}
+                className="group w-full flex items-center gap-3 px-4 py-3 enabled:hover:bg-gray-50 transition-colors text-left disabled:cursor-default disabled:opacity-60"
+                aria-label={
+                    hasSkids
+                        ? `View skids for ${order.is_envelope_order ? order.name : order.advertiser || order.name}`
+                        : undefined
+                }
             >
-                {expanded ? (
-                    <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
-                ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+                {/* View affordance — only shown when the order has skids */}
+                {hasSkids && (
+                    <span className="text-sm font-semibold text-primary shrink-0 transition-colors group-hover:underline">
+                        View
+                    </span>
                 )}
 
                 {order.is_envelope_order ? (
-                    /* Envelope order — no advertiser / category */
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
                             <Layers className="h-3.5 w-3.5 text-amber-600 shrink-0" />
@@ -220,7 +337,6 @@ function OrderRow({ order, edits, onEdit }: OrderRowProps) {
                         </span>
                     </div>
                 ) : (
-                    /* Standalone order */
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                         <span className="text-sm font-medium text-gray-900 truncate min-w-[120px]">
                             {order.advertiser}
@@ -231,26 +347,64 @@ function OrderRow({ order, edits, onEdit }: OrderRowProps) {
                     </div>
                 )}
 
-                <div className="shrink-0 ml-auto">
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
+                    {/* Skid-label warning icon */}
+                    {order.skid_label_warning && (
+                        <TooltipProvider delayDuration={150}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span
+                                        className="inline-flex items-center justify-center text-amber-500 hover:text-amber-600 transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <AlertTriangle className="h-4 w-4" />
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-xs">
+                                    Skids will arrive without Skid ID labels and will need
+                                    to be labeled onsite.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {/* Edited badge with popup — shows the changed values on hover */}
+                    {editedCount > 0 && (
+                        <TooltipProvider delayDuration={150}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap cursor-help">
+                                        {editedCount} edited
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-xs">
+                                    <div className="space-y-1">
+                                        {order.skids.map((skid) => {
+                                            const value = edits[skid.id];
+                                            if (value === undefined) return null;
+                                            return (
+                                                <div
+                                                    key={skid.id}
+                                                    className="flex items-center justify-between gap-3"
+                                                >
+                                                    <span className="font-mono font-medium text-gray-900">
+                                                        {skid.skid_id}
+                                                    </span>
+                                                    <span className="text-gray-500 whitespace-nowrap">
+                                                        {skid.cartons_remaining_last_update.toLocaleString()}
+                                                        <span className="text-gray-400 mx-1">→</span>
+                                                        {value.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
                     {skidCount(totalSkids)}
                 </div>
             </button>
-
-            {/* Skid-label warning */}
-            {order.skid_label_warning && (
-                <div className="mx-4 mb-2 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
-                    <span>
-                        Warning: Skids will arrive without Skid ID labels and will need
-                        to be labeled onsite.
-                    </span>
-                </div>
-            )}
-
-            {/* Skid table */}
-            {expanded && (
-                <SkidTable skids={order.skids} edits={edits} onEdit={onEdit} />
-            )}
         </div>
     );
 }
@@ -260,18 +414,26 @@ function OrderRow({ order, edits, onEdit }: OrderRowProps) {
 interface BookingMonthAccordionProps {
     month: BookingMonth;
     isExpanded: boolean;
-    onToggle: () => void;
     edits: SkidEdits;
-    onEdit: (skidId: string, value: number | undefined) => void;
+    onToggle: () => void;
+    onOpenOrder: (order: Order) => void;
 }
 
 function BookingMonthAccordion({
     month,
     isExpanded,
-    onToggle,
     edits,
-    onEdit,
+    onToggle,
+    onOpenOrder,
 }: BookingMonthAccordionProps) {
+    const editedCount = month.orders.reduce(
+        (sum, order) =>
+            sum +
+            order.skids.filter((skid) => edits[skid.id] !== undefined)
+                .length,
+        0,
+    );
+
     return (
         <div className="border rounded-xl overflow-hidden mb-3 bg-white shadow-sm">
             {/* Accordion header */}
@@ -290,7 +452,44 @@ function BookingMonthAccordion({
                     </span>
                     {statusBadge(month.status)}
                 </div>
-                <div className="shrink-0 ml-4">
+                <div className="flex items-center gap-2 shrink-0 ml-4">
+                    {/* Edited badge with popup — same as order rows, shows changed values on hover */}
+                    {editedCount > 0 && (
+                        <TooltipProvider delayDuration={150}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap cursor-help">
+                                        {editedCount} edited
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-xs">
+                                    <div className="space-y-1">
+                                        {month.orders.flatMap((order) =>
+                                            order.skids.map((skid) => {
+                                                const value = edits[skid.id];
+                                                if (value === undefined) return [];
+                                                return [
+                                                    <div
+                                                        key={skid.id}
+                                                        className="flex items-center justify-between gap-3"
+                                                    >
+                                                        <span className="font-mono font-medium text-gray-900">
+                                                            {skid.skid_id}
+                                                        </span>
+                                                        <span className="text-gray-500 whitespace-nowrap">
+                                                            {skid.cartons_remaining_last_update.toLocaleString()}
+                                                            <span className="text-gray-400 mx-1">→</span>
+                                                            {value.toLocaleString()}
+                                                        </span>
+                                                    </div>,
+                                                ];
+                                            }),
+                                        )}
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
                     {skidCount(month.total_skids)}
                 </div>
             </button>
@@ -308,7 +507,7 @@ function BookingMonthAccordion({
                                 key={order.id}
                                 order={order}
                                 edits={edits}
-                                onEdit={onEdit}
+                                onOpen={onOpenOrder}
                             />
                         ))
                     )}
@@ -323,28 +522,70 @@ function BookingMonthAccordion({
 interface DCSelectorProps {
     centers: DistributionCenter[];
     selectedId: string;
+    loading: boolean;
+    error: unknown;
     onChange: (id: string) => void;
+    onRefresh: () => void;
 }
 
-function DCSelector({ centers, selectedId, onChange }: DCSelectorProps) {
-    if (centers.length === 0) return null;
-
+function DCSelector({ centers, selectedId, loading, error, onChange, onRefresh }: DCSelectorProps) {
     return (
-        <div className="flex flex-wrap items-center gap-2">
-            {centers.map((dc) => (
-                <button
-                    key={dc.salesforce_distribution_center_id}
-                    onClick={() => onChange(dc.salesforce_distribution_center_id)}
-                    className={cn(
-                        "px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors",
-                        selectedId === dc.salesforce_distribution_center_id
-                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                            : "bg-white text-gray-700 border-gray-200 hover:border-primary/40 hover:bg-primary/5",
+        <div className="flex flex-col gap-4">
+            {/* Selector card */}
+            <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-xl border">
+                {/* Distribution Center row */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 shrink-0">
+                        Distribution Center:
+                    </span>
+                    {loading && centers.length === 0 ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <LoadingSpinner size="sm" /> Loading distribution centers…
+                        </div>
+                    ) : (
+                        <Select value={selectedId} onValueChange={onChange}>
+                            <SelectTrigger className="w-[250px]">
+                                <SelectValue placeholder="Select a distribution center" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {centers.map((dc) => (
+                                    <SelectItem
+                                        key={dc.salesforce_distribution_center_id}
+                                        value={dc.salesforce_distribution_center_id}
+                                    >
+                                        {dc.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     )}
-                >
-                    {dc.name}
-                </button>
-            ))}
+                    <Button onClick={onRefresh} disabled={loading} variant="outline" size="sm">
+                        <RefreshCw className="h-4 w-4 mr-1" />
+                        Refresh
+                    </Button>
+                </div>
+            </div>
+
+            {/* Error state */}
+            {!loading && !!error && (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <p className="text-sm text-red-600">Failed to load distribution centers.</p>
+                    <Button variant="outline" size="sm" onClick={onRefresh}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                    </Button>
+                </div>
+            )}
+
+            {/* Empty state */}
+            {!loading && !error && centers.length === 0 && (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-10 text-center">
+                    <Package2 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">
+                        No distribution centers are assigned to your account.
+                    </p>
+                </div>
+            )}
         </div>
     );
 }
@@ -360,15 +601,36 @@ export function InventoryPage() {
     );
     // skid.id → user-entered value
     const [edits, setEdits] = useState<SkidEdits>({});
+    // Pagination for booking months (the API paginates the list)
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState<InventoryPagination | null>(
+        null,
+    );
+    // skid.id → initial_total_cartons, accumulated across pages so validation
+    // still catches over-max edits made on other pages
+    const skidInitialTotalsRef = useRef<Record<string, number>>({});
 
-    const [callCenters, { loading: loadingCenters }] = useApi({ errMsg: true });
+    // ── Skid drawer state ──
+    const [drawerOrder, setDrawerOrder] = useState<Order | null>(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const openDrawer = (order: Order) => {
+        setDrawerOrder(order);
+        setDrawerOpen(true);
+    };
+
+    const closeDrawer = () => {
+        setDrawerOpen(false);
+    };
+
+    const [callCenters, { loading: loadingCenters, error: centersError }] = useApi({ errMsg: true });
     const [callInventory, { loading: loadingInventory }] = useApi({
         errMsg: true,
     });
     const [callSubmit, { loading: submitting }] = useApi({ errMsg: true });
 
     // ── Load distribution centers once on mount ──
-    useEffect(() => {
+    const loadCenters = useCallback(() => {
         callCenters(
             getAuthorizedDistributionCentersApi(),
             ({ data }: any) => {
@@ -385,17 +647,35 @@ export function InventoryPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── Load inventory whenever selected DC changes ──
+    useEffect(() => {
+        loadCenters();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ── Load inventory whenever the selected DC or page changes ──
     const loadInventory = useCallback(
-        (dcId: string) => {
+        (dcId: string, pageNumber: number = 1) => {
             if (!dcId) return;
             setBookingMonths([]);
             setExpandedMonths(new Set());
-            setEdits({});
             callInventory(
-                getDistributionCenterInventoryApi(dcId),
+                getDistributionCenterInventoryApi(dcId, {
+                    page: pageNumber,
+                }),
                 ({ data }: any) => {
-                    setBookingMonths(data?.booking_months ?? []);
+                    const months = data?.booking_months ?? [];
+                    setBookingMonths(months);
+                    setPagination(data?.pagination ?? null);
+                    // Accumulate skid totals so edits on hidden pages stay validated
+                    const totals = { ...skidInitialTotalsRef.current };
+                    months.forEach((m: any) =>
+                        m.orders?.forEach((o: any) =>
+                            o.skids?.forEach((s: any) => {
+                                totals[s.id] = s.initial_total_cartons;
+                            }),
+                        ),
+                    );
+                    skidInitialTotalsRef.current = totals;
                 },
             );
         },
@@ -404,8 +684,37 @@ export function InventoryPage() {
     );
 
     useEffect(() => {
-        if (selectedDcId) loadInventory(selectedDcId);
-    }, [selectedDcId, loadInventory]);
+        if (selectedDcId) loadInventory(selectedDcId, page);
+    }, [selectedDcId, page, loadInventory]);
+
+    // ── Refresh: reload the DC list (keeping the selection) and reload the
+    // inventory for the currently selected DC by passing its value to the API ──
+    const handleRefresh = useCallback(() => {
+        callCenters(
+            getAuthorizedDistributionCentersApi(),
+            ({ data }: any) => {
+                const dcs: DistributionCenter[] =
+                    data?.distribution_centers ?? [];
+                setCenters(dcs);
+                // Preserve the current selection when the list reloads
+                if (dcs.length > 0) {
+                    setSelectedDcId((prev) =>
+                        dcs.some(
+                            (dc) =>
+                                dc.salesforce_distribution_center_id === prev,
+                        )
+                            ? prev
+                            : dcs[0].salesforce_distribution_center_id,
+                    );
+                }
+            },
+        );
+        // Pass the selected DC value to the inventory API so fresh data loads for it
+        if (selectedDcId) {
+            loadInventory(selectedDcId, page);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDcId, page]);
 
     // ── Edit handler ──
     const handleEdit = (skidId: string, value: number | undefined) => {
@@ -420,22 +729,31 @@ export function InventoryPage() {
         });
     };
 
-    // ── Validate edits: none may exceed initial_total_cartons ──
-    const hasValidationErrors = (() => {
-        for (const month of bookingMonths) {
-            for (const order of month.orders) {
-                for (const skid of order.skids) {
-                    const v = edits[skid.id];
-                    if (v !== undefined && v > skid.initial_total_cartons) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    })();
+    // ── DC change: reset to page 1, clear edits + accumulated totals for the new DC ──
+    const handleDcChange = (id: string) => {
+        setSelectedDcId(id);
+        setPage(1);
+        setEdits({});
+        skidInitialTotalsRef.current = {};
+    };
 
+    // ── Page change: keep edits, request the new page ──
+    const handlePageChange = (nextPage: number) => {
+        if (nextPage < 1) return;
+        setPage(nextPage);
+    };
+
+    // ── Validate edits against initial totals (accumulated across all pages) ──
     const editedSkidIds = Object.keys(edits);
+    const hasValidationErrors = editedSkidIds.some((skidId) => {
+        const value = edits[skidId];
+        const initial = skidInitialTotalsRef.current[skidId];
+        return (
+            value !== undefined &&
+            initial !== undefined &&
+            value > initial
+        );
+    });
     const canSubmit =
         editedSkidIds.length > 0 && !hasValidationErrors && !submitting;
 
@@ -457,7 +775,8 @@ export function InventoryPage() {
         const submitChunks = (remaining: typeof chunks) => {
             if (remaining.length === 0) {
                 toast.success("Skid updates submitted successfully.");
-                loadInventory(selectedDcId);
+                setEdits({});
+                loadInventory(selectedDcId, page);
                 return;
             }
             const [head, ...tail] = remaining;
@@ -496,30 +815,16 @@ export function InventoryPage() {
             </div>
 
             {/* DC Selector */}
-            {isLoadingCenters ? (
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading distribution centers…
-                </div>
-            ) : centers.length === 0 ? (
-                <div className="mb-6 rounded-xl border border-dashed border-gray-200 bg-white px-6 py-10 text-center">
-                    <Package2 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">
-                        No distribution centers are assigned to your account.
-                    </p>
-                </div>
-            ) : (
-                <div className="mb-6 space-y-1">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                        Distribution Center
-                    </p>
-                    <DCSelector
-                        centers={centers}
-                        selectedId={selectedDcId}
-                        onChange={(id) => setSelectedDcId(id)}
-                    />
-                </div>
-            )}
+            <div className="mb-6">
+                <DCSelector
+                    centers={centers}
+                    selectedId={selectedDcId}
+                    loading={isLoadingCenters}
+                    error={centersError}
+                    onChange={handleDcChange}
+                    onRefresh={handleRefresh}
+                />
+            </div>
 
             {/* Inventory content */}
             {selectedDcId && (
@@ -547,13 +852,65 @@ export function InventoryPage() {
                                         isExpanded={expandedMonths.has(
                                             month.booking_month,
                                         )}
+                                        edits={edits}
                                         onToggle={() =>
                                             toggleMonth(month.booking_month)
                                         }
-                                        edits={edits}
-                                        onEdit={handleEdit}
+                                        onOpenOrder={openDrawer}
                                     />
                                 ))}
+
+                                {/* Pagination — booking months are paginated by the API */}
+                                {pagination && pagination.total_pages > 1 && (
+                                    <div className="mt-3 flex items-center justify-between px-5 py-3 border rounded-xl bg-white shadow-sm">
+                                        <p className="text-sm text-gray-600">
+                                            Page {pagination.page} of{" "}
+                                            {pagination.total_pages} (
+                                            {pagination.total_groups} booking
+                                            month
+                                            {pagination.total_groups === 1
+                                                ? ""
+                                                : "s"}
+                                            )
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                type="button"
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        pagination.page - 1,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !pagination.has_previous ||
+                                                    isLoadingInventory
+                                                }
+                                            >
+                                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                                Previous
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                type="button"
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        pagination.page + 1,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !pagination.has_next ||
+                                                    isLoadingInventory
+                                                }
+                                            >
+                                                Next
+                                                <ChevronRight className="h-4 w-4 ml-1" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Submit bar */}
@@ -603,6 +960,15 @@ export function InventoryPage() {
                     )}
                 </>
             )}
+
+            {/* Skid drawer */}
+            <SkidDrawer
+                order={drawerOrder}
+                open={drawerOpen}
+                edits={edits}
+                onEdit={handleEdit}
+                onClose={closeDrawer}
+            />
         </main>
     );
 }

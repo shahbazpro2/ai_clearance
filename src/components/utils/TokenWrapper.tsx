@@ -74,7 +74,7 @@ const TokenWrapper: React.FC = () => {
                             if (window.location.href.includes('admin')) {
                                 window.location.href = '/admin/login';
                             } else if (window.location.href.includes('inventory-portal')) {
-                                window.location.href = '/inventory-portal/login';
+                                window.location.href = '/login?role=inventory';
                             } else if (window.location.href.includes('retailer')) {
                                 window.location.href = '/login?role=retailer';
                             } else {

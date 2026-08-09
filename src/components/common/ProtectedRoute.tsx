@@ -23,9 +23,9 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
 
             if (!authenticated) {
                 const currentPath = window.location.pathname;
-                // Send inventory users to their own login page
+                // Send inventory users to the common login page
                 if (currentPath.startsWith("/inventory-portal")) {
-                    router.push(`/inventory-portal/login?redirect=${encodeURIComponent(currentPath)}`);
+                    router.push(`/login?role=inventory&redirect=${encodeURIComponent(currentPath)}`);
                 } else {
                     router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
                 }

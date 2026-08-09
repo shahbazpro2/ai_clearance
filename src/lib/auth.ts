@@ -99,7 +99,7 @@ export function logout(): void {
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
       if (pathname.startsWith("/inventory-portal") || normalizedRole === "inventory") {
-        window.location.href = "/inventory-portal/login";
+        window.location.href = "/login?role=inventory";
       } else if (pathname.startsWith("/admin")) {
         window.location.href = "/admin/login";
       } else if (pathname.startsWith("/finance") || normalizedRole === "finance") {

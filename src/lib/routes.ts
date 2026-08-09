@@ -37,7 +37,6 @@ export const ROUTES = {
     "/admin/signup",
     "/verify-otp",
     "/forgot-password",
-    "/inventory-portal/login",
     "/inventory-portal/forgot-password",
   ],
   PUBLIC: ["/payment/success"],

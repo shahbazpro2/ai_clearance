@@ -53,7 +53,7 @@ export const useMe = () => {
         } else if (ROUTES.RETAILER.some(r => path === r || path.startsWith(`${r}/`))) {
           window.location.href = "/login?role=retailer";
         } else if (ROUTES.INVENTORY_PORTAL.some(r => path === r || path.startsWith(`${r}/`))) {
-          window.location.href = "/inventory-portal/login";
+          window.location.href = "/login?role=inventory";
         } else {
           window.location.href = "/login";
         }

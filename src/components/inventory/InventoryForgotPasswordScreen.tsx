@@ -200,7 +200,7 @@ export function InventoryForgotPasswordScreen() {
                     variant="ghost"
                     size="sm"
                     className="text-gray-600 hover:text-gray-800 -mt-2 mb-2 px-0"
-                    onClick={() => router.push("/inventory-portal/login")}
+                    onClick={() => router.push("/login?role=inventory")}
                 >
                     <ArrowLeft className="h-4 w-4 mr-1" /> Back to login
                 </Button>
@@ -322,7 +322,7 @@ export function InventoryForgotPasswordScreen() {
                 </p>
                 <Button
                     className="w-full bg-blue-gradient text-white h-11 font-medium"
-                    onClick={() => router.push("/inventory-portal/login")}
+                    onClick={() => router.push("/login?role=inventory")}
                 >
                     Back to Login
                 </Button>
