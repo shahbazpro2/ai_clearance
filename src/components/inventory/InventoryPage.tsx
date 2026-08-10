@@ -67,6 +67,7 @@ interface Order {
     category: string | null;
     skid_label_warning: boolean;
     skids: Skid[];
+    children?: Order[];
 }
 
 interface BookingMonth {
@@ -117,6 +118,15 @@ function skidCount(n: number) {
             {n} skid{n !== 1 ? "s" : ""}
         </span>
     );
+}
+
+// Flattens an order's own skids plus skids from its child orders (envelope
+// parent orders) so edits/badges cover all editable skids.
+function allSkids(order: Order): Skid[] {
+    return [
+        ...(order.skids ?? []),
+        ...(order.children ?? []).flatMap((child) => child.skids ?? []),
+    ];
 }
 
 // ─── Skid Table ───────────────────────────────────────────────────────────────
@@ -219,6 +229,164 @@ function SkidTable({ skids, edits, onEdit }: SkidTableProps) {
     );
 }
 
+// ─── Child Order Card (collapsible) ────────────────────────────────────────────
+
+interface ChildOrderCardProps {
+    child: Order;
+    edits: SkidEdits;
+    onEdit: (skidId: string, value: number | undefined) => void;
+    expanded: boolean;
+    onToggle: () => void;
+}
+
+function ChildOrderCard({
+    child,
+    edits,
+    onEdit,
+    expanded,
+    onToggle,
+}: ChildOrderCardProps) {
+    const childSkids = child.skids ?? [];
+    const editedCount = childSkids.filter(
+        (skid) => edits[skid.id] !== undefined,
+    ).length;
+
+    return (
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            {/* Header — click to expand/collapse */}
+            <button
+                type="button"
+                onClick={onToggle}
+                aria-expanded={expanded}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
+            >
+                <ChevronDown
+                    className={cn(
+                        "h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200",
+                        !expanded && "-rotate-90",
+                    )}
+                />
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-gray-900 truncate">
+                        {child.name}
+                    </span>
+                    {child.category && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-gray-100 text-[11px] font-medium text-gray-500 truncate max-w-[200px] shrink-0">
+                            {child.category}
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    {editedCount > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                            {editedCount} edited
+                        </span>
+                    )}
+                    <span className="text-xs font-medium text-gray-500 whitespace-nowrap tabular-nums">
+                        {childSkids.length} skid
+                        {childSkids.length !== 1 ? "s" : ""}
+                    </span>
+                </div>
+            </button>
+
+            {/* Collapsible body — animates via grid-template-rows */}
+            <div
+                className={cn(
+                    "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                    expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                )}
+            >
+                <div className="overflow-hidden min-h-0">
+                    {childSkids.length > 0 ? (
+                        <SkidTable
+                            skids={childSkids}
+                            edits={edits}
+                            onEdit={onEdit}
+                        />
+                    ) : (
+                        <div className="px-4 py-4 text-sm text-gray-400 border-t">
+                            No skids for this child order.
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Child Orders Section ─────────────────────────────────────────────────────
+
+interface ChildOrdersSectionProps {
+    order: Order;
+    edits: SkidEdits;
+    onEdit: (skidId: string, value: number | undefined) => void;
+}
+
+function ChildOrdersSection({ order, edits, onEdit }: ChildOrdersSectionProps) {
+    const children = order.children ?? [];
+    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+
+    const allExpanded = collapsedIds.size === 0;
+
+    const toggleChild = (id: string) => {
+        setCollapsedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleAll = () => {
+        setCollapsedIds(
+            allExpanded ? new Set(children.map((c) => c.id)) : new Set(),
+        );
+    };
+
+    return (
+        <div className="border-t bg-gray-50">
+            {/* Section header */}
+            <div className="px-6 py-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 shrink-0">
+                        <Layers className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900">
+                            Child Orders
+                        </h3>
+                        <p className="text-xs text-gray-400">
+                            {children.length} order
+                            {children.length !== 1 ? "s" : ""}
+                        </p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="text-xs font-semibold text-primary hover:underline transition-colors shrink-0"
+                >
+                    {allExpanded ? "Collapse all" : "Expand all"}
+                </button>
+            </div>
+
+            {/* Child cards */}
+            <div className="px-4 pb-5 space-y-2">
+                {children.map((child) => (
+                    <ChildOrderCard
+                        key={child.id}
+                        child={child}
+                        edits={edits}
+                        onEdit={onEdit}
+                        expanded={!collapsedIds.has(child.id)}
+                        onToggle={() => toggleChild(child.id)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // ─── Skid Drawer ─────────────────────────────────────────────────────────────
 
 interface SkidDrawerProps {
@@ -284,6 +452,19 @@ function SkidDrawer({ order, open, edits, onEdit, onClose }: SkidDrawerProps) {
                             No skids for this order.
                         </div>
                     )}
+
+                    {/* Child Orders — only shown for Parent Envelope Orders that
+                        include child records in the API response */}
+                    {order?.is_envelope_order &&
+                        order.children &&
+                        order.children.length > 0 && (
+                            <ChildOrdersSection
+                                key={order.id}
+                                order={order}
+                                edits={edits}
+                                onEdit={onEdit}
+                            />
+                        )}
                 </div>
             </SheetContent>
         </Sheet>
@@ -300,8 +481,14 @@ interface OrderRowProps {
 
 function OrderRow({ order, edits, onOpen }: OrderRowProps) {
     const totalSkids = order.skids.length;
-    const hasSkids = totalSkids > 0;
-    const editedCount = order.skids.filter(
+    const hasSkids =
+        totalSkids > 0 ||
+        (order.is_envelope_order &&
+            (order.children?.some(
+                (child) => (child.skids ?? []).length > 0,
+            ) ??
+                false));
+    const editedCount = allSkids(order).filter(
         (skid) => edits[skid.id] !== undefined,
     ).length;
 
@@ -338,10 +525,13 @@ function OrderRow({ order, edits, onOpen }: OrderRowProps) {
                     </div>
                 ) : (
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <span className="text-sm font-medium text-gray-900 truncate min-w-[120px]">
+                        <span className="text-sm font-semibold text-gray-900 truncate min-w-[100px]">
+                            {order.name}
+                        </span>
+                        <span className="text-sm font-medium text-gray-700 truncate min-w-[120px] hidden sm:block">
                             {order.advertiser}
                         </span>
-                        <span className="text-xs text-gray-500 truncate hidden sm:block">
+                        <span className="text-xs text-gray-500 truncate hidden md:block">
                             {order.category}
                         </span>
                     </div>
@@ -378,7 +568,7 @@ function OrderRow({ order, edits, onOpen }: OrderRowProps) {
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-xs text-xs">
                                     <div className="space-y-1">
-                                        {order.skids.map((skid) => {
+                                        {allSkids(order).map((skid) => {
                                             const value = edits[skid.id];
                                             if (value === undefined) return null;
                                             return (
@@ -429,8 +619,9 @@ function BookingMonthAccordion({
     const editedCount = month.orders.reduce(
         (sum, order) =>
             sum +
-            order.skids.filter((skid) => edits[skid.id] !== undefined)
-                .length,
+            allSkids(order).filter(
+                (skid) => edits[skid.id] !== undefined,
+            ).length,
         0,
     );
 
@@ -465,7 +656,7 @@ function BookingMonthAccordion({
                                 <TooltipContent side="top" className="max-w-xs text-xs">
                                     <div className="space-y-1">
                                         {month.orders.flatMap((order) =>
-                                            order.skids.map((skid) => {
+                                            allSkids(order).map((skid) => {
                                                 const value = edits[skid.id];
                                                 if (value === undefined) return [];
                                                 return [
@@ -669,11 +860,19 @@ export function InventoryPage() {
                     // Accumulate skid totals so edits on hidden pages stay validated
                     const totals = { ...skidInitialTotalsRef.current };
                     months.forEach((m: any) =>
-                        m.orders?.forEach((o: any) =>
+                        m.orders?.forEach((o: any) => {
                             o.skids?.forEach((s: any) => {
                                 totals[s.id] = s.initial_total_cartons;
-                            }),
-                        ),
+                            });
+                            // Accumulate child-order skid totals too so edits on
+                            // envelope child skids stay validated against their
+                            // initial totals.
+                            o.children?.forEach((c: any) =>
+                                c.skids?.forEach((s: any) => {
+                                    totals[s.id] = s.initial_total_cartons;
+                                }),
+                            );
+                        }),
                     );
                     skidInitialTotalsRef.current = totals;
                 },
