@@ -41,18 +41,6 @@ export const viewGcpInsertImagesApi = (payload: {
 };
 
 /**
- * 4.4 Skip Category Selection
- * Endpoint: POST /retailer/channel/blocked-category/skip
- */
-export const skipCategorySelectionApi = (payload: { channel_id: string }) => {
-  return responseApi(
-    "/retailer/channel/blocked-category/skip",
-    "post",
-    payload,
-  );
-};
-
-/**
  * 5.5 Get Account Audiences
  * Endpoint: GET /retailer/account-audiences
  */
@@ -110,17 +98,6 @@ export const audienceSetupStep1Api = (payload: {
     Monthly_New_Customer_Percentage__c: number;
     Annual_Customer_Order_Frequency__c: number;
   };
-}) => {
-  return responseApi("/retailer/audience/setup/step", "post", payload);
-};
-
-/**
- * 7.2 Verify Category Selection (blocked_categories_verification)
- * Endpoint: POST /retailer/audience/setup/step
- */
-export const verifyCategorySelectionApi = (payload: {
-  audience_id: string;
-  current_step_name: "blocked_categories_verification";
 }) => {
   return responseApi("/retailer/audience/setup/step", "post", payload);
 };
@@ -470,6 +447,75 @@ export const submitProjectionChangeRequestApi = (payload: {
     "/retailer/projection-shipment-logs/change-request",
     "post",
     payload,
+  );
+};
+
+/**
+ * 15.1 Get Brand Categories for Channel
+ * Endpoint: GET /retailer/brand-categories?channel_id=...
+ */
+export const getBrandCategoriesApi = (channelId: string) => {
+  return universalApi(
+    `/retailer/brand-categories?channel_id=${encodeURIComponent(channelId)}`,
+    "get",
+  );
+};
+
+/**
+ * 15.2 Get Category Brands
+ * Endpoint: GET /retailer/category-brands?category_id=...&channel_id=...&page=...&limit=...
+ */
+export const getCategoryBrandsApi = (payload: {
+  category_id: string;
+  channel_id: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const queryParams = new URLSearchParams({
+    category_id: payload.category_id,
+    channel_id: payload.channel_id,
+  });
+  if (payload.page !== undefined) {
+    queryParams.set("page", payload.page.toString());
+  }
+  if (payload.limit !== undefined) {
+    queryParams.set("limit", payload.limit.toString());
+  }
+  return universalApi(
+    `/retailer/category-brands?${queryParams.toString()}`,
+    "get",
+  );
+};
+
+/**
+ * 15.3 Save Category / Brand Approval Settings
+ * Endpoint: POST /retailer/brand-approval-settings
+ * Provide exactly one of category_id or brand_salesforce_id per request.
+ */
+export const saveBrandApprovalSettingsApi = (payload: {
+  channel_id: string;
+  category_id?: string;
+  category_mode?: number;
+  notifications_enabled?: boolean;
+  automatically_approve?: boolean;
+  brand_salesforce_id?: string;
+  is_blocked?: boolean;
+}) => {
+  return responseApi("/retailer/brand-approval-settings", "post", payload);
+};
+
+/**
+ * 15.4 Verify Brand Approval Settings Step
+ * Endpoint: GET /retailer/audience/setup/step/verify?audience_id=...&current_step_name=brand_approval_settings
+ */
+export const verifyBrandApprovalSettingsStepApi = (audienceId: string) => {
+  const queryParams = new URLSearchParams({
+    audience_id: audienceId,
+    current_step_name: "brand_approval_settings",
+  });
+  return universalApi(
+    `/retailer/audience/setup/step/verify?${queryParams.toString()}`,
+    "get",
   );
 };
 

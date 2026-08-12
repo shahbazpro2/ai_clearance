@@ -1,13 +1,13 @@
 "use client";
 
 import { use } from "react";
-import { CategoryExclusionsStep2 } from "@/components/retailer/CategoryExclusionsStep2";
+import { BrandApprovalSettingsStep2 } from "@/components/retailer/BrandApprovalSettingsStep2";
 
-export default function CategoryExclusionsStep2Route({
+export default function Step2Page({
     params,
 }: {
     params: Promise<{ audienceId: string }>;
 }) {
     const { audienceId } = use(params);
-    return <CategoryExclusionsStep2 audienceId={audienceId} />;
+    return <BrandApprovalSettingsStep2 audienceId={audienceId} />;
 }
