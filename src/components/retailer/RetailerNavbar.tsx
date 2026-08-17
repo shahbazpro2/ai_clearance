@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Tag, LogOut, Menu, Settings, Warehouse, ClipboardList, UserCircle, BarChart3, Users } from "lucide-react";
+import { LogOut, Menu, Settings, Settings2, Warehouse, ClipboardList, UserCircle, BarChart3, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useMe";
 import { logout } from "@/lib/auth";
@@ -25,9 +25,9 @@ const baseNavItems = [
         icon: UserCircle,
     },
     {
-        title: "Block Categories",
-        href: "/retailer/block-categories",
-        icon: Tag,
+        title: "Brand Approval Settings",
+        href: "/retailer/brand-approval-settings",
+        icon: Settings2,
     },
     {
         title: "Distribution Centers",
@@ -104,7 +104,7 @@ export function RetailerNavbar() {
 
                         {/* Logo */}
                         <button
-                            onClick={() => router.push("/retailer/block-categories")}
+                            onClick={() => router.push("/retailer/brand-approval-settings")}
                             className="text-lg font-bold text-gray-900 hover:text-primary transition-colors"
                         >
                             Insert Media

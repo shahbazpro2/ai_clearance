@@ -8,6 +8,7 @@ import { useApi } from "use-hook-api";
 import { useRouter } from "next/navigation";
 import { useSetAtom } from "jotai";
 import {
+    downloadOmsDcDetailsPdfApi,
     getProjectionShipmentLogsByChannelApi,
     submitProjectionChangeRequestApi,
 } from "@/api/retailer";
@@ -25,8 +26,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, ChevronDown, ChevronRight, Clock, Pencil, RefreshCw, X } from "lucide-react";
-import { BarChart3 } from "lucide-react";
+import { AlertCircle, BarChart3, ChevronDown, ChevronRight, Clock, FileDown, Pencil, RefreshCw, X } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -613,6 +613,7 @@ export function ProjectionShipmentLogsPage() {
 
     const [projectionData, setProjectionData] = useState<ProjectionData | null>(null);
     const [callFetch, { loading: loadingData, error: fetchError }] = useApi({ errMsg: true });
+    const [callDownloadGuide, { loading: downloadingGuide }] = useApi({ errMsg: true });
 
     const fetchProjectionData = (channelId: string) => {
         setProjectionData(null);
@@ -634,6 +635,11 @@ export function ProjectionShipmentLogsPage() {
         if (selectedChannelId) {
             fetchProjectionData(selectedChannelId);
         }
+    };
+
+    const handleDownloadGuide = () => {
+        if (!selectedAudienceId) return;
+        callDownloadGuide(downloadOmsDcDetailsPdfApi(selectedAudienceId));
     };
 
     const handleDCClick = (dcSalesforceId: string) => {
@@ -661,13 +667,24 @@ export function ProjectionShipmentLogsPage() {
                 </div>
             ) : (
                 <>
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            Projection &amp; Shipment Logs
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-0.5">
-                            View monthly shipment projections and log history by channel.
-                        </p>
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                Projection &amp; Shipment Logs
+                            </h1>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                                View monthly shipment projections and log history by channel.
+                            </p>
+                        </div>
+                        <Button
+                            onClick={handleDownloadGuide}
+                            disabled={!selectedAudienceId || downloadingGuide}
+                            size="sm"
+                            className="bg-emerald-600 text-white hover:bg-emerald-700 shrink-0"
+                        >
+                            <FileDown className="h-4 w-4 mr-2" />
+                            {downloadingGuide ? "Downloading..." : "Data Feed Integration Guide"}
+                        </Button>
                     </div>
 
                     {/* Audience / Channel Selector */}

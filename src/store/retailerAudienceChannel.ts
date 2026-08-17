@@ -7,6 +7,7 @@ export interface RetailerAudienceChannelSelection {
 
 export type RetailerAudienceChannelSelectionScope =
   | "block-categories"
+  | "brand-approval-settings"
   | "distribution-centers"
   | "order-management"
   | "projection-shipment-logs"

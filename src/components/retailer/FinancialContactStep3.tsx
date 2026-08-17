@@ -125,7 +125,7 @@ export function FinancialContactStep3({ audienceId }: FinancialContactStep3Props
             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Category Exclusions
+            Back to Brand Approval Settings
           </button>
         </div>
       </div>

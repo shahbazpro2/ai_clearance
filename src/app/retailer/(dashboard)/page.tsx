@@ -1,7 +1,7 @@
 "use client";
 
 import { useMe } from "@/hooks/useMe";
-import { Tag, Warehouse, ClipboardList, BarChart3 } from "lucide-react";
+import { Settings2, Warehouse, ClipboardList, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 export default function RetailerDashboardPage() {
@@ -23,16 +23,16 @@ export default function RetailerDashboardPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Link
-                    href="/retailer/block-categories"
+                    href="/retailer/brand-approval-settings"
                     className="flex items-start gap-4 p-5 bg-white border rounded-xl hover:shadow-md transition-shadow"
                 >
                     <div className="p-2 bg-primary/10 rounded-lg">
-                        <Tag className="h-6 w-6 text-primary" />
+                        <Settings2 className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                        <h2 className="font-semibold text-gray-900 mb-1">Block Categories</h2>
+                        <h2 className="font-semibold text-gray-900 mb-1">Brand Approval Settings</h2>
                         <p className="text-sm text-gray-500">
-                            Manage which categories are allowed or blocked for your channel.
+                            Configure approval settings for all categories and brands by channel.
                         </p>
                     </div>
                 </Link>

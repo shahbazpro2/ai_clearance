@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Tag, LogOut, Menu, Warehouse, ClipboardList } from "lucide-react";
+import { LogOut, Menu, Settings2, Warehouse, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { retailerMobileSidebarOpenAtom } from "@/store/ui";
@@ -12,9 +12,9 @@ import { logout } from "@/lib/auth";
 
 const sidebarItems = [
     {
-        title: "Block Categories",
-        href: "/retailer/block-categories",
-        icon: Tag,
+        title: "Brand Approval Settings",
+        href: "/retailer/brand-approval-settings",
+        icon: Settings2,
         exact: false,
     },
     {

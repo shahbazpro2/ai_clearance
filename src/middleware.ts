@@ -106,7 +106,7 @@ export async function middleware(request: NextRequest) {
     } else if (isFinancePath || roleQuery === "finance") {
       redirectPath = "/finance";
     } else if (isRetailerPath) {
-      redirectPath = "/retailer/block-categories";
+      redirectPath = "/retailer/brand-approval-settings";
     } else if (isInventoryPortalPath || roleQuery === "inventory") {
       redirectPath = "/inventory-portal";
     }

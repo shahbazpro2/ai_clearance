@@ -31,7 +31,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Category {
+export interface Category {
     category_id: string;
     category_name: string;
     configured: boolean;
@@ -58,11 +58,17 @@ const CATEGORY_MODES = [
 interface BrandApprovalSettingsPageProps {
     audienceId: string;
     channelId: string;
+    /** Render without setup-flow chrome (progress header, back bar, role restriction, page header) */
+    embedded?: boolean;
+    /** Override the default "View Brands" navigation */
+    onViewBrands?: (category: Category) => void;
 }
 
 export function BrandApprovalSettingsPage({
     audienceId,
     channelId,
+    embedded = false,
+    onViewBrands,
 }: BrandApprovalSettingsPageProps) {
     const router = useRouter();
     const userData = useMe();
@@ -85,8 +91,8 @@ export function BrandApprovalSettingsPage({
         fetchCategories();
     }, [fetchCategories]);
 
-    // Restrict access for retailer role
-    if (userData && userData.role === "retailer") {
+    // Restrict access for retailer role (dashboard tab is available to both roles)
+    if (!embedded && userData && userData.role === "retailer") {
         return (
             <div className="min-h-screen bg-gray-50">
                 <main className="container mx-auto px-4 py-8">
@@ -165,6 +171,10 @@ export function BrandApprovalSettingsPage({
     };
 
     const handleViewBrands = (category: Category) => {
+        if (onViewBrands) {
+            onViewBrands(category);
+            return;
+        }
         const params = new URLSearchParams({
             category_name: category.category_name,
         });
@@ -176,40 +186,61 @@ export function BrandApprovalSettingsPage({
     const isSaving = savingId !== null;
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <SetupProgressHeader stepOverride={2} />
+        <div className={embedded ? "" : "min-h-screen bg-gray-50"}>
+            {!embedded && (
+                <>
+                    <SetupProgressHeader stepOverride={2} />
 
-            {/* Back navigation bar */}
-            <div className="bg-white border-b sticky top-14 z-20">
-                <div className="container mx-auto px-4 py-3">
-                    <button
-                        onClick={() => router.push(`/retailer/audiences/setup/step/${audienceId}/2`)}
-                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                        Back to Brand Approval Settings
-                    </button>
-                </div>
-            </div>
-
-            <main className="container mx-auto px-4 py-8">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900">Brand Approval Settings</h1>
-                        <p className="text-sm text-gray-500 mt-1 max-w-2xl">
-                            Configure approval settings for all categories. Assigning a setting of &ldquo;Approve&rdquo; allows the brand to include your program in their campaigns.
-                        </p>
+                    {/* Back navigation bar */}
+                    <div className="bg-white border-b sticky top-14 z-20">
+                        <div className="container mx-auto px-4 py-3">
+                            <button
+                                onClick={() => router.push(`/retailer/audiences/setup/step/${audienceId}/2`)}
+                                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                                Back to Brand Approval Settings
+                            </button>
+                        </div>
                     </div>
-                    <Button
-                        onClick={fetchCategories}
-                        disabled={loading}
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0"
-                    >
-                        <RefreshCw className="h-4 w-4" />
-                    </Button>
-                </div>
+                </>
+            )}
+
+            <main className={embedded ? "" : "container mx-auto px-4 py-8"}>
+                {!embedded ? (
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">Brand Approval Settings</h1>
+                            <p className="text-sm text-gray-500 mt-1 max-w-2xl">
+                                Configure approval settings for all categories. Assigning a setting of &ldquo;Approve&rdquo; allows the brand to include your program in their campaigns.
+                            </p>
+                        </div>
+                        <Button
+                            onClick={fetchCategories}
+                            disabled={loading}
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                            Category Approval Settings
+                        </h2>
+                        <Button
+                            onClick={fetchCategories}
+                            disabled={loading}
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
 
                 {/* Loading */}
                 {loading && (

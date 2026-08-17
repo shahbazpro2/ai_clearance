@@ -18,6 +18,7 @@ export const ROUTES = {
   RETAILER: [
     "/retailer",
     "/retailer/block-categories",
+    "/retailer/brand-approval-settings",
     "/retailer/audiences/setup/step",
   ],
 
