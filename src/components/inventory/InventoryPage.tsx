@@ -63,8 +63,7 @@ interface Order {
     id: string;
     name: string;
     is_envelope_order: boolean;
-    advertiser: string | null;
-    category: string | null;
+    brand: string | null;
     skid_label_warning: boolean;
     skids: Skid[];
     children?: Order[];
@@ -270,11 +269,6 @@ function ChildOrderCard({
                     <span className="text-sm font-semibold text-gray-900 truncate">
                         {child.name}
                     </span>
-                    {child.category && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-gray-100 text-[11px] font-medium text-gray-500 truncate max-w-[200px] shrink-0">
-                            {child.category}
-                        </span>
-                    )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     {editedCount > 0 && (
@@ -424,16 +418,9 @@ function SkidDrawer({ order, open, edits, onEdit, onClose }: SkidDrawerProps) {
                                     </span>
                                 </>
                             ) : (
-                                <>
-                                    <span className="text-sm font-medium text-gray-700">
-                                        {order.advertiser}
-                                    </span>
-                                    {order.category && (
-                                        <span className="text-xs text-gray-400">
-                                            · {order.category}
-                                        </span>
-                                    )}
-                                </>
+                                <span className="text-sm font-medium text-gray-700">
+                                    {order.brand}
+                                </span>
                             )}
                         </div>
                     )}
@@ -500,10 +487,32 @@ function OrderRow({ order, edits, onOpen }: OrderRowProps) {
                 className="group w-full flex items-center gap-3 px-4 py-3 enabled:hover:bg-gray-50 transition-colors text-left disabled:cursor-default disabled:opacity-60"
                 aria-label={
                     hasSkids
-                        ? `View skids for ${order.is_envelope_order ? order.name : order.advertiser || order.name}`
+                        ? `View skids for ${order.is_envelope_order ? order.name : order.brand || order.name}`
                         : undefined
                 }
             >
+                {/* Skid-label warning icon — moved to the left */}
+                {order.skid_label_warning && (
+                    <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span
+                                    className="inline-flex items-center justify-center text-amber-500 hover:text-amber-600 transition-colors"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <AlertTriangle className="h-4 w-4" />
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-xs">
+                                Skids will arrive without Skid ID labels and will need
+                                to be labeled onsite.
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
+
+                {skidCount(totalSkids)}
+
                 {/* View affordance — only shown when the order has skids */}
                 {hasSkids && (
                     <span className="text-sm font-semibold text-primary shrink-0 transition-colors group-hover:underline">
@@ -529,34 +538,12 @@ function OrderRow({ order, edits, onOpen }: OrderRowProps) {
                             {order.name}
                         </span>
                         <span className="text-sm font-medium text-gray-700 truncate min-w-[120px] hidden sm:block">
-                            {order.advertiser}
-                        </span>
-                        <span className="text-xs text-gray-500 truncate hidden md:block">
-                            {order.category}
+                            {order.brand}
                         </span>
                     </div>
                 )}
 
                 <div className="flex items-center gap-2 shrink-0 ml-auto">
-                    {/* Skid-label warning icon */}
-                    {order.skid_label_warning && (
-                        <TooltipProvider delayDuration={150}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span
-                                        className="inline-flex items-center justify-center text-amber-500 hover:text-amber-600 transition-colors"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <AlertTriangle className="h-4 w-4" />
-                                    </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs text-xs">
-                                    Skids will arrive without Skid ID labels and will need
-                                    to be labeled onsite.
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    )}
                     {/* Edited badge with popup — shows the changed values on hover */}
                     {editedCount > 0 && (
                         <TooltipProvider delayDuration={150}>
@@ -592,7 +579,6 @@ function OrderRow({ order, edits, onOpen }: OrderRowProps) {
                             </Tooltip>
                         </TooltipProvider>
                     )}
-                    {skidCount(totalSkids)}
                 </div>
             </button>
         </div>
@@ -642,6 +628,8 @@ function BookingMonthAccordion({
                         {month.booking_month}
                     </span>
                     {statusBadge(month.status)}
+                    {/* Skid count — moved to the left */}
+                    {skidCount(month.total_skids)}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-4">
                     {/* Edited badge with popup — same as order rows, shows changed values on hover */}
@@ -681,7 +669,6 @@ function BookingMonthAccordion({
                             </Tooltip>
                         </TooltipProvider>
                     )}
-                    {skidCount(month.total_skids)}
                 </div>
             </button>
 
