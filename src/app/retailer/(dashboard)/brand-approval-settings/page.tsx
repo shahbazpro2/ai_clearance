@@ -13,6 +13,7 @@ export default function BrandApprovalSettingsRoute() {
         selectedAudienceId,
         selectedChannelId,
         selectedAudience,
+        refreshKey,
         loading,
         error,
         setSelectedChannelId,
@@ -64,7 +65,7 @@ export default function BrandApprovalSettingsRoute() {
 
                     {selectedChannelId && selectedAudienceId && (
                         <BrandApprovalSettingsPage
-                            key={selectedChannelId}
+                            key={`${selectedChannelId}-${refreshKey}`}
                             audienceId={selectedAudienceId}
                             channelId={selectedChannelId}
                             embedded

@@ -320,6 +320,7 @@ export function OrderManagementPage() {
         selectedAudienceId,
         selectedChannelId,
         selectedAudience,
+        refreshKey,
         loading: loadingStats,
         error,
         setSelectedChannelId,
@@ -341,7 +342,7 @@ export function OrderManagementPage() {
             setExpandedMonths(new Set());
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedChannelId]);
+    }, [selectedChannelId, refreshKey]);
 
     const toggleMonth = (bookingMonth: string) => {
         setExpandedMonths((prev) => {

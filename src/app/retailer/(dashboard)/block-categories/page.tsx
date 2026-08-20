@@ -11,6 +11,7 @@ export default function BlockCategoriesRoute() {
         selectedAudienceId,
         selectedChannelId,
         selectedAudience,
+        refreshKey,
         loading,
         error,
         setSelectedChannelId,
@@ -54,7 +55,11 @@ export default function BlockCategoriesRoute() {
                     </div>
 
                     {selectedChannelId && (
-                        <BlockCategoriesPage channelId={selectedChannelId} hideHeader={true} />
+                        <BlockCategoriesPage
+                            key={`${selectedChannelId}-${refreshKey}`}
+                            channelId={selectedChannelId}
+                            hideHeader={true}
+                        />
                     )}
                 </>
             )}

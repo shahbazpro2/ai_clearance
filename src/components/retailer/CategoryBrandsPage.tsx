@@ -8,6 +8,7 @@ import { SetupProgressHeader } from "@/components/retailer/SetupProgressHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Switch } from "@/components/ui/switch";
 import { PaginationBar } from "@/components/ui/pagination-bar";
@@ -66,19 +67,22 @@ export function CategoryBrandsPage({
     const [pagination, setPagination] = useState<BrandPagination | null>(null);
     const [canUpdateBrands, setCanUpdateBrands] = useState(false);
     const [page, setPage] = useState(1);
+    const [searchInput, setSearchInput] = useState("");
+    const [activeSearch, setActiveSearch] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const [callFetch, { loading, error }] = useApi({ errMsg: true });
     const [callUpdate] = useApi({ errMsg: true });
 
     const fetchBrands = useCallback(
-        (pageNum: number) => {
+        (pageNum: number, search = "") => {
             callFetch(
                 getCategoryBrandsApi({
                     category_id: categoryId,
                     channel_id: channelId,
                     page: pageNum,
                     limit: PAGE_SIZE,
+                    search: search || undefined,
                 }),
                 ({ data }: any) => {
                     setBrands(data?.brands ?? []);
@@ -93,15 +97,17 @@ export function CategoryBrandsPage({
 
     useEffect(() => {
         setPage(1);
-        fetchBrands(1);
+        setSearchInput("");
+        setActiveSearch("");
+        fetchBrands(1, "");
     }, [fetchBrands]);
 
     // Refetch when the page changes
     useEffect(() => {
         if (page === 1) return;
-        fetchBrands(page);
+        fetchBrands(page, activeSearch);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page]);
+    }, [page, activeSearch]);
 
     // Restrict access for retailer role (dashboard tab is available to both roles)
     if (!embedded && userData && userData.role === "retailer") {
@@ -139,7 +145,7 @@ export function CategoryBrandsPage({
             }),
             () => {
                 setUpdatingId(null);
-                fetchBrands(page);
+                fetchBrands(page, activeSearch);
             },
             () => {
                 setUpdatingId(null);
@@ -150,6 +156,21 @@ export function CategoryBrandsPage({
     const totalPages = pagination?.total_pages ?? 1;
     const hasNext = page < totalPages;
     const hasPrev = page > 1;
+
+    const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const nextSearch = searchInput.trim();
+        setActiveSearch(nextSearch);
+        setPage(1);
+        fetchBrands(1, nextSearch);
+    };
+
+    const handleClearSearch = () => {
+        setSearchInput("");
+        setActiveSearch("");
+        setPage(1);
+        fetchBrands(1, "");
+    };
 
     return (
         <div className={embedded ? "" : "min-h-screen bg-gray-50"}>
@@ -186,7 +207,7 @@ export function CategoryBrandsPage({
                 </div>
             ) : null}
 
-            <main className={embedded ? "" : "container mx-auto px-4 py-8"}>
+            <main className="container mx-auto px-4 py-8">
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">
@@ -199,7 +220,7 @@ export function CategoryBrandsPage({
                         </p>
                     </div>
                     <Button
-                        onClick={() => fetchBrands(page)}
+                        onClick={() => fetchBrands(page, activeSearch)}
                         disabled={loading}
                         variant="outline"
                         size="sm"
@@ -208,6 +229,34 @@ export function CategoryBrandsPage({
                         <RefreshCw className="h-4 w-4" />
                     </Button>
                 </div>
+
+                <form
+                    onSubmit={handleSearch}
+                    className="mb-4 flex flex-col gap-2 sm:flex-row"
+                >
+                    <Input
+                        type="search"
+                        value={searchInput}
+                        onChange={(event) => setSearchInput(event.target.value)}
+                        placeholder="Search brands"
+                        aria-label="Search brands"
+                        className="w-full sm:max-w-md"
+                    />
+                    <Button type="submit" disabled={loading} className="sm:w-auto">
+                        Search
+                    </Button>
+                    {activeSearch && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={loading}
+                            onClick={handleClearSearch}
+                            className="sm:w-auto"
+                        >
+                            Clear
+                        </Button>
+                    )}
+                </form>
 
                 {/* Loading */}
                 {loading && (
@@ -223,7 +272,11 @@ export function CategoryBrandsPage({
                 {!loading && error && (
                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                         <p className="text-sm text-red-600">Failed to load brands.</p>
-                        <Button variant="outline" size="sm" onClick={() => fetchBrands(page)}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fetchBrands(page, activeSearch)}
+                        >
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Retry
                         </Button>
@@ -235,7 +288,9 @@ export function CategoryBrandsPage({
                     <>
                         {brands.length === 0 ? (
                             <div className="rounded-xl border bg-white shadow-sm py-12 text-center text-sm text-gray-500">
-                                No brands found in this category.
+                                {activeSearch
+                                    ? "No brands match your search."
+                                    : "No brands found in this category."}
                             </div>
                         ) : (
                             <div className="overflow-hidden rounded-xl border bg-white shadow-sm">

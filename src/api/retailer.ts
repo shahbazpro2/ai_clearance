@@ -463,13 +463,14 @@ export const getBrandCategoriesApi = (channelId: string) => {
 
 /**
  * 15.2 Get Category Brands
- * Endpoint: GET /retailer/category-brands?category_id=...&channel_id=...&page=...&limit=...
+ * Endpoint: GET /retailer/category-brands?category_id=...&channel_id=...&page=...&limit=...&search=...
  */
 export const getCategoryBrandsApi = (payload: {
   category_id: string;
   channel_id: string;
   page?: number;
   limit?: number;
+  search?: string;
 }) => {
   const queryParams = new URLSearchParams({
     category_id: payload.category_id,
@@ -480,6 +481,9 @@ export const getCategoryBrandsApi = (payload: {
   }
   if (payload.limit !== undefined) {
     queryParams.set("limit", payload.limit.toString());
+  }
+  if (payload.search) {
+    queryParams.set("search", payload.search);
   }
   return universalApi(
     `/retailer/category-brands?${queryParams.toString()}`,

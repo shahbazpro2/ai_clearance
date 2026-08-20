@@ -21,6 +21,7 @@ export default function DistributionCentersRoute() {
         selectedAudienceId,
         selectedChannelId,
         selectedAudience,
+        refreshKey,
         loading,
         error,
         setSelectedChannelId,
@@ -75,7 +76,7 @@ export default function DistributionCentersRoute() {
 
                     {selectedChannelId && selectedAudienceId && (
                         <DistributionCenterForm
-                            key={`${selectedChannelId}-${formKey}`}
+                            key={`${selectedChannelId}-${formKey}-${refreshKey}`}
                             audienceId={selectedAudienceId}
                             channelId={selectedChannelId}
                             allowRetailerRole={true}

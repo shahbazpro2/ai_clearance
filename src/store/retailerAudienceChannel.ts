@@ -16,7 +16,10 @@ export type RetailerAudienceChannelSelectionScope =
 const AUDIENCE_CHANNEL_SELECTION_KEY = "retailer:audience-channel-selection";
 
 const selectionStorage = createJSONStorage<RetailerAudienceChannelSelection>(
-  () => sessionStorage,
+  () =>
+    typeof window === "undefined"
+      ? (undefined as unknown as Storage)
+      : window.sessionStorage,
 );
 
 export const retailerAudienceChannelSelectionAtomFamily = atomFamily(
@@ -28,5 +31,6 @@ export const retailerAudienceChannelSelectionAtomFamily = atomFamily(
         channelId: null,
       },
       selectionStorage,
+      { getOnInit: true },
     ),
 );

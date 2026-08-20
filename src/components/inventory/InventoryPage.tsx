@@ -93,6 +93,7 @@ type SkidEdits = Record<string, number>;
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const COMPOSITE_MAX_RECORDS = 200;
+const SELECTED_DC_STORAGE_KEY = "inventory:selected-distribution-center";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -816,9 +817,20 @@ export function InventoryPage() {
                     data?.distribution_centers ?? [];
                 setCenters(dcs);
                 if (dcs.length > 0) {
-                    setSelectedDcId(
-                        dcs[0].salesforce_distribution_center_id,
+                    const savedDcId = window.sessionStorage.getItem(
+                        SELECTED_DC_STORAGE_KEY,
                     );
+                    setSelectedDcId(
+                        dcs.some(
+                            (dc) =>
+                                dc.salesforce_distribution_center_id ===
+                                savedDcId,
+                        )
+                            ? savedDcId!
+                            : dcs[0].salesforce_distribution_center_id,
+                    );
+                } else {
+                    setSelectedDcId("");
                 }
             },
         );
@@ -872,6 +884,15 @@ export function InventoryPage() {
     useEffect(() => {
         if (selectedDcId) loadInventory(selectedDcId, page);
     }, [selectedDcId, page, loadInventory]);
+
+    useEffect(() => {
+        if (selectedDcId) {
+            window.sessionStorage.setItem(
+                SELECTED_DC_STORAGE_KEY,
+                selectedDcId,
+            );
+        }
+    }, [selectedDcId]);
 
     // ── Refresh: reload the DC list (keeping the selection) and reload the
     // inventory for the currently selected DC by passing its value to the API ──

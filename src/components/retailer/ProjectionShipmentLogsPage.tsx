@@ -604,6 +604,7 @@ export function ProjectionShipmentLogsPage() {
         selectedAudienceId,
         selectedChannelId,
         selectedAudience,
+        refreshKey,
         loading: loadingStats,
         error: statsError,
         setSelectedChannelId,
@@ -629,7 +630,7 @@ export function ProjectionShipmentLogsPage() {
         if (!selectedChannelId) return;
         fetchProjectionData(selectedChannelId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedChannelId]);
+    }, [selectedChannelId, refreshKey]);
 
     const handleSaved = () => {
         if (selectedChannelId) {

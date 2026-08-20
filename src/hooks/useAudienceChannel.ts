@@ -29,6 +29,7 @@ export interface UseAudienceChannelReturn {
   selectedAudienceId: string | null;
   selectedChannelId: string | null;
   selectedAudience: Audience | undefined;
+  refreshKey: number;
   loading: boolean;
   error: unknown;
   setSelectedChannelId: (id: string | null) => void;
@@ -40,6 +41,7 @@ export function useAudienceChannel(
   scope: RetailerAudienceChannelSelectionScope,
 ): UseAudienceChannelReturn {
   const [audiences, setAudiences] = useState<Audience[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selection, setSelection] = useAtom(
     retailerAudienceChannelSelectionAtomFamily(scope),
   );
@@ -87,14 +89,20 @@ export function useAudienceChannel(
     });
   }, [audienceData, selectedAudienceId, selectedChannelId, setSelection]);
 
-  const refresh = () => {
+  const fetchAudiences = () => {
     callFetch(getDistributorStatsApi(true));
   };
 
   useEffect(() => {
-    refresh();
+    fetchAudiences();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Let each page refresh its own APIs in place without a browser reload.
+  const refresh = () => {
+    fetchAudiences();
+    setRefreshKey((current) => current + 1);
+  };
 
   const updateSelectedChannelId = (id: string | null) => {
     setSelection({
@@ -121,6 +129,7 @@ export function useAudienceChannel(
     selectedAudienceId,
     selectedChannelId,
     selectedAudience,
+    refreshKey,
     loading,
     error,
     setSelectedChannelId: updateSelectedChannelId,
