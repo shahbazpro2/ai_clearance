@@ -53,6 +53,17 @@ const CATEGORY_MODES = [
     { value: "3", label: "Custom" },
 ];
 
+const categoryToDraft = (category: Category): CategoryDraft => ({
+    category_mode: category.category_mode ?? null,
+    notifications_enabled: category.notifications_enabled ?? false,
+    automatically_approve: category.automatically_approve ?? false,
+});
+
+const draftsMatch = (left: CategoryDraft, right: CategoryDraft) =>
+    left.category_mode === right.category_mode &&
+    left.notifications_enabled === right.notifications_enabled &&
+    left.automatically_approve === right.automatically_approve;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface BrandApprovalSettingsPageProps {
@@ -119,25 +130,23 @@ export function BrandApprovalSettingsPage({
     const getEffective = (category: Category): CategoryDraft => {
         const draft = drafts.get(category.category_id);
         if (draft) return draft;
-        return {
-            category_mode: category.category_mode ?? null,
-            notifications_enabled: category.notifications_enabled ?? false,
-            automatically_approve: category.automatically_approve ?? false,
-        };
+        return categoryToDraft(category);
     };
 
     const updateDraft = (categoryId: string, patch: Partial<CategoryDraft>) => {
         setDrafts((prev) => {
             const next = new Map(prev);
             const category = categories.find((c) => c.category_id === categoryId);
-            const base = category
-                ? {
-                      category_mode: category.category_mode ?? null,
-                      notifications_enabled: category.notifications_enabled ?? false,
-                      automatically_approve: category.automatically_approve ?? false,
-                  }
-                : { category_mode: null, notifications_enabled: false, automatically_approve: false };
-            next.set(categoryId, { ...(next.get(categoryId) ?? base), ...patch });
+            if (!category) return prev;
+
+            const original = categoryToDraft(category);
+            const updated = { ...(next.get(categoryId) ?? original), ...patch };
+
+            if (draftsMatch(updated, original)) {
+                next.delete(categoryId);
+            } else {
+                next.set(categoryId, updated);
+            }
             return next;
         });
     };
