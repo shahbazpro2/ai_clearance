@@ -25,9 +25,16 @@ import {
     AlertCircle,
     ChevronLeft,
     ExternalLink,
+    Info,
     Lock,
     RefreshCw,
 } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,19 +51,13 @@ export interface Category {
 interface CategoryDraft {
     category_mode: number | null;
     notifications_enabled: boolean;
-    automatically_approve: boolean;
+    automatically_approve: boolean | null;
 }
-
-const CATEGORY_MODES = [
-    { value: "1", label: "Approve All" },
-    { value: "2", label: "Block All" },
-    { value: "3", label: "Custom" },
-];
 
 const categoryToDraft = (category: Category): CategoryDraft => ({
     category_mode: category.category_mode ?? null,
     notifications_enabled: category.notifications_enabled ?? false,
-    automatically_approve: category.automatically_approve ?? false,
+    automatically_approve: category.automatically_approve ?? null,
 });
 
 const draftsMatch = (left: CategoryDraft, right: CategoryDraft) =>
@@ -153,7 +154,11 @@ export function BrandApprovalSettingsPage({
 
     const handleSave = (category: Category) => {
         const draft = drafts.get(category.category_id);
-        if (!draft || draft.category_mode === null) return;
+        if (
+            !draft ||
+            draft.category_mode === null ||
+            draft.automatically_approve === null
+        ) return;
 
         setSavingId(category.category_id);
         callSave(
@@ -286,11 +291,38 @@ export function BrandApprovalSettingsPage({
                                         <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                                             <tr>
                                                 <th className="px-4 py-3">Category Name</th>
-                                                <th className="px-4 py-3">Category Mode</th>
-                                                <th className="px-4 py-3">Category Notification</th>
-                                                <th className="px-4 py-3">New Brands Approval</th>
+                                                <th className="px-4 py-3">Brand Status</th>
+                                                <th className="px-4 py-3">
+                                                    <span className="inline-flex items-center gap-1">
+                                                        Category Notification
+                                                        <TooltipProvider delayDuration={200}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Info className="h-3.5 w-3.5 cursor-help" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="max-w-xs normal-case font-normal">
+                                                                    Enable an email notification each time a brand is added to the category.
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </span>
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    <span className="inline-flex items-center gap-1">
+                                                        New Brands Default
+                                                        <TooltipProvider delayDuration={200}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Info className="h-3.5 w-3.5 cursor-help" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="max-w-sm normal-case font-normal">
+                                                                    You will have 1 business day to configure the approval status of new brands added to the category. In the event you don&apos;t meet this deadline, your selected New Brand Default status will be automatically applied.
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </span>
+                                                </th>
                                                 <th className="px-4 py-3">Setup Status</th>
-                                                <th className="px-4 py-3">View Brands</th>
                                                 <th className="px-4 py-3">Save Changes</th>
                                             </tr>
                                         </thead>
@@ -298,7 +330,10 @@ export function BrandApprovalSettingsPage({
                                             {categories.map((category) => {
                                                 const effective = getEffective(category);
                                                 const hasDraft = drafts.has(category.category_id);
-                                                const canSave = hasDraft && effective.category_mode !== null;
+                                                const canSave =
+                                                    hasDraft &&
+                                                    effective.category_mode !== null &&
+                                                    effective.automatically_approve !== null;
 
                                                 return (
                                                     <tr
@@ -317,31 +352,16 @@ export function BrandApprovalSettingsPage({
                                                             )}
                                                         </td>
 
-                                                        {/* Category Mode */}
-                                                        <td className="px-4 py-3 min-w-40">
-                                                            <Select
-                                                                value={
-                                                                    effective.category_mode !== null
-                                                                        ? String(effective.category_mode)
-                                                                        : ""
-                                                                }
-                                                                onValueChange={(val) =>
-                                                                    updateDraft(category.category_id, {
-                                                                        category_mode: Number(val),
-                                                                    })
-                                                                }
+                                                        {/* Brand Status */}
+                                                        <td className="px-4 py-3">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => handleViewBrands(category)}
                                                             >
-                                                                <SelectTrigger size="sm">
-                                                                    <SelectValue placeholder="Select mode" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {CATEGORY_MODES.map((mode) => (
-                                                                        <SelectItem key={mode.value} value={mode.value}>
-                                                                            {mode.label}
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
+                                                                <ExternalLink className="h-4 w-4 mr-1" />
+                                                                Configure Brands
+                                                            </Button>
                                                         </td>
 
                                                         {/* Category Notification */}
@@ -364,24 +384,34 @@ export function BrandApprovalSettingsPage({
                                                             </div>
                                                         </td>
 
-                                                        {/* New Brands Approval */}
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <Switch
-                                                                    checked={effective.automatically_approve}
-                                                                    onCheckedChange={(checked) =>
-                                                                        updateDraft(category.category_id, {
-                                                                            automatically_approve: checked,
-                                                                        })
-                                                                    }
-                                                                    aria-label={`Toggle new brands approval for ${category.category_name}`}
-                                                                />
-                                                                <span className="text-xs text-gray-500 whitespace-nowrap">
-                                                                    {effective.automatically_approve
-                                                                        ? "Auto-approve"
-                                                                        : "Auto-block"}
-                                                                </span>
-                                                            </div>
+                                                        {/* New Brands Default */}
+                                                        <td className="px-4 py-3 min-w-44">
+                                                            <Select
+                                                                value={
+                                                                    effective.automatically_approve === null
+                                                                        ? "blank"
+                                                                        : effective.automatically_approve
+                                                                          ? "approve"
+                                                                          : "block"
+                                                                }
+                                                                onValueChange={(value) =>
+                                                                    updateDraft(category.category_id, {
+                                                                        automatically_approve:
+                                                                            value === "blank"
+                                                                                ? null
+                                                                                : value === "approve",
+                                                                    })
+                                                                }
+                                                            >
+                                                                <SelectTrigger size="sm">
+                                                                    <SelectValue placeholder="Select default" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="blank">Blank</SelectItem>
+                                                                    <SelectItem value="approve">Auto Approve</SelectItem>
+                                                                    <SelectItem value="block">Auto Block</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
                                                         </td>
 
                                                         {/* Setup Status */}
@@ -395,18 +425,6 @@ export function BrandApprovalSettingsPage({
                                                             >
                                                                 {category.configured ? "Completed" : "Pending"}
                                                             </Badge>
-                                                        </td>
-
-                                                        {/* View Brands */}
-                                                        <td className="px-4 py-3">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => handleViewBrands(category)}
-                                                            >
-                                                                <ExternalLink className="h-4 w-4 mr-1" />
-                                                                View Brands
-                                                            </Button>
                                                         </td>
 
                                                         {/* Save Changes */}
@@ -441,7 +459,7 @@ export function BrandApprovalSettingsPage({
                             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2 items-start">
                                 <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
                                 <p className="text-sm text-blue-700">
-                                    Save Changes is enabled once you modify a category&rsquo;s settings. Saved settings are applied immediately and the list is refreshed.
+                                    Configure brand statuses and select a New Brands Default before saving category changes.
                                 </p>
                             </div>
                         )}

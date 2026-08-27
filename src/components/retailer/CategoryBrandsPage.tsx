@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/hooks/useMe";
@@ -27,6 +27,10 @@ interface Brand {
     category_id: string;
     brand_salesforce_id: string;
     updated_at: string;
+    created_at?: string | null;
+    created_date?: string | null;
+    salesforce_created_at?: string | null;
+    salesforce_created_date?: string | null;
     is_blocked: boolean;
 }
 
@@ -38,6 +42,28 @@ interface BrandPagination {
 }
 
 const PAGE_SIZE = 25;
+const BULK_REFETCH_DELAY_MS = 1500;
+
+const getBrandCreatedDate = (brand: Brand) =>
+    brand.salesforce_created_at ??
+    brand.salesforce_created_date ??
+    brand.created_date ??
+    brand.created_at ??
+    null;
+
+const formatBrandCreatedDate = (brand: Brand) => {
+    const value = getBrandCreatedDate(brand);
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+};
+
+const getBrandCreatedTime = (brand: Brand) => {
+    const value = getBrandCreatedDate(brand);
+    if (!value) return 0;
+    const time = new Date(value).getTime();
+    return Number.isNaN(time) ? 0 : time;
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -66,16 +92,20 @@ export function CategoryBrandsPage({
     const [brands, setBrands] = useState<Brand[]>([]);
     const [pagination, setPagination] = useState<BrandPagination | null>(null);
     const [canUpdateBrands, setCanUpdateBrands] = useState(false);
+    const [categoryMode, setCategoryMode] = useState<number | null>(null);
     const [page, setPage] = useState(1);
     const [searchInput, setSearchInput] = useState("");
     const [activeSearch, setActiveSearch] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [bulkMode, setBulkMode] = useState<1 | 2 | null>(null);
+    const bulkRefreshTimeoutRef = useRef<number | null>(null);
 
     const [callFetch, { loading, error }] = useApi({ errMsg: true });
     const [callUpdate] = useApi({ errMsg: true });
+    const [callBulkUpdate] = useApi({ errMsg: true });
 
     const fetchBrands = useCallback(
-        (pageNum: number, search = "") => {
+        (pageNum: number, search = "", afterFetch?: () => void) => {
             callFetch(
                 getCategoryBrandsApi({
                     category_id: categoryId,
@@ -85,10 +115,18 @@ export function CategoryBrandsPage({
                     search: search || undefined,
                 }),
                 ({ data }: any) => {
-                    setBrands(data?.brands ?? []);
+                    const nextBrands: Brand[] = data?.brands ?? [];
+                    setBrands(
+                        [...nextBrands].sort((left, right) => {
+                            return getBrandCreatedTime(right) - getBrandCreatedTime(left);
+                        }),
+                    );
                     setCanUpdateBrands(data?.can_update_individual_brands ?? false);
+                    setCategoryMode(data?.category_mode ?? null);
                     setPagination(data?.pagination ?? null);
-                }
+                    afterFetch?.();
+                },
+                () => afterFetch?.(),
             );
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,6 +146,15 @@ export function CategoryBrandsPage({
         fetchBrands(page, activeSearch);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, activeSearch]);
+
+    useEffect(
+        () => () => {
+            if (bulkRefreshTimeoutRef.current !== null) {
+                window.clearTimeout(bulkRefreshTimeoutRef.current);
+            }
+        },
+        [],
+    );
 
     // Restrict access for retailer role (dashboard tab is available to both roles)
     if (!embedded && userData && userData.role === "retailer") {
@@ -134,8 +181,10 @@ export function CategoryBrandsPage({
         );
     }
 
+    const individualUpdatesEnabled = canUpdateBrands || categoryMode !== null;
+
     const handleToggle = (brand: Brand, isBlocked: boolean) => {
-        if (!canUpdateBrands || updatingId) return;
+        if (!individualUpdatesEnabled || updatingId) return;
         setUpdatingId(brand.brand_salesforce_id);
         callUpdate(
             saveBrandApprovalSettingsApi({
@@ -150,6 +199,28 @@ export function CategoryBrandsPage({
             () => {
                 setUpdatingId(null);
             }
+        );
+    };
+
+    const handleBulkStatus = (categoryMode: 1 | 2) => {
+        if (bulkMode !== null || updatingId) return;
+        setBulkMode(categoryMode);
+        callBulkUpdate(
+            saveBrandApprovalSettingsApi({
+                channel_id: channelId,
+                category_id: categoryId,
+                category_mode: categoryMode,
+            }),
+            () => {
+                // The update has completed successfully. Keep the bulk action
+                // pending while backend jobs settle and until the follow-up
+                // request returns the latest statuses.
+                bulkRefreshTimeoutRef.current = window.setTimeout(() => {
+                    bulkRefreshTimeoutRef.current = null;
+                    fetchBrands(page, activeSearch, () => setBulkMode(null));
+                }, BULK_REFETCH_DELAY_MS);
+            },
+            () => setBulkMode(null),
         );
     };
 
@@ -214,9 +285,7 @@ export function CategoryBrandsPage({
                             {categoryName ? `Brands — ${categoryName}` : "Category Brands"}
                         </h1>
                         <p className="text-sm text-gray-500 mt-1 max-w-2xl">
-                            {canUpdateBrands
-                                ? "Approve or block individual brands in this category."
-                                : "Brand approval is managed at the category level. Individual brand updates are not available for this category."}
+                            Configure an approval status for all brands in this category.
                         </p>
                     </div>
                     <Button
@@ -227,6 +296,27 @@ export function CategoryBrandsPage({
                         className="shrink-0"
                     >
                         <RefreshCw className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                <div className="mb-4 flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        disabled={bulkMode !== null || updatingId !== null}
+                        onClick={() => handleBulkStatus(1)}
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                        {bulkMode === 1 && <LoadingSpinner size="sm" className="mr-2" />}
+                        Approve All
+                    </Button>
+                    <Button
+                        type="button"
+                        disabled={bulkMode !== null || updatingId !== null}
+                        onClick={() => handleBulkStatus(2)}
+                        variant="destructive"
+                    >
+                        {bulkMode === 2 && <LoadingSpinner size="sm" className="mr-2" />}
+                        Block All
                     </Button>
                 </div>
 
@@ -300,6 +390,9 @@ export function CategoryBrandsPage({
                                             <tr>
                                                 <th className="px-4 py-3">Name</th>
                                                 <th className="px-4 py-3">Domain / Website URL</th>
+                                                <th className="px-4 py-3 whitespace-nowrap">
+                                                    Salesforce Created Date ↓
+                                                </th>
                                                 <th className="px-4 py-3">Current Status</th>
                                                 <th className="px-4 py-3">Action</th>
                                             </tr>
@@ -334,6 +427,9 @@ export function CategoryBrandsPage({
                                                                 <span className="text-gray-400">—</span>
                                                             )}
                                                         </td>
+                                                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                                                            {formatBrandCreatedDate(brand)}
+                                                        </td>
                                                         <td className="px-4 py-3">
                                                             <Badge
                                                                 className={
@@ -346,7 +442,7 @@ export function CategoryBrandsPage({
                                                             </Badge>
                                                         </td>
                                                         <td className="px-4 py-3">
-                                                            {canUpdateBrands ? (
+                                                            {individualUpdatesEnabled ? (
                                                                 <div className="flex items-center gap-2">
                                                                     <Switch
                                                                         checked={brand.is_blocked}
