@@ -294,21 +294,6 @@ export function BrandApprovalSettingsPage({
                                                 <th className="px-4 py-3">Brand Status</th>
                                                 <th className="px-4 py-3">
                                                     <span className="inline-flex items-center gap-1">
-                                                        Category Notification
-                                                        <TooltipProvider delayDuration={200}>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Info className="h-3.5 w-3.5 cursor-help" />
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="max-w-xs normal-case font-normal">
-                                                                    Enable an email notification each time a brand is added to the category.
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    </span>
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <span className="inline-flex items-center gap-1">
                                                         New Brands Default
                                                         <TooltipProvider delayDuration={200}>
                                                             <Tooltip>
@@ -317,6 +302,21 @@ export function BrandApprovalSettingsPage({
                                                                 </TooltipTrigger>
                                                                 <TooltipContent className="max-w-sm normal-case font-normal">
                                                                     You will have 1 business day to configure the approval status of new brands added to the category. In the event you don&apos;t meet this deadline, your selected New Brand Default status will be automatically applied.
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </span>
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    <span className="inline-flex items-center gap-1">
+                                                        Category Notification
+                                                        <TooltipProvider delayDuration={200}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Info className="h-3.5 w-3.5 cursor-help" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="max-w-xs normal-case font-normal">
+                                                                    Enable an email notification each time a brand is added to the category.
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </TooltipProvider>
@@ -364,6 +364,32 @@ export function BrandApprovalSettingsPage({
                                                             </Button>
                                                         </td>
 
+                                                        {/* New Brands Default */}
+                                                        <td className="px-4 py-3 min-w-44">
+                                                            <Select
+                                                                value={
+                                                                    effective.automatically_approve === null
+                                                                        ? ""
+                                                                        : effective.automatically_approve
+                                                                          ? "approve"
+                                                                          : "block"
+                                                                }
+                                                                onValueChange={(value) =>
+                                                                    updateDraft(category.category_id, {
+                                                                        automatically_approve: value === "approve",
+                                                                    })
+                                                                }
+                                                            >
+                                                                <SelectTrigger size="sm">
+                                                                    <SelectValue placeholder="—" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="approve">Auto Approve</SelectItem>
+                                                                    <SelectItem value="block">Auto Block</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </td>
+
                                                         {/* Category Notification */}
                                                         <td className="px-4 py-3">
                                                             <div className="flex items-center gap-2">
@@ -382,36 +408,6 @@ export function BrandApprovalSettingsPage({
                                                                         : "Disabled"}
                                                                 </span>
                                                             </div>
-                                                        </td>
-
-                                                        {/* New Brands Default */}
-                                                        <td className="px-4 py-3 min-w-44">
-                                                            <Select
-                                                                value={
-                                                                    effective.automatically_approve === null
-                                                                        ? "blank"
-                                                                        : effective.automatically_approve
-                                                                          ? "approve"
-                                                                          : "block"
-                                                                }
-                                                                onValueChange={(value) =>
-                                                                    updateDraft(category.category_id, {
-                                                                        automatically_approve:
-                                                                            value === "blank"
-                                                                                ? null
-                                                                                : value === "approve",
-                                                                    })
-                                                                }
-                                                            >
-                                                                <SelectTrigger size="sm">
-                                                                    <SelectValue placeholder="Select default" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="blank">Blank</SelectItem>
-                                                                    <SelectItem value="approve">Auto Approve</SelectItem>
-                                                                    <SelectItem value="block">Auto Block</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
                                                         </td>
 
                                                         {/* Setup Status */}

@@ -121,7 +121,7 @@ export function CategoryBrandsPage({
                             return getBrandCreatedTime(right) - getBrandCreatedTime(left);
                         }),
                     );
-                    setCanUpdateBrands(data?.can_update_individual_brands ?? false);
+                    setCanUpdateBrands(true);
                     setCategoryMode(data?.category_mode ?? null);
                     setPagination(data?.pagination ?? null);
                     afterFetch?.();
@@ -391,7 +391,7 @@ export function CategoryBrandsPage({
                                                 <th className="px-4 py-3">Name</th>
                                                 <th className="px-4 py-3">Domain / Website URL</th>
                                                 <th className="px-4 py-3 whitespace-nowrap">
-                                                    Salesforce Created Date ↓
+                                                    Date Added ↓
                                                 </th>
                                                 <th className="px-4 py-3">Current Status</th>
                                                 <th className="px-4 py-3">Action</th>
