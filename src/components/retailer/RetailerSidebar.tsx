@@ -19,6 +19,13 @@ export function RetailerSidebar() {
     const [mobileOpen, setMobileOpen] = useAtom(retailerMobileSidebarOpenAtom);
     const [collapsed, setCollapsed] = useAtom(retailerSidebarCollapsedAtom);
     const userData = useMe();
+    const userName = userData?.name || userData?.username || userData?.email?.split("@")[0] || "User";
+    const userInitials = userName
+        .split(" ")
+        .map((part: string) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
     const items: PortalSidebarItem[] = userData?.role === "setup_user"
         ? [
             { title: "Account Setup", href: "/retailer/audiences/setup/step", icon: Settings },
@@ -29,6 +36,8 @@ export function RetailerSidebar() {
 
     return (
         <PortalSidebar
+            brandMark="IM"
+            brandTitle="Insert Media"
             collapsed={collapsed}
             homeHref="/retailer"
             items={items}
@@ -36,6 +45,12 @@ export function RetailerSidebar() {
             onCollapsedChange={setCollapsed}
             onMobileOpenChange={setMobileOpen}
             portalName="Retailer Portal"
+            showPortalName={false}
+            userProfile={{
+                avatarUrl: userData?.avatar || userData?.profile_picture,
+                initials: userInitials,
+                name: userName,
+            }}
         />
     );
 }

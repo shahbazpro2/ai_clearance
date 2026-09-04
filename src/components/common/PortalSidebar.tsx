@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,8 @@ export interface PortalSidebarItem {
 }
 
 interface PortalSidebarProps {
+    brandMark?: string;
+    brandTitle?: string;
     collapsed: boolean;
     homeHref: string;
     items: readonly PortalSidebarItem[];
@@ -26,6 +29,12 @@ interface PortalSidebarProps {
     onMobileOpenChange: (open: boolean) => void;
     portalName: string;
     secondaryItems?: readonly PortalSidebarItem[];
+    showPortalName?: boolean;
+    userProfile?: {
+        avatarUrl?: string;
+        initials: string;
+        name: string;
+    };
 }
 
 interface SidebarNavProps {
@@ -68,27 +77,61 @@ function SidebarNav({ collapsed = false, items, onItemClick, pathname }: Sidebar
     );
 }
 
-function Brand({ collapsed, homeHref, portalName }: Pick<PortalSidebarProps, "collapsed" | "homeHref" | "portalName">) {
+function Brand({
+    brandMark = "AC",
+    brandTitle = "Ai Clearance",
+    collapsed,
+    homeHref,
+    portalName,
+    showPortalName = true,
+}: Pick<PortalSidebarProps, "brandMark" | "brandTitle" | "collapsed" | "homeHref" | "portalName" | "showPortalName">) {
     return (
         <div className={cn("flex h-16 items-center border-b", collapsed ? "justify-center px-2" : "p-6")}>
             {collapsed ? (
                 <Link
                     href={homeHref}
                     className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm"
-                    aria-label={`Ai Clearance ${portalName}`}
+                    aria-label={`${brandTitle}${showPortalName ? ` ${portalName}` : ""}`}
                 >
-                    AC
+                    {brandMark}
                 </Link>
             ) : (
                 <div className="flex w-full flex-col">
                     <Link href={homeHref} className="text-xl font-bold text-gray-900 transition-colors hover:text-primary">
-                        Ai Clearance
+                        {brandTitle}
                     </Link>
-                    <span className="truncate text-xs font-medium text-gray-500">{portalName}</span>
+                    {showPortalName && <span className="truncate text-xs font-medium text-gray-500">{portalName}</span>}
                 </div>
             )}
         </div>
     );
+}
+
+function UserProfile({
+    collapsed = false,
+    profile,
+}: {
+    collapsed?: boolean;
+    profile: NonNullable<PortalSidebarProps["userProfile"]>;
+}) {
+    const content = (
+        <div className={cn("flex items-center gap-3", collapsed ? "justify-center px-2 py-3" : "px-4 py-3")}>
+            <Avatar className="h-9 w-9 border border-gray-200">
+                <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                    {profile.initials}
+                </AvatarFallback>
+            </Avatar>
+            {!collapsed && <span className="min-w-0 truncate text-sm font-medium text-gray-700">{profile.name}</span>}
+        </div>
+    );
+
+    return collapsed ? (
+        <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>{content}</TooltipTrigger>
+            <TooltipContent side="right">{profile.name}</TooltipContent>
+        </Tooltip>
+    ) : content;
 }
 
 function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
@@ -108,6 +151,8 @@ function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
 }
 
 export function PortalSidebar({
+    brandMark,
+    brandTitle,
     collapsed,
     homeHref,
     items,
@@ -116,6 +161,8 @@ export function PortalSidebar({
     onMobileOpenChange,
     portalName,
     secondaryItems = [],
+    showPortalName = true,
+    userProfile,
 }: PortalSidebarProps) {
     const pathname = usePathname();
 
@@ -125,7 +172,7 @@ export function PortalSidebar({
                 "fixed left-0 top-0 z-30 hidden h-screen flex-col border-r bg-white transition-all duration-300 md:flex",
                 collapsed ? "w-20" : "w-64"
             )}>
-                <Brand collapsed={collapsed} homeHref={homeHref} portalName={portalName} />
+                <Brand brandMark={brandMark} brandTitle={brandTitle} collapsed={collapsed} homeHref={homeHref} portalName={portalName} showPortalName={showPortalName} />
 
                 <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
@@ -153,6 +200,12 @@ export function PortalSidebar({
                     </div>
                 )}
 
+                {userProfile && (
+                    <div className="border-t py-1">
+                        <UserProfile collapsed={collapsed} profile={userProfile} />
+                    </div>
+                )}
+
                 <div className="border-t p-4"><LogoutButton collapsed={collapsed} /></div>
             </aside>
 
@@ -160,14 +213,14 @@ export function PortalSidebar({
                 <Button variant="ghost" size="icon" onClick={() => onMobileOpenChange(true)} aria-label="Open navigation">
                     <Menu className="h-5 w-5" />
                 </Button>
-                <span className="text-lg font-bold text-gray-900">Ai Clearance</span>
-                <span className="text-xs font-medium text-gray-500">{portalName}</span>
+                <span className="text-lg font-bold text-gray-900">{brandTitle ?? "Ai Clearance"}</span>
+                {showPortalName && <span className="text-xs font-medium text-gray-500">{portalName}</span>}
             </div>
 
             <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
                 <SheetContent side="left" className="w-64 bg-white p-0">
                     <div className="flex h-full flex-col">
-                        <Brand collapsed={false} homeHref={homeHref} portalName={portalName} />
+                        <Brand brandMark={brandMark} brandTitle={brandTitle} collapsed={false} homeHref={homeHref} portalName={portalName} showPortalName={showPortalName} />
                         <div className="flex-1 overflow-y-auto py-4">
                             <SidebarNav items={items} pathname={pathname} onItemClick={() => onMobileOpenChange(false)} />
                         </div>
@@ -175,6 +228,9 @@ export function PortalSidebar({
                             <div className="border-t py-2">
                                 <SidebarNav items={secondaryItems} pathname={pathname} onItemClick={() => onMobileOpenChange(false)} />
                             </div>
+                        )}
+                        {userProfile && (
+                            <div className="border-t py-1"><UserProfile profile={userProfile} /></div>
                         )}
                         <div className="border-t p-4"><LogoutButton /></div>
                     </div>
