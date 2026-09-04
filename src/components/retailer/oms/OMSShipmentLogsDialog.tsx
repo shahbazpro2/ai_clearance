@@ -40,7 +40,7 @@ export function OMSShipmentLogsDialog({
 }: OMSShipmentLogsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-5xl">
+      <DialogContent className="!max-w-5xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Shipment Logs</DialogTitle>
           <DialogDescription>
@@ -58,7 +58,7 @@ export function OMSShipmentLogsDialog({
         ) : error ? (
           <div className="py-8 text-sm text-red-600">{error}</div>
         ) : data?.logs?.length ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-auto min-h-0 flex-1">
             <table className="w-full min-w-[960px] text-sm">
               <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <tr>

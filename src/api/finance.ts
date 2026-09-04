@@ -74,7 +74,9 @@ export interface PaymentOrderRecord {
 }
 
 export interface PaymentGroup {
+  group_key?: string;
   paid_date: string | null;
+  payment_date?: string | null;
   is_paid: boolean;
   headline: string;
   order_count: number;

@@ -60,6 +60,13 @@ export const getDistributorStatsApi = (isLive?: boolean) => {
   return universalApi(url, "get");
 };
 
+/** 16.1 Fetch retailer payments for authorized channels. */
+export const fetchRetailerPaymentsApi = (payload: {
+  channel_ids: string[];
+  page: number;
+  page_size: number;
+}) => universalApi("/retailer/payments", "post", payload);
+
 /**
  * 5.2 GET Audience Channels
  * Endpoint: GET /retailer/audience-channels?audience_id=...

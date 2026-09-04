@@ -33,30 +33,45 @@ import {
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
+const requiredNumber = (min: number, minMessage: string, max?: number) =>
+    z.preprocess(
+        (value) => value === "" || value === null || value === undefined ? undefined : value,
+        z.coerce
+            .number({ error: "Required" })
+            .min(min, minMessage)
+            .pipe(max === undefined ? z.number() : z.number().max(max, `Max ${max}`))
+    );
+
 const schema = z.object({
     Category__c: z.string().min(1, "Category is required"),
-    Website__c: z.string().url().min(1, "Website is required"),
-    Age__c: z.coerce.number({ error: "Required" }).min(1, "Required"),
-    Income__c: z.coerce.number({ error: "Required" }).min(0, "Required"),
-    Female__c: z.coerce
-        .number({ error: "Required" })
-        .min(0)
-        .max(100, "Max 100"),
-    Male__c: z.coerce
-        .number({ error: "Required" })
-        .min(0)
-        .max(100, "Max 100"),
-    Average_Order_Value__c: z.coerce.number({ error: "Required" }).min(0, "Required"),
-    Monthly_New_Customer_Percentage__c: z.coerce
-        .number({ error: "Required" })
-        .min(0)
-        .max(100, "Max 100"),
-    Annual_Customer_Order_Frequency__c: z.coerce
-        .number({ error: "Required" })
-        .min(0, "Required"),
+    Website__c: z.string().min(1, "Website is required").refine(
+        (value) => /^https?:\/\/.+/.test(value),
+        "Must be a valid URL starting with http:// or https://"
+    ),
+    Age__c: requiredNumber(1, "Must be at least 1"),
+    Income__c: requiredNumber(0, "Required"),
+    Female__c: requiredNumber(0, "Required", 100),
+    Male__c: requiredNumber(0, "Required", 100),
+    Average_Order_Value__c: requiredNumber(0, "Required"),
+    Monthly_New_Customer_Percentage__c: requiredNumber(0, "Required", 100),
+    Annual_Customer_Order_Frequency__c: requiredNumber(0, "Required"),
 });
 
 type FormData = z.infer<typeof schema>;
+
+function normalizeFormData(formData: Record<string, any>): FormData {
+    return {
+        Category__c: formData.Category__c != null ? String(formData.Category__c) : "",
+        Website__c: formData.Website__c ?? "",
+        Age__c: formData.Age__c ?? undefined,
+        Income__c: formData.Income__c ?? undefined,
+        Female__c: formData.Female__c ?? undefined,
+        Male__c: formData.Male__c ?? undefined,
+        Average_Order_Value__c: formData.Average_Order_Value__c ?? undefined,
+        Monthly_New_Customer_Percentage__c: formData.Monthly_New_Customer_Percentage__c ?? undefined,
+        Annual_Customer_Order_Frequency__c: formData.Annual_Customer_Order_Frequency__c ?? undefined,
+    } as FormData;
+}
 
 // ─── Help tooltip ─────────────────────────────────────────────────────────────
 
@@ -116,8 +131,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         handleSubmit,
         setValue,
         watch,
-        trigger,
-        formState: { errors, isValid },
+        formState: { errors },
     } = useForm<FormData>({
         resolver: zodResolver(schema) as any,
         mode: "onChange",
@@ -170,11 +184,8 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         }
     }
 
-    // On mount: validate all fields so isValid is accurate, pre-fill from cache
+    // On mount, load the available categories and existing profile values.
     useEffect(() => {
-        // Trigger validation so isValid is computed immediately
-        trigger();
-
         callFetchCategories(fetchAudienceCategoriesApi("audience"), () => {
             callFetchProfile(fetchAudienceProfileDataApi({ audience_id: audienceId }));
         })
@@ -191,8 +202,9 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         const profilePayload = profileData?.data ?? profileData;
         const formData = profilePayload?.form_data;
         if (formData) {
-            setOriginalValues(formData);
-            reset(formData);
+            const normalized = normalizeFormData(formData);
+            setOriginalValues(normalized);
+            reset(normalized);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [profileData]);
@@ -298,7 +310,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     onValueChange={(val) => setValue("Category__c", val, { shouldValidate: true })}
                                     value={watch("Category__c") ?? ""}
                                 >
-                                    <SelectTrigger aria-invalid={!!errors.Category__c}>
+                                    <SelectTrigger className="data-[placeholder]:text-gray-300" aria-invalid={!!errors.Category__c}>
                                         <SelectValue placeholder="Select a category" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -319,6 +331,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                 Website <span className="text-red-500">*</span>
                             </Label>
                             <Input
+                                className="placeholder:text-gray-300"
                                 placeholder="https://example.com"
                                 {...register("Website__c")}
                                 aria-invalid={!!errors.Website__c}
@@ -335,6 +348,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     Age <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
+                                    className="placeholder:text-gray-300"
                                     type="number"
                                     placeholder="35"
                                     {...register("Age__c")}
@@ -350,6 +364,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     Income <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
+                                    className="placeholder:text-gray-300"
                                     type="number"
                                     placeholder="75000"
                                     {...register("Income__c")}
@@ -365,6 +380,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     Female % <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
+                                    className="placeholder:text-gray-300"
                                     type="number"
                                     placeholder="55"
                                     min={0}
@@ -382,6 +398,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     Male % <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
+                                    className="placeholder:text-gray-300"
                                     type="number"
                                     placeholder="45"
                                     min={0}
@@ -399,6 +416,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     Average Order Value <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
+                                    className="placeholder:text-gray-300"
                                     type="number"
                                     placeholder="120"
                                     {...register("Average_Order_Value__c")}
@@ -415,6 +433,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     <HelpTooltip text="What is your percentage of new first-time customers each month on average?" />
                                 </Label>
                                 <Input
+                                    className="placeholder:text-gray-300"
                                     type="number"
                                     placeholder="20"
                                     min={0}
@@ -433,6 +452,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                     <HelpTooltip text="How many times does a customer order per year on average?" />
                                 </Label>
                                 <Input
+                                    className="placeholder:text-gray-300"
                                     type="number"
                                     placeholder="6"
                                     {...register("Annual_Customer_Order_Frequency__c")}
@@ -447,13 +467,8 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                         <div className="flex justify-end pt-2">
                             <Button
                                 type="submit"
-                                disabled={!isValid || submitting || loadingCategories || loadingProfile}
+                                disabled={submitting || loadingCategories || loadingProfile}
                                 className="bg-blue-gradient text-white hover:bg-blue-gradient/90 min-w-28"
-                                title={
-                                    !isValid
-                                        ? "Please fill in all required fields first"
-                                        : ""
-                                }
                             >
                                 {submitting ? (
                                     <>

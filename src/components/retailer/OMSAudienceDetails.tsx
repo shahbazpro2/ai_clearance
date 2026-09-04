@@ -91,7 +91,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
     <div className="min-h-screen bg-gray-50">
       <SetupProgressHeader stepOverride={6} />
 
-      <div className="bg-white border-b sticky top-14 z-20">
+      <div className="bg-white border-b z-20">
         <div className="container mx-auto px-4 py-3">
           <button
             onClick={handleBack}

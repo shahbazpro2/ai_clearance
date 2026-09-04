@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, ChevronLeft, MoreHorizontal } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { fetchPaymentsApi, type PaymentGroup, type PaymentOrderRecord, type PaymentsPagination } from "@/api/finance";
+import { fetchRetailerPaymentsApi } from "@/api/retailer";
 import { Button } from "@/components/ui/button";
 import {
     Select,
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 interface PaymentsTabProps {
     channelIds: string[];
+    source?: "finance" | "retailer";
 }
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -69,7 +71,7 @@ function calculateGroupTotal(group: PaymentGroup): number {
     return group.orders.reduce((sum, order) => sum + (order.total || 0), 0);
 }
 
-export function PaymentsTab({ channelIds }: PaymentsTabProps) {
+export function PaymentsTab({ channelIds, source = "finance" }: PaymentsTabProps) {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [groups, setGroups] = useState<PaymentGroup[]>([]);
@@ -89,13 +91,16 @@ export function PaymentsTab({ channelIds }: PaymentsTabProps) {
         }
 
         callApi(
-            fetchPaymentsApi({
+            (source === "retailer" ? fetchRetailerPaymentsApi : fetchPaymentsApi)({
                 channel_ids: channelIds,
                 page,
                 page_size: pageSize,
             }),
             ({ data }: any) => {
-                const fetchedGroups: PaymentGroup[] = data?.groups || [];
+                const fetchedGroups: PaymentGroup[] = (data?.groups || []).map((group: PaymentGroup) => ({
+                    ...group,
+                    paid_date: group.paid_date ?? group.payment_date ?? null,
+                }));
                 setGroups(fetchedGroups);
                 setPagination(data?.pagination || null);
                 setExpandedGroups(new Set());
@@ -105,7 +110,6 @@ export function PaymentsTab({ channelIds }: PaymentsTabProps) {
 
     useEffect(() => {
         setPage(1);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [channelIdsKey, pageSize]);
 
     useEffect(() => {

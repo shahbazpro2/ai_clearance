@@ -476,7 +476,7 @@ export function DistributionCenterForm({
       {!allowRetailerRole && <SetupProgressHeader stepOverride={4} />}
 
       {!allowRetailerRole && (
-        <div className="bg-white border-b sticky top-14 z-20">
+        <div className="bg-white border-b z-20">
           <div className="container mx-auto px-4 py-3">
             <button
               onClick={() => router.push(`/retailer/audiences/setup/step/${audienceId}/4`)}

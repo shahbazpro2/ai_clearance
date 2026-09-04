@@ -141,7 +141,7 @@ export function BrandApprovalSettingsStep2({ audienceId }: BrandApprovalSettings
             <SetupProgressHeader stepOverride={2} />
 
             {/* Back navigation bar */}
-            <div className="bg-white border-b sticky top-14 z-20">
+            <div className="bg-white border-b z-20">
                 <div className="container mx-auto px-4 py-3">
                     <button
                         onClick={handleBack}

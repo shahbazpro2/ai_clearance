@@ -9,6 +9,8 @@ import { UserManagementContent } from "@/components/retailer/UserManagementCore"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Lock } from "lucide-react";
+import { useApi } from "use-hook-api";
+import { verifyUserManagementStepApi } from "@/api/retailer";
 
 interface UserManagementStep3Props {
     audienceId: string;
@@ -19,6 +21,7 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
     const userData = useMe();
     const ctx = useAtomValue(retailerSetupContextAtom);
     const setCtx = useSetAtom(retailerSetupContextAtom);
+    const [callVerify, { loading: verifying }] = useApi({ errMsg: true });
     // ─── Access guard ─────────────────────────────────────────────────────────────
 
     if (userData && userData.role === "retailer") {
@@ -51,8 +54,10 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
     };
 
     const handleNext = () => {
-        if (ctx) setCtx({ ...ctx, currentStep: 4 });
-        router.push(`/retailer/audiences/setup/step/${audienceId}/4`);
+        callVerify(verifyUserManagementStepApi(audienceId), () => {
+            if (ctx) setCtx({ ...ctx, currentStep: 4 });
+            router.push(`/retailer/audiences/setup/step/${audienceId}/4`);
+        });
     };
 
     // ─── Render ──────────────────────────────────────────────────────────────────
@@ -62,7 +67,7 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
             <SetupProgressHeader stepOverride={3} />
 
             {/* Back navigation bar */}
-            <div className="bg-white border-b sticky top-14 z-20">
+            <div className="bg-white border-b top-14 z-20">
                 <div className="container mx-auto px-4 py-3">
                     <button
                         onClick={handleBack}
@@ -91,9 +96,10 @@ export function UserManagementStep3({ audienceId }: UserManagementStep3Props) {
                         toolbar={
                             <Button
                                 onClick={handleNext}
+                                disabled={verifying}
                                 className="bg-blue-gradient text-white hover:bg-blue-gradient/90 min-w-28"
                             >
-                                Next
+                                {verifying ? "Verifying..." : "Next"}
                             </Button>
                         }
                     />
