@@ -19,6 +19,7 @@ export interface PortalSidebarItem {
 }
 
 interface PortalSidebarProps {
+    brandClickable?: boolean;
     brandMark?: string;
     brandTitle?: string;
     collapsed: boolean;
@@ -78,28 +79,36 @@ function SidebarNav({ collapsed = false, items, onItemClick, pathname }: Sidebar
 }
 
 function Brand({
+    brandClickable = true,
     brandMark = "AC",
     brandTitle = "Ai Clearance",
     collapsed,
     homeHref,
     portalName,
     showPortalName = true,
-}: Pick<PortalSidebarProps, "brandMark" | "brandTitle" | "collapsed" | "homeHref" | "portalName" | "showPortalName">) {
+}: Pick<PortalSidebarProps, "brandClickable" | "brandMark" | "brandTitle" | "collapsed" | "homeHref" | "portalName" | "showPortalName">) {
+    const collapsedBrandClass = "flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm";
+    const expandedBrandClass = "text-xl font-bold text-gray-900 transition-colors";
+
     return (
         <div className={cn("flex h-16 items-center border-b", collapsed ? "justify-center px-2" : "p-6")}>
             {collapsed ? (
-                <Link
-                    href={homeHref}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm"
-                    aria-label={`${brandTitle}${showPortalName ? ` ${portalName}` : ""}`}
-                >
-                    {brandMark}
-                </Link>
+                brandClickable ? (
+                    <Link
+                        href={homeHref}
+                        className={collapsedBrandClass}
+                        aria-label={`${brandTitle}${showPortalName ? ` ${portalName}` : ""}`}
+                    >
+                        {brandMark}
+                    </Link>
+                ) : <div className={collapsedBrandClass}>{brandMark}</div>
             ) : (
                 <div className="flex w-full flex-col">
-                    <Link href={homeHref} className="text-xl font-bold text-gray-900 transition-colors hover:text-primary">
-                        {brandTitle}
-                    </Link>
+                    {brandClickable ? (
+                        <Link href={homeHref} className={cn(expandedBrandClass, "hover:text-primary")}>
+                            {brandTitle}
+                        </Link>
+                    ) : <span className={expandedBrandClass}>{brandTitle}</span>}
                     {showPortalName && <span className="truncate text-xs font-medium text-gray-500">{portalName}</span>}
                 </div>
             )}
@@ -151,6 +160,7 @@ function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
 }
 
 export function PortalSidebar({
+    brandClickable,
     brandMark,
     brandTitle,
     collapsed,
@@ -172,7 +182,7 @@ export function PortalSidebar({
                 "fixed left-0 top-0 z-30 hidden h-screen flex-col border-r bg-white transition-all duration-300 md:flex",
                 collapsed ? "w-20" : "w-64"
             )}>
-                <Brand brandMark={brandMark} brandTitle={brandTitle} collapsed={collapsed} homeHref={homeHref} portalName={portalName} showPortalName={showPortalName} />
+                <Brand brandClickable={brandClickable} brandMark={brandMark} brandTitle={brandTitle} collapsed={collapsed} homeHref={homeHref} portalName={portalName} showPortalName={showPortalName} />
 
                 <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
@@ -220,7 +230,7 @@ export function PortalSidebar({
             <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
                 <SheetContent side="left" className="w-64 bg-white p-0">
                     <div className="flex h-full flex-col">
-                        <Brand brandMark={brandMark} brandTitle={brandTitle} collapsed={false} homeHref={homeHref} portalName={portalName} showPortalName={showPortalName} />
+                        <Brand brandClickable={brandClickable} brandMark={brandMark} brandTitle={brandTitle} collapsed={false} homeHref={homeHref} portalName={portalName} showPortalName={showPortalName} />
                         <div className="flex-1 overflow-y-auto py-4">
                             <SidebarNav items={items} pathname={pathname} onItemClick={() => onMobileOpenChange(false)} />
                         </div>

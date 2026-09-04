@@ -36,6 +36,7 @@ export function RetailerSidebar() {
 
     return (
         <PortalSidebar
+            brandClickable={false}
             brandMark="IM"
             brandTitle="Insert Media"
             collapsed={collapsed}
