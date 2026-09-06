@@ -1,4 +1,5 @@
 import { SignupScreen } from "@/components/SignupScreen";
+import { redirect } from "next/navigation";
 
 export default async function SignupPage({
     searchParams,
@@ -7,7 +8,6 @@ export default async function SignupPage({
 }) {
     const params = await searchParams;
     const role = params.role;
-    const normalizedRole =
-        role === "admin" || role === "retailer" ? role : undefined;
-    return <SignupScreen role={normalizedRole} />;
+    if (role !== "retailer") redirect("/login");
+    return <SignupScreen role="retailer" />;
 }

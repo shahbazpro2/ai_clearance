@@ -21,10 +21,6 @@ export async function middleware(request: NextRequest) {
   console.log("🔑 Access token:", accessToken);
   console.log("🔑 Token status:", accessToken ? "Found" : "Not found");
 
-  // Check if current path is protected (general advertiser routes)
-  const isProtectedRoute = ROUTES.PROTECTED.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
   // Check finance protected routes
   const isFinanceProtectedRoute = ROUTES.FINANCE.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
@@ -65,7 +61,7 @@ export async function middleware(request: NextRequest) {
   // Check if current path is an auth route
   const isAuthRoute = ROUTES.AUTH.includes(pathname as any);
 
-  const anyProtected = isProtectedRoute || isFinanceProtectedRoute || isRetailerProtectedRoute || isAdminProtectedRoute || (isInventoryPortalProtectedRoute && !isInventoryPortalAuthPage);
+  const anyProtected = isFinanceProtectedRoute || isRetailerProtectedRoute || isAdminProtectedRoute || (isInventoryPortalProtectedRoute && !isInventoryPortalAuthPage);
 
   // Redirect unauthenticated users from protected routes to login
   if (anyProtected && !accessToken) {
@@ -88,27 +84,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (
-    isProtectedRoute &&
-    (await cookies()).get("is_active")?.value === "false" &&
-    pathname !== "/plans"
-  ) {
-    console.log("🚫 Redirecting to plans from protected route:", pathname);
-    return NextResponse.redirect(new URL("/plans", request.url));
-  }
-
   // Redirect authenticated users from auth routes to dashboard based on role context
   if (isAuthRoute && accessToken) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
-    let redirectPath = "/";
+    const authRole = (await cookies()).get("auth_role")?.value?.toLowerCase();
+    let redirectPath = "/retailer";
     if (isAdminContext) {
       redirectPath = "/admin";
     } else if (isFinancePath || roleQuery === "finance") {
       redirectPath = "/finance";
-    } else if (isRetailerPath) {
+    } else if (isRetailerPath || roleQuery === "retailer") {
       redirectPath = "/retailer/brand-approval-settings";
     } else if (isInventoryPortalPath || roleQuery === "inventory") {
       redirectPath = "/inventory-portal";
+    } else if (authRole === "admin" || authRole === "super_admin") {
+      redirectPath = "/admin";
+    } else if (authRole === "finance") {
+      redirectPath = "/finance";
+    } else if (authRole === "inventory") {
+      redirectPath = "/inventory-portal";
+    } else if (authRole === "retailer" || authRole === "setup_user") {
+      redirectPath = "/retailer";
     }
     return NextResponse.redirect(new URL(redirectPath, request.url));
   }

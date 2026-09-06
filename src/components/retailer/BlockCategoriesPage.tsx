@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ChevronDown, ChevronUp, Search, Eye } from "lucide-react";
-import { SampleViewerDialog } from "@/components/admin/manualReviews/SampleViewerDialog";
+import { SampleViewerDialog } from "@/components/common/SampleViewerDialog";
 import {
     Dialog,
     DialogContent,

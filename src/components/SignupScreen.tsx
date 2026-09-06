@@ -35,7 +35,7 @@ export function SignupScreen({
     title,
     loginPath,
 }: {
-    role?: "admin" | "user" | "retailer";
+    role: "admin" | "retailer";
     title?: string;
     loginPath?: string;
 }) {
@@ -48,10 +48,10 @@ export function SignupScreen({
     });
 
     const onSubmit = async (payload: SignupFormData) => {
-        const apiPayload = role ? { ...payload, role } : payload;
+        const apiPayload = { ...payload, role };
         callApi(signupApi(apiPayload), ({ data }: any) => {
             console.log('Signup successful:', data);
-            const roleQuery = role ? `&role=${encodeURIComponent(role)}` : "";
+            const roleQuery = `&role=${encodeURIComponent(role)}`;
             router.push(
                 `/verify-otp?email=${encodeURIComponent(payload.email)}${roleQuery}`
             );
@@ -60,7 +60,7 @@ export function SignupScreen({
 
     const handleLogin = () => {
         const targetLoginPath =
-            loginPath || (role && role !== "user" ? `/login?role=${encodeURIComponent(role)}` : "/login");
+            loginPath || `/login?role=${encodeURIComponent(role)}`;
         router.push(targetLoginPath);
     };
 

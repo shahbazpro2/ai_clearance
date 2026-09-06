@@ -1,5 +1,5 @@
 'use client'
-import { isAuthenticated, setIsActive } from '@/lib/auth';
+import { isAuthenticated } from '@/lib/auth';
 import { useMe } from '@/hooks/useMe';
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation';
@@ -11,10 +11,6 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
     const pathname = usePathname();
     const router = useRouter();
     const [gateTimedOut, setGateTimedOut] = useState(false);
-
-    useEffect(() => {
-        setIsActive(meData?.is_active);
-    }, [meData]);
 
     useEffect(() => {
         console.log('mmmaa', meData, meData?.role)
@@ -33,30 +29,6 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
             router.replace('/inventory-portal');
         }
     }, [meData, pathname, router]);
-
-    useEffect(() => {
-        //if medData.current_period_end is less than now, then setIsActive(false)
-        //current_period_end = Wed, 05 Nov 2025 17:50:20 GMT
-
-        if (!meData?.current_period_end) return;
-
-        try {
-            const currentDate = new Date();
-            const currentPeriodEnd = new Date(meData?.current_period_end);
-
-            // Check if date is valid
-            if (isNaN(currentPeriodEnd.getTime())) {
-                return;
-            }
-
-            if (currentPeriodEnd < currentDate) {
-                setIsActive(false)
-            }
-        } catch (error) {
-            // Silently handle invalid date
-            return;
-        }
-    }, [meData, pathname]);
 
     const shouldGate =
         isAuthenticated() &&

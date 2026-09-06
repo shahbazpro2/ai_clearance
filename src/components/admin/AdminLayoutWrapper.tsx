@@ -4,7 +4,6 @@ import { useAtomValue } from "jotai";
 import { sidebarCollapsedAtom } from "@/store/ui";
 import { cn } from "@/lib/utils";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { DashboardNavbar } from "@/components/common/DashboardNavbar";
 
 export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
     const collapsed = useAtomValue(sidebarCollapsedAtom);
@@ -21,7 +20,6 @@ export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) 
                     collapsed ? "md:ml-20" : "md:ml-64"
                 )}
             >
-                {/* <DashboardNavbar /> */}
                 <div className="flex-1">
                     {children}
                 </div>

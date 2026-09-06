@@ -15,25 +15,25 @@ export function SampleViewerDialog({
   open: boolean;
   url: string | null;
   onClose: () => void;
-  /** Optional MIME type when URL has no extension (e.g. signed GCP URLs) */
   mimeType?: string | null;
 }) {
   const isImage = useMemo(() => {
     if (mimeType?.startsWith("image/")) return true;
     if (!url) return false;
-    const u = url.split("?")[0].toLowerCase();
-    return u.endsWith(".jpg") || u.endsWith(".jpeg") || u.endsWith(".png") || u.endsWith(".gif") || u.endsWith(".webp");
+    const normalizedUrl = url.split("?")[0].toLowerCase();
+    return [".jpg", ".jpeg", ".png", ".gif", ".webp"].some((extension) =>
+      normalizedUrl.endsWith(extension),
+    );
   }, [url, mimeType]);
 
   const isPdf = useMemo(() => {
     if (mimeType === "application/pdf") return true;
     if (!url) return false;
-    const u = url.split("?")[0].toLowerCase();
-    return u.endsWith(".pdf");
+    return url.split("?")[0].toLowerCase().endsWith(".pdf");
   }, [url, mimeType]);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="!max-w-none !w-screen !h-[95vh]">
         <DialogHeader>
           <DialogTitle>View Sample</DialogTitle>
@@ -69,23 +69,14 @@ export function SampleViewerDialog({
                     wrapperClass="rounded-md border bg-neutral-50"
                     contentClass="select-none"
                   >
-                    <img
-                      src={url || ""}
-                      alt="Preview"
-                      className="object-contain h-[80vh]"
-                    />
+                    <img src={url || ""} alt="Preview" className="object-contain h-[80vh]" />
                   </TransformComponent>
                 </>
               )}
             </TransformWrapper>
           ) : isPdf ? (
             <div className="w-full flex flex-col gap-2">
-              <a
-                href={url || "#"}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-primary underline self-end"
-              >
+              <a href={url || "#"} target="_blank" rel="noreferrer" className="text-sm text-primary underline self-end">
                 Open in new tab
               </a>
               <iframe

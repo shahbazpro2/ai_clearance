@@ -1,19 +1,7 @@
 // Route configuration
 export const ROUTES = {
   // Routes that require authentication
-  PROTECTED: ["/", "/create-campaign", "/campaigns"],
-
-  ADMIN: [
-    "/admin",
-    "/admin/manual-reviews",
-    "/admin/manual-availability-reviews",
-    "/admin/complete-booking-review",
-    "/admin/fine-tuning",
-    "/admin/challenged-reviews",
-    "/admin/approve-reviews",
-    "/admin/deny-reviews",
-    "/admin/users",
-  ],
+  ADMIN: ["/admin"],
 
   RETAILER: [
     "/retailer",
@@ -40,5 +28,5 @@ export const ROUTES = {
     "/forgot-password",
     "/inventory-portal/forgot-password",
   ],
-  PUBLIC: ["/payment/success"],
+  PUBLIC: [] as readonly string[],
 } as const;

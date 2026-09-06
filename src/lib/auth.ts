@@ -36,12 +36,6 @@ export function setRefreshToken(token: string): void {
   document.cookie = `refresh_token=${token}; path=/;`; // 30 days
 }
 
-export function setIsActive(isActive: boolean): void {
-  if (typeof document === "undefined") return;
-
-  document.cookie = `is_active=${isActive}; path=/;`; // 30 days
-}
-
 export function setAuthRole(role: string): void {
   if (typeof document === "undefined") return;
   document.cookie = `auth_role=${encodeURIComponent(role)}; path=/;`;
@@ -60,18 +54,6 @@ export function clearAuthRole(): void {
   if (typeof document === "undefined") return;
   document.cookie =
     "auth_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
-}
-
-// Get is_active status from cookies
-export function getIsActive(): boolean {
-  if (typeof document === "undefined") return false;
-
-  const cookies = document.cookie.split(";");
-  const isActiveCookie = cookies.find((cookie) =>
-    cookie.trim().startsWith("is_active="),
-  );
-
-  return isActiveCookie ? isActiveCookie.split("=")[1] === "true" : false;
 }
 
 // Remove all authentication tokens

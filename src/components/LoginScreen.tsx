@@ -12,7 +12,7 @@ import * as z from "zod";
 import { AuthHeader, AuthLayout } from "@/components/common";
 import { Axios, useApi } from "use-hook-api";
 import { loginApi } from "@/api/auth";
-import { setAccessToken, setAuthRole, setIsActive, setRefreshToken } from "@/lib/auth";
+import { setAccessToken, setAuthRole, setRefreshToken } from "@/lib/auth";
 import { universalApi } from "@/lib/universal-api";
 import { VERSION } from "@/constant";
 
@@ -24,10 +24,10 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-type AuthRole = "user" | "admin" | "retailer" | "setup_user" | "finance" | "inventory";
+type AuthRole = "admin" | "retailer" | "setup_user" | "finance" | "inventory";
 
 export function LoginScreen({
-    defaultRole = "user",
+    defaultRole = "retailer",
     defaultRedirectTo,
     showSignup = true,
     title,
@@ -61,11 +61,10 @@ export function LoginScreen({
         if (role === "retailer") return "/retailer";
         if (role === "finance") return "/finance";
         if (role === "inventory") return "/inventory-portal";
-        return "/";
+        return "/retailer";
     };
 
-    // role sent to the login API (undefined for plain "user")
-    const apiRole = role === "user" ? undefined : role;
+    const apiRole = role;
 
     const form = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -111,7 +110,7 @@ export function LoginScreen({
                     } else if (userRole === 'inventory') {
                         window.location.href = '/inventory-portal';
                     } else {
-                        window.location.href = '/';
+                        window.location.href = '/login';
                     }
                 } catch (error) {
                     console.error('Failed to fetch user data:', error);
@@ -152,7 +151,6 @@ export function LoginScreen({
 
     const tabs: { label: string; value: AuthRole }[] = [
         { label: "Admin",     value: "admin" },
-        { label: "Advertiser",value: "user" },
         { label: "Retailer",  value: "retailer" },
         { label: "Finance",   value: "finance" },
         { label: "Inventory", value: "inventory" },
@@ -167,7 +165,7 @@ export function LoginScreen({
                     <AuthHeader title={title || "Welcome Back"} />
                     <div className="text-center mb-6">
                         <p className="text-sm text-gray-600 mb-1">Sign in to your Ai Clearance account</p>
-                        <div className="mt-3 grid grid-cols-5 rounded-lg bg-gray-100 p-1 gap-0.5">
+                        <div className="mt-3 grid grid-cols-4 rounded-lg bg-gray-100 p-1 gap-0.5">
                             {tabs.map((tab) => (
                                 <Button
                                     key={tab.value}
