@@ -20,7 +20,7 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
         if (['admin', 'super_admin'].includes(role)) {
             router.replace('/admin');
         } else if (role === 'retailer') {
-            router.replace('/retailer/block-categories');
+            router.replace('/retailer/audiences/setup/step');
         } else if (role === 'setup_user') {
             router.push('/retailer/audiences/setup/step');
         } else if (role === 'finance') {

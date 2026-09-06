@@ -40,7 +40,7 @@ export function RetailerSidebar() {
             brandMark="IM"
             brandTitle="Insert Media"
             collapsed={collapsed}
-            homeHref="/retailer"
+            homeHref="/retailer/audiences/setup/step"
             items={items}
             mobileOpen={mobileOpen}
             onCollapsedChange={setCollapsed}

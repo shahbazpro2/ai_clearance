@@ -58,10 +58,10 @@ export function LoginScreen({
         if (defaultRedirectTo) return defaultRedirectTo;
 
         if (role === "admin") return "/admin";
-        if (role === "retailer") return "/retailer";
+        if (role === "retailer") return "/retailer/audiences/setup/step";
         if (role === "finance") return "/finance";
         if (role === "inventory") return "/inventory-portal";
-        return "/retailer";
+        return "/retailer/audiences/setup/step";
     };
 
     const apiRole = role;
@@ -102,7 +102,7 @@ export function LoginScreen({
                     } else if (userRole === 'setup_user') {
                         window.location.href = '/retailer/audiences/setup/step';
                     } else if (userRole === 'retailer') {
-                        window.location.href = '/retailer/block-categories';
+                        window.location.href = '/retailer/audiences/setup/step';
                     } else if (userRole === 'admin' || userRole === 'super_admin') {
                         window.location.href = '/admin';
                     } else if (userRole === 'finance') {

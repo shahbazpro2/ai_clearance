@@ -104,7 +104,7 @@ export function RetailerNavbar() {
 
                         {/* Logo */}
                         <button
-                            onClick={() => router.push("/retailer/brand-approval-settings")}
+                            onClick={() => router.push("/retailer/audiences/setup/step")}
                             className="text-lg font-bold text-gray-900 hover:text-primary transition-colors"
                         >
                             Insert Media

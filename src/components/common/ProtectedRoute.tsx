@@ -50,8 +50,10 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                     // Redirect to appropriate home based on role
                     if (['admin', 'super_admin'].includes(userRole)) {
                         router.push("/admin");
-                    } else if (['retailer', 'setup_user'].includes(userRole)) {
-                        router.push("/retailer/block-categories");
+                    } else if (userRole === 'retailer') {
+                        router.push("/retailer/audiences/setup/step");
+                    } else if (userRole === 'setup_user') {
+                        router.push("/retailer/audiences/setup/step");
                     } else if (userRole === 'finance') {
                         router.push("/finance");
                     } else if (userRole === 'inventory') {

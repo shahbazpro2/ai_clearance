@@ -88,13 +88,13 @@ export async function middleware(request: NextRequest) {
   if (isAuthRoute && accessToken) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
     const authRole = (await cookies()).get("auth_role")?.value?.toLowerCase();
-    let redirectPath = "/retailer";
+    let redirectPath = "/retailer/audiences/setup/step";
     if (isAdminContext) {
       redirectPath = "/admin";
     } else if (isFinancePath || roleQuery === "finance") {
       redirectPath = "/finance";
     } else if (isRetailerPath || roleQuery === "retailer") {
-      redirectPath = "/retailer/brand-approval-settings";
+      redirectPath = "/retailer/audiences/setup/step";
     } else if (isInventoryPortalPath || roleQuery === "inventory") {
       redirectPath = "/inventory-portal";
     } else if (authRole === "admin" || authRole === "super_admin") {
@@ -104,7 +104,9 @@ export async function middleware(request: NextRequest) {
     } else if (authRole === "inventory") {
       redirectPath = "/inventory-portal";
     } else if (authRole === "retailer" || authRole === "setup_user") {
-      redirectPath = "/retailer";
+      redirectPath = authRole === "setup_user"
+        ? "/retailer/audiences/setup/step"
+        : "/retailer/audiences/setup/step";
     }
     return NextResponse.redirect(new URL(redirectPath, request.url));
   }
