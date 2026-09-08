@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useApi } from "use-hook-api";
 import { useRouter } from "next/navigation";
 import { useSetAtom, useAtomValue } from "jotai";
-import { audienceSetupStep1Api, fetchAudienceCategoriesApi, fetchAudienceProfileDataApi } from "@/api/retailer";
+import { audienceSetupStep1Api, fetchAudienceCategoriesApi, fetchAudienceProfileDataApi, verifyAudienceSetupStepApi } from "@/api/retailer";
 import { retailerSetupContextAtom } from "@/store/retailerSetup";
 import { useMe } from "@/hooks/useMe";
 import { SetupProgressHeader } from "@/components/retailer/SetupProgressHeader";
@@ -123,7 +123,9 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
         useApi({ errMsg: true });
     const [callFetchProfile, { data: profileData, loading: loadingProfile }] =
         useApi({ errMsg: true });
-    const [callSubmit, { loading: submitting }] = useApi({ errMsg: true });
+    const [callSubmit, { loading: saving }] = useApi({ errMsg: true });
+    const [callVerify, { loading: verifying }] = useApi({ errMsg: true });
+    const submitting = saving || verifying;
 
     const {
         register,
@@ -241,19 +243,31 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
     });
 
     const onSubmit: SubmitHandler<FormData> = (data) => {
-        // If nothing changed, just navigate forward without re-saving
+        const verifyAndContinue = () => {
+            callVerify(
+                verifyAudienceSetupStepApi({
+                    audience_id: audienceId,
+                    current_step_name: "audience_data_collection",
+                }),
+                () => {
+                    if (ctx) {
+                        setCtx({
+                            ...ctx,
+                            currentStep: 2,
+                            stepData: {
+                                ...(ctx.stepData ?? {}),
+                                "1": data,
+                            },
+                        });
+                    }
+                    router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
+                }
+            );
+        };
+
+        // Unchanged data still needs verification to complete and lock Step 1.
         if (originalValues && !hasChanges) {
-            if (ctx) {
-                setCtx({
-                    ...ctx,
-                    currentStep: 2,
-                    stepData: {
-                        ...(ctx.stepData ?? {}),
-                        "1": data,
-                    },
-                });
-            }
-            router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
+            verifyAndContinue();
             return;
         }
 
@@ -263,20 +277,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                 current_step_name: "audience_data_collection",
                 form_data: data,
             }),
-            () => {
-                // Cache form data and advance step in atom
-                if (ctx) {
-                    setCtx({
-                        ...ctx,
-                        currentStep: 2,
-                        stepData: {
-                            ...(ctx.stepData ?? {}),
-                            "1": data,
-                        },
-                    });
-                }
-                router.push(`/retailer/audiences/setup/step/${audienceId}/2`);
-            }
+            verifyAndContinue
         );
     };
 
@@ -473,7 +474,7 @@ export function AudienceSetupStep1({ audienceId }: AudienceSetupStep1Props) {
                                 {submitting ? (
                                     <>
                                         <LoadingSpinner size="sm" className="mr-2" />
-                                        Saving...
+                                        {verifying ? "Verifying..." : "Saving..."}
                                     </>
                                 ) : (
                                     originalValues && !hasChanges ? "Next" : originalValues ? "Save Changes" : "Continue"

@@ -254,7 +254,7 @@ export const distributionCenterSetupApi = (payload: {
  */
 export const verifyAudienceSetupStepApi = (payload: {
   audience_id: string;
-  current_step_name: "distribution_center";
+  current_step_name: "audience_data_collection" | "distribution_center";
 }) => {
   return universalApi(
     `/retailer/audience/setup/step/verify?audience_id=${encodeURIComponent(payload.audience_id)}&current_step_name=${encodeURIComponent(payload.current_step_name)}`,
