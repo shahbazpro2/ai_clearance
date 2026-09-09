@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { OMSChannelCard } from "@/components/retailer/oms/OMSChannelCard";
 import { OMSShipmentLogsDialog } from "@/components/retailer/oms/OMSShipmentLogsDialog";
 import { useOmsAudienceDetails } from "@/components/retailer/oms/useOmsAudienceDetails";
-import { RefreshCw, Lock, ChevronLeft, FileDown } from "lucide-react";
+import { RefreshCw, Lock, ChevronLeft, FileDown, Info } from "lucide-react";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -132,6 +132,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
             <Button
               onClick={handleVerify}
               disabled={!omsData?.all_oms_feed_received || verifying}
+              aria-describedby={!omsData?.all_oms_feed_received ? "shipment-log-setup-help" : undefined}
               className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
             >
               {verifying ? (
@@ -145,6 +146,18 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
             </Button>
           </div>
         </div>
+
+        {!omsData?.all_oms_feed_received && (
+          <div
+            id="shipment-log-setup-help"
+            className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+          >
+            <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p>
+              At least 50 successful shipment log records are required for each Distribution Center before you can verify and complete setup.
+            </p>
+          </div>
+        )}
 
         {/* Loading */}
         {loading && (

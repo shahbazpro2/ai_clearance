@@ -64,6 +64,7 @@ type MonthlyProjectionPayload = Record<MonthName, number | null>;
 const quantityFieldSchema = z
   .string()
   .min(1, "Required")
+  .refine((value) => Number(value) > 0, "Quantity must be greater than 0")
   .refine(
     (value) => Number(value) % 25000 === 0,
     "Quantity must be entered in increments of 25,000",
@@ -170,13 +171,11 @@ function MonthlyShipmentProjectionsDialog({
     errMsg: true,
   });
 
-  const [originalValues, setOriginalValues] = useState<ProjectionFormValues | null>(null);
-
   const {
     register,
     reset,
     handleSubmit,
-    watch,
+    trigger,
     formState: { errors, isValid },
   } = useForm<ProjectionFormValues>({
     resolver: zodResolver(monthlyProjectionSchema) as any,
@@ -184,25 +183,11 @@ function MonthlyShipmentProjectionsDialog({
     defaultValues: createEmptyFormValues(),
   });
 
-  const watchedValues = watch();
-
-  const hasChanges = useMemo(() => {
-    if (!originalValues) return false; // No original data yet — keep disabled
-    return MONTHS.some((month) => {
-      const orig = originalValues[month];
-      const curr = watchedValues[month];
-      return String(orig ?? "") !== String(curr ?? "");
-    });
-  }, [watchedValues, originalValues]);
-
   useEffect(() => {
     if (!open || !channel) {
-      setOriginalValues(null);
       reset(createEmptyFormValues());
       return;
     }
-
-    setOriginalValues(null);
 
     callFetchProjections(
       getMonthlyShipmentProjectionsByChannelApi(channel.channel_id),
@@ -210,12 +195,11 @@ function MonthlyShipmentProjectionsDialog({
         const normalized = normalizeProjectionValues(
           extractMonthlyProjections(data, channel.channel_id),
         );
-        setOriginalValues(normalized);
         reset(normalized);
+        void trigger();
       },
       () => {
         const empty = createEmptyFormValues();
-        setOriginalValues(empty);
         reset(empty);
       },
     );
@@ -224,12 +208,6 @@ function MonthlyShipmentProjectionsDialog({
 
   const onSubmit: SubmitHandler<ProjectionFormValues> = (formValues) => {
     if (!channel) return;
-
-    // If nothing changed, just close the dialog without saving
-    if (originalValues && !hasChanges) {
-      onClose();
-      return;
-    }
 
     callSave(
       saveMonthlyShipmentProjectionsApi({
@@ -280,8 +258,8 @@ function MonthlyShipmentProjectionsDialog({
                     const normalized = normalizeProjectionValues(
                       extractMonthlyProjections(data, channel.channel_id),
                     );
-                    setOriginalValues(normalized);
                     reset(normalized);
+                    void trigger();
                   },
                 );
               }}
@@ -341,14 +319,10 @@ function MonthlyShipmentProjectionsDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={saving || !hasChanges || !isValid}
+                disabled={saving || !isValid}
                 className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
                 title={
-                  !hasChanges
-                    ? "No changes made yet — modify a value to enable saving"
-                    : !isValid
-                      ? "Fill in all required fields correctly"
-                      : ""
+                  !isValid ? "Fill in all required fields correctly" : ""
                 }
               >
                 {saving ? (
