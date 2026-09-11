@@ -11,7 +11,7 @@ const baseSidebarItems: readonly PortalSidebarItem[] = [
     { title: "Brand Approval Settings", href: "/retailer/brand-approval-settings", icon: Settings2 },
     { title: "Distribution Centers", href: "/retailer/distribution-centers", icon: Warehouse },
     { title: "Order Management", href: "/retailer/order-management", icon: ClipboardList },
-    { title: "Projection & Shipment Logs", href: "/retailer/projection-shipment-logs", icon: BarChart3 },
+    { title: "Monthly Projections & Shipment Logs", href: "/retailer/projection-shipment-logs", icon: BarChart3 },
     { title: "Payments", href: "/retailer/payments", icon: CreditCard },
 ];
 
