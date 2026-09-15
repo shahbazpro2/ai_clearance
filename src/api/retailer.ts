@@ -49,7 +49,7 @@ export const getAccountAudiencesApi = () => {
 };
 
 /**
- * 5.1 GET Distributor / Account Stats
+ * 5.1 GET Account Stats
  * Endpoint: GET /retailer/distributor/stats
  */
 export const getDistributorStatsApi = (isLive?: boolean) => {

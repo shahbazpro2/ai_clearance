@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, Settings, Settings2, Warehouse, ClipboardList, UserCircle, BarChart3, Users } from "lucide-react";
+import { LogOut, Menu, Settings, Settings2, Warehouse, ClipboardList, UserCircle, BarChart3, CreditCard, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useMe";
 import { logout } from "@/lib/auth";
@@ -25,6 +25,11 @@ const baseNavItems = [
         icon: UserCircle,
     },
     {
+        title: "Channel Setup",
+        href: "/retailer/audiences/setup/step",
+        icon: Settings,
+    },
+    {
         title: "Brand Approval Settings",
         href: "/retailer/brand-approval-settings",
         icon: Settings2,
@@ -44,20 +49,21 @@ const baseNavItems = [
         href: "/retailer/projection-shipment-logs",
         icon: BarChart3,
     },
+    {
+        title: "Payments",
+        href: "/retailer/payments",
+        icon: CreditCard,
+    },
 ] as const;
 
 const setupUserNavItems = [
-    {
-        title: "Account Setup",
-        href: "/retailer/audiences/setup/step",
-        icon: Settings,
-    },
+    ...baseNavItems.slice(0, 2),
     {
         title: "User Management",
         href: "/retailer/user-management",
         icon: Users,
     },
-    ...baseNavItems,
+    ...baseNavItems.slice(2),
 ] as const;
 
 export function RetailerNavbar() {
@@ -66,7 +72,7 @@ export function RetailerNavbar() {
     const userData = useMe();
     const [mobileOpen, setMobileOpen] = useState(false);
 
-    // Show Account Setup only for setup_user role
+    // Channel Setup is available to both retailer roles; User Management remains setup-user only.
     const navItems = userData?.role === "setup_user" ? setupUserNavItems : baseNavItems;
 
     const getUserName = () => {

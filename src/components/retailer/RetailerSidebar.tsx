@@ -8,6 +8,7 @@ import { retailerMobileSidebarOpenAtom, retailerSidebarCollapsedAtom } from "@/s
 
 const baseSidebarItems: readonly PortalSidebarItem[] = [
     { title: "Audience Profile", href: "/retailer/audience-profile", icon: UserCircle },
+    { title: "Channel Setup", href: "/retailer/audiences/setup/step", icon: Settings },
     { title: "Brand Approval Settings", href: "/retailer/brand-approval-settings", icon: Settings2 },
     { title: "Distribution Centers", href: "/retailer/distribution-centers", icon: Warehouse },
     { title: "Order Management", href: "/retailer/order-management", icon: ClipboardList },
@@ -28,9 +29,9 @@ export function RetailerSidebar() {
         .slice(0, 2);
     const items: PortalSidebarItem[] = userData?.role === "setup_user"
         ? [
-            { title: "Account Setup", href: "/retailer/audiences/setup/step", icon: Settings },
+            ...baseSidebarItems.slice(0, 2),
             { title: "User Management", href: "/retailer/user-management", icon: Users },
-            ...baseSidebarItems,
+            ...baseSidebarItems.slice(2),
         ]
         : [...baseSidebarItems];
 

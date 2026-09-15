@@ -56,6 +56,23 @@ The app includes login, signup, campaign management, retailer onboarding, admin 
 - `npm run start` — run the built app in production mode
 - `npm run lint` — run ESLint
 
+## Docker
+
+Build the production image:
+
+```bash
+docker build -t ai-clearance .
+docker run --rm -p 3020:3000 ai-clearance
+```
+
+Open http://localhost:3020. The Dockerfile defaults to `http://34.9.36.203:8080`,
+copied from the project's `.env`. Override it with
+`--build-arg NEXT_PUBLIC_API_URL=https://your-api.com` when building if needed.
+`NEXT_PUBLIC_API_URL` is embedded at build time; rebuild the image to change it.
+Local `.env` files are excluded from the image. If you add server-only runtime
+variables, pass them with `docker run --env-file .env` before the image name.
+The build needs internet access to install npm packages and download Google fonts.
+
 ## Project Structure
 
 Key directories:
