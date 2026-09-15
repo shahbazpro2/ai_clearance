@@ -45,7 +45,7 @@ const baseNavItems = [
         icon: ClipboardList,
     },
     {
-        title: "Projection & Shipment Logs",
+        title: "Monthly Projections & Shipment Logs",
         href: "/retailer/projection-shipment-logs",
         icon: BarChart3,
     },
