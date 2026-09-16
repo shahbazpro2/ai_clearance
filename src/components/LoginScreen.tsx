@@ -12,7 +12,7 @@ import * as z from "zod";
 import { AuthHeader, AuthLayout } from "@/components/common";
 import { Axios, useApi } from "use-hook-api";
 import { loginApi } from "@/api/auth";
-import { setAccessToken, setAuthRole, setRefreshToken } from "@/lib/auth";
+import { clearAuthTokens, setAccessToken, setAuthRole, setRefreshToken } from "@/lib/auth";
 import { universalApi } from "@/lib/universal-api";
 import { VERSION } from "@/constant";
 
@@ -71,10 +71,16 @@ export function LoginScreen({
         mode: "onChange"
     });
 
-    const [callApi, { loading: isLoading }] = useApi({ both: true, resSuccessMsg: 'Login successful' });
+    const [callApi, { loading: isLoading, onClearCaches }] = useApi({ both: true, resSuccessMsg: 'Login successful' });
 
     const onSubmit = async (data: LoginFormData) => {
         const payload = apiRole ? { ...data, role: apiRole } : data;
+
+        // A new login must never inherit the previous account's token or cached profile.
+        clearAuthTokens();
+        onClearCaches(["meUser"]);
+        setAuthRole(role);
+
         callApi(
             loginApi(payload),
             async ({ data: responseData }: any) => {

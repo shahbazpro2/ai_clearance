@@ -1,3 +1,15 @@
+import { Axios } from "use-hook-api";
+
+const AUTH_COOKIE_PATHS = ["/", "/admin", "/finance", "/retailer", "/inventory-portal"];
+
+function expireCookie(name: string, path: string): void {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path};`;
+}
+
+function clearLegacyTokenCookies(name: string): void {
+  AUTH_COOKIE_PATHS.forEach((path) => expireCookie(name, path));
+}
+
 // Get access token from cookies
 export function getAccessToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -26,6 +38,7 @@ export function getRefreshToken(): string | null {
 export function setAccessToken(token: string): void {
   if (typeof document === "undefined") return;
 
+  clearLegacyTokenCookies("access_token");
   document.cookie = `access_token=${token}; path=/;`;
 }
 
@@ -33,6 +46,7 @@ export function setAccessToken(token: string): void {
 export function setRefreshToken(token: string): void {
   if (typeof document === "undefined") return;
 
+  clearLegacyTokenCookies("refresh_token");
   document.cookie = `refresh_token=${token}; path=/;`; // 30 days
 }
 
@@ -60,10 +74,9 @@ export function clearAuthRole(): void {
 export function clearAuthTokens(): void {
   if (typeof document === "undefined") return;
 
-  document.cookie =
-    "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
-  document.cookie =
-    "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+  clearLegacyTokenCookies("access_token");
+  clearLegacyTokenCookies("refresh_token");
+  delete Axios.defaults.headers.common.Authorization;
   clearAuthRole();
 }
 

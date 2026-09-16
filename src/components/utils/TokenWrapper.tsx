@@ -1,5 +1,5 @@
 'use client'
-import { clearAuthTokens, getAuthRole } from '@/lib/auth';
+import { clearAuthTokens, getAuthRole, setAccessToken, setRefreshToken } from '@/lib/auth';
 import { jwtDecode } from 'jwt-decode';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef } from 'react';
@@ -64,9 +64,9 @@ const TokenWrapper: React.FC = () => {
 
                         if (!res.error) {
                             if (res.data?.access_token)
-                                document.cookie = `access_token=${res.data.access_token}`;
+                                setAccessToken(res.data.access_token);
                             if (res.data.refresh_token) {
-                                document.cookie = `refresh_token=${res.data.refresh_token}`;
+                                setRefreshToken(res.data.refresh_token);
                             }
                         }
                         else {
