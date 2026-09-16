@@ -50,20 +50,6 @@ interface AccountData {
     updated_at: string;
 }
 
-type AudienceSetupStatus = "Pending" | "In Progress" | "Completed";
-
-function getAudienceSetupStatus(audience: Audience): AudienceSetupStatus {
-    if (audience.is_completed) return "Completed";
-    if (audience.current_step > 1) return "In Progress";
-    return "Pending";
-}
-
-function getStepPath(audienceId: string, step: number): string {
-    if (step <= 1) return `/retailer/audiences/setup/step/${audienceId}/1`;
-    if (step === 2) return `/retailer/audiences/setup/step/${audienceId}/2`;
-    return `/retailer/audiences/setup/step/${audienceId}/${step}`;
-}
-
 function CompletionAction({ completed, onContinue }: { completed: boolean; onContinue: () => void }) {
     if (completed) {
         return (
@@ -146,11 +132,6 @@ export function AccountSetupPage() {
         });
     };
 
-    const handleSetupClick = (audience: Audience) => {
-        setSetupContext(audience, audience.current_step);
-        router.push(getStepPath(audience.audience_id, audience.current_step));
-    };
-
     const moduleSelection = (audience: Audience, channel: Channel) => ({
         audienceId: audience.audience_id,
         channelId: channel.channel_id,
@@ -173,7 +154,7 @@ export function AccountSetupPage() {
 
     const handleShipmentLogsClick = (audience: Audience) => {
         setSetupContext(audience, 6);
-        router.push(`/retailer/audiences/setup/step/${audience.audience_id}/6`);
+        router.push(`/retailer/audiences/setup/step/${audience.audience_id}/6?source=channel-setup`);
     };
 
     const programRows = account?.audiences.flatMap((audience) =>
@@ -258,14 +239,10 @@ export function AccountSetupPage() {
                                                 <th className="px-4 py-3">Distribution Centers</th>
                                                 <th className="px-4 py-3">Monthly Projections</th>
                                                 <th className="px-4 py-3">Shipment Logs</th>
-                                                <th className="px-4 py-3">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {programRows.map(({ audience, channel }) => {
-                                                const setupStatus = getAudienceSetupStatus(audience);
-                                                const showButton = audience.status === "active" && setupStatus !== "Completed";
-
                                                 return (
                                                     <tr key={`${audience.audience_id}-${channel.channel_id}`} className="border-t hover:bg-gray-50 transition-colors">
                                                         <td className="px-4 py-3 font-medium text-gray-900">{audience.name}</td>
@@ -293,22 +270,6 @@ export function AccountSetupPage() {
                                                                 completed={channel.oms_feed_received}
                                                                 onContinue={() => handleShipmentLogsClick(audience)}
                                                             />
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            {showButton && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    onClick={() => handleSetupClick(audience)}
-                                                                    className={
-                                                                        setupStatus === "Pending"
-                                                                            ? "bg-blue-gradient text-white hover:bg-blue-gradient/90"
-                                                                            : ""
-                                                                    }
-                                                                    variant={setupStatus === "In Progress" ? "outline" : "default"}
-                                                                >
-                                                                    {setupStatus === "Pending" ? "Start Setup" : "Continue Setup"}
-                                                                </Button>
-                                                            )}
                                                         </td>
                                                     </tr>
                                                 );

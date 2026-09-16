@@ -40,14 +40,14 @@ const baseNavItems = [
         icon: Warehouse,
     },
     {
-        title: "Order Management",
-        href: "/retailer/order-management",
-        icon: ClipboardList,
-    },
-    {
         title: "Monthly Projections & Shipment Logs",
         href: "/retailer/projection-shipment-logs",
         icon: BarChart3,
+    },
+    {
+        title: "Order Management",
+        href: "/retailer/order-management",
+        icon: ClipboardList,
     },
     {
         title: "Payments",
@@ -57,13 +57,12 @@ const baseNavItems = [
 ] as const;
 
 const setupUserNavItems = [
-    ...baseNavItems.slice(0, 2),
     {
         title: "User Management",
         href: "/retailer/user-management",
         icon: Users,
     },
-    ...baseNavItems.slice(2),
+    ...baseNavItems,
 ] as const;
 
 export function RetailerNavbar() {

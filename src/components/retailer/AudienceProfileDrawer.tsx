@@ -345,6 +345,7 @@ export function AudienceProfileDrawer({
                                     </Label>
                                     <Input
                                         type="number"
+                                        step="any"
                                         placeholder="35"
                                         {...register("Age__c")}
                                         aria-invalid={!!errors.Age__c}
@@ -360,6 +361,7 @@ export function AudienceProfileDrawer({
                                     </Label>
                                     <Input
                                         type="number"
+                                        step="any"
                                         placeholder="75000"
                                         {...register("Income__c")}
                                         aria-invalid={!!errors.Income__c}
@@ -375,6 +377,7 @@ export function AudienceProfileDrawer({
                                     </Label>
                                     <Input
                                         type="number"
+                                        step="any"
                                         placeholder="55"
                                         min={0}
                                         max={100}
@@ -392,6 +395,7 @@ export function AudienceProfileDrawer({
                                     </Label>
                                     <Input
                                         type="number"
+                                        step="any"
                                         placeholder="45"
                                         min={0}
                                         max={100}
@@ -409,6 +413,7 @@ export function AudienceProfileDrawer({
                                     </Label>
                                     <Input
                                         type="number"
+                                        step="any"
                                         placeholder="120"
                                         {...register("Average_Order_Value__c")}
                                         aria-invalid={!!errors.Average_Order_Value__c}
@@ -426,6 +431,7 @@ export function AudienceProfileDrawer({
                                     </Label>
                                     <Input
                                         type="number"
+                                        step="any"
                                         placeholder="20"
                                         min={0}
                                         max={100}
@@ -445,6 +451,7 @@ export function AudienceProfileDrawer({
                                     </Label>
                                     <Input
                                         type="number"
+                                        step="any"
                                         placeholder="6"
                                         {...register("Annual_Customer_Order_Frequency__c")}
                                         aria-invalid={!!errors.Annual_Customer_Order_Frequency__c}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useApi } from "use-hook-api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
 import { verifyOMSIntegrationApi } from "@/api/retailer";
 import { retailerSetupContextAtom } from "@/store/retailerSetup";
@@ -23,6 +23,8 @@ interface OMSAudienceDetailsProps {
 
 export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isFromChannelSetup = searchParams.get("source") === "channel-setup";
   const userData = useMe();
   const ctx = useAtomValue(retailerSetupContextAtom);
   const setCtx = useSetAtom(retailerSetupContextAtom);
@@ -43,7 +45,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
   } = useOmsAudienceDetails(audienceId);
 
   // Restrict access for retailer role
-  if (userData && userData.role === "retailer") {
+  if (userData && userData.role === "retailer" && !isFromChannelSetup) {
     return (
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-4 py-8">
@@ -91,17 +93,19 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
     <div className="min-h-screen bg-gray-50">
       <SetupProgressHeader stepOverride={6} />
 
-      <div className="bg-white border-b z-20">
-        <div className="container mx-auto px-4 py-3">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to Monthly Shipment Projections
-          </button>
+      {!isFromChannelSetup && (
+        <div className="bg-white border-b z-20">
+          <div className="container mx-auto px-4 py-3">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to Monthly Shipment Projections
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
@@ -129,25 +133,27 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
               <FileDown className="h-4 w-4 mr-2" />
               {downloadingPdf ? "Downloading..." : "Data Feed Integration Guide"}
             </Button>
-            <Button
-              onClick={handleVerify}
-              disabled={!omsData?.all_oms_feed_received || verifying}
-              aria-describedby={!omsData?.all_oms_feed_received ? "shipment-log-setup-help" : undefined}
-              className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-            >
-              {verifying ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Verifying...
-                </>
-              ) : (
-                "Verify & Complete Setup"
-              )}
-            </Button>
+            {!isFromChannelSetup && (
+              <Button
+                onClick={handleVerify}
+                disabled={!omsData?.all_oms_feed_received || verifying}
+                aria-describedby={!omsData?.all_oms_feed_received ? "shipment-log-setup-help" : undefined}
+                className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+              >
+                {verifying ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify & Complete Setup"
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
-        {!omsData?.all_oms_feed_received && (
+        {!isFromChannelSetup && !omsData?.all_oms_feed_received && (
           <div
             id="shipment-log-setup-help"
             className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"

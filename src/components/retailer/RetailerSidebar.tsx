@@ -11,8 +11,8 @@ const baseSidebarItems: readonly PortalSidebarItem[] = [
     { title: "Channel Setup", href: "/retailer/audiences/setup/step", icon: Settings },
     { title: "Brand Approval Settings", href: "/retailer/brand-approval-settings", icon: Settings2 },
     { title: "Distribution Centers", href: "/retailer/distribution-centers", icon: Warehouse },
-    { title: "Order Management", href: "/retailer/order-management", icon: ClipboardList },
     { title: "Monthly Projections & Shipment Logs", href: "/retailer/projection-shipment-logs", icon: BarChart3 },
+    { title: "Order Management", href: "/retailer/order-management", icon: ClipboardList },
     { title: "Payments", href: "/retailer/payments", icon: CreditCard },
 ];
 
@@ -29,9 +29,8 @@ export function RetailerSidebar() {
         .slice(0, 2);
     const items: PortalSidebarItem[] = userData?.role === "setup_user"
         ? [
-            ...baseSidebarItems.slice(0, 2),
             { title: "User Management", href: "/retailer/user-management", icon: Users },
-            ...baseSidebarItems.slice(2),
+            ...baseSidebarItems,
         ]
         : [...baseSidebarItems];
 
