@@ -91,7 +91,7 @@ export function OMSAudienceDetails({ audienceId }: OMSAudienceDetailsProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SetupProgressHeader stepOverride={6} />
+      {!isFromChannelSetup && <SetupProgressHeader stepOverride={6} />}
 
       {!isFromChannelSetup && (
         <div className="bg-white border-b z-20">
