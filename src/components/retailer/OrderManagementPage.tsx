@@ -27,6 +27,8 @@ interface Order {
     conversions: number | null;
     cac: number | null;
     children?: Order[];
+    brand_name: string | null;
+    brand_category: string | null;
 }
 
 interface MonthSummary {
@@ -107,7 +109,7 @@ function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope,
                     </button>
                 </td>
 
-                {/* ADVERTISER */}
+                {/* BRAND */}
                 <td className="px-4 py-3 text-sm text-gray-700">
                     {isEnvelope ? (
                         <button
@@ -119,12 +121,12 @@ function OrderRow({ order, isChild = false, expandedEnvelopes, onToggleEnvelope,
                             <span className="text-gray-400">►</span>
                         </button>
                     ) : (
-                        <span>{order.advertiser ?? "—"}</span>
+                        <span>{order.brand_name ?? "—"}</span>
                     )}
                 </td>
 
                 {/* CATEGORY */}
-                <td className="px-4 py-3 text-sm text-gray-600">{order.category ?? "—"}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{order.brand_category ?? "—"}</td>
 
                 {/* QTY */}
                 <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
@@ -273,7 +275,7 @@ function MonthAccordion({ month, isExpanded, onToggle, onOpenSkids }: MonthAccor
                         <thead>
                             <tr className="bg-gray-50 border-b">
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order</th>
-                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Advertiser</th>
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Brand</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Category</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Quantity Booked</th>
                                 <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pacing</th>

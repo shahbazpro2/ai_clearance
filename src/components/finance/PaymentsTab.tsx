@@ -26,7 +26,7 @@ const PAGE_SIZE_OPTIONS = [5, 10, 25, 50];
 
 const PAYMENTS_COLUMNS: { key: keyof PaymentOrderRecord; label: string; className?: string; headerClassName?: string }[] = [
     { key: "order", label: "Order" },
-    { key: "advertiser", label: "Advertiser" },
+    { key: "brand_name", label: "Brand" },
     { key: "audience", label: "Audience" },
     { key: "channel", label: "Channel" },
     { key: "booking_month", label: "Booking Month" },
@@ -321,7 +321,7 @@ export function PaymentsTab({ channelIds, source = "finance" }: PaymentsTabProps
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                                                                    {order.advertiser ?? "—"}
+                                                                    {order.brand_name ?? "—"}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
                                                                     {order.audience ?? "—"}
