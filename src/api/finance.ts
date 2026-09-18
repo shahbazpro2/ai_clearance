@@ -64,7 +64,7 @@ export interface OrdersResponse {
 
 export interface PaymentOrderRecord {
   order: string;
-  advertiser: string;
+  brand_name: string;
   audience: string;
   channel: string;
   booking_month: string;
