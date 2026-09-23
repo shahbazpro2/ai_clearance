@@ -1,6 +1,6 @@
 import { Axios } from "use-hook-api";
 
-const AUTH_COOKIE_PATHS = ["/", "/admin", "/finance", "/retailer", "/inventory-portal"];
+const AUTH_COOKIE_PATHS = ["/", "/admin", "/finance", "/retailer", "/inventory", "/inventory-portal"];
 
 function expireCookie(name: string, path: string): void {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path};`;
@@ -93,16 +93,14 @@ export function logout(): void {
   setTimeout(() => {
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
-      if (pathname.startsWith("/inventory-portal") || normalizedRole === "inventory") {
-        window.location.href = "/login?role=inventory";
-      } else if (pathname.startsWith("/admin")) {
+      if (pathname.startsWith("/inventory") || normalizedRole === "inventory") {
+        window.location.href = "/inventory/login";
+      } else if (pathname.startsWith("/admin") || normalizedRole === "admin" || normalizedRole === "super_admin") {
         window.location.href = "/admin/login";
       } else if (pathname.startsWith("/finance") || normalizedRole === "finance") {
-        window.location.href = "/login?role=finance";
+        window.location.href = "/finance/login";
       } else if (pathname.startsWith("/retailer") || normalizedRole === "retailer" || normalizedRole === "setup_user") {
-        window.location.href = "/login?role=retailer";
-      } else if (normalizedRole === "admin" || normalizedRole === "super_admin") {
-        window.location.href = "/admin/login";
+        window.location.href = "/retailer/login";
       } else {
         window.location.href = "/login";
       }

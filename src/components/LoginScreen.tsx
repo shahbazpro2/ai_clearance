@@ -3,8 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { PasswordField } from "@/components/ui/password-field";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +13,6 @@ import { Axios, useApi } from "use-hook-api";
 import { loginApi } from "@/api/auth";
 import { clearAuthTokens, setAccessToken, setAuthRole, setRefreshToken } from "@/lib/auth";
 import { universalApi } from "@/lib/universal-api";
-import { VERSION } from "@/constant";
 
 // Define the login form schema using Zod
 const loginSchema = z.object({
@@ -24,29 +22,43 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-type AuthRole = "admin" | "retailer" | "setup_user" | "finance" | "inventory";
+export type AuthRole = "admin" | "retailer" | "setup_user" | "finance" | "inventory";
 
-export function LoginScreen({
-    defaultRole = "retailer",
-    defaultRedirectTo,
-    showSignup = true,
-    title,
-}: {
+interface LoginScreenProps {
+    role?: AuthRole;
     defaultRole?: AuthRole;
     defaultRedirectTo?: string;
     showSignup?: boolean;
     title?: string;
-}) {
+    subtitle?: string;
+    signupPath?: string;
+    forgotPasswordPath?: string;
+}
+
+export function LoginScreen({
+    role: fixedRole,
+    defaultRole = "retailer",
+    defaultRedirectTo,
+    showSignup,
+    title,
+    subtitle,
+    signupPath,
+    forgotPasswordPath,
+}: LoginScreenProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const roleFromQuery = (searchParams.get("role") as AuthRole | null) ?? null;
-    const [role, setRole] = useState<AuthRole>(roleFromQuery ?? defaultRole);
+    const [role, setRole] = useState<AuthRole>(fixedRole ?? roleFromQuery ?? defaultRole);
 
     useEffect(() => {
+        if (fixedRole) {
+            setRole(fixedRole);
+            return;
+        }
         if (!roleFromQuery) return;
         if (roleFromQuery === role) return;
         setRole(roleFromQuery);
-    }, [roleFromQuery, role]);
+    }, [fixedRole, roleFromQuery, role]);
 
     useEffect(() => {
         setAuthRole(role);
@@ -60,7 +72,7 @@ export function LoginScreen({
         if (role === "admin") return "/admin";
         if (role === "retailer") return "/retailer/audiences/setup/step";
         if (role === "finance") return "/finance";
-        if (role === "inventory") return "/inventory-portal";
+        if (role === "inventory") return "/inventory";
         return "/retailer/audiences/setup/step";
     };
 
@@ -92,7 +104,7 @@ export function LoginScreen({
                 // For inventory contacts skip /auth/me and redirect directly
                 if (role === "inventory") {
                     const requestedRedirect = searchParams.get("redirect");
-                    window.location.href = requestedRedirect || "/inventory-portal";
+                    window.location.href = requestedRedirect || defaultRedirectTo || "/inventory";
                     return;
                 }
 
@@ -105,18 +117,18 @@ export function LoginScreen({
                     const requestedRedirect = searchParams.get("redirect");
                     if (requestedRedirect) {
                         window.location.href = requestedRedirect;
-                    } else if (userRole === 'setup_user') {
-                        window.location.href = '/retailer/audiences/setup/step';
-                    } else if (userRole === 'retailer') {
+                    } else if (defaultRedirectTo) {
+                        window.location.href = defaultRedirectTo;
+                    } else if (userRole === 'setup_user' || userRole === 'retailer') {
                         window.location.href = '/retailer/audiences/setup/step';
                     } else if (userRole === 'admin' || userRole === 'super_admin') {
                         window.location.href = '/admin';
                     } else if (userRole === 'finance') {
                         window.location.href = '/finance';
                     } else if (userRole === 'inventory') {
-                        window.location.href = '/inventory-portal';
+                        window.location.href = '/inventory';
                     } else {
-                        window.location.href = '/login';
+                        window.location.href = defaultRedirectTo || getRedirectPath();
                     }
                 } catch (error) {
                     console.error('Failed to fetch user data:', error);
@@ -142,6 +154,10 @@ export function LoginScreen({
     };
 
     const handleSignup = () => {
+        if (signupPath) {
+            router.push(signupPath);
+            return;
+        }
         const targetSignupPath = role === "admin"
             ? "/admin/signup"
             : role === "retailer"
@@ -150,47 +166,47 @@ export function LoginScreen({
         router.push(targetSignupPath);
     };
 
-    const getForgotPasswordPath = () => {
-        if (role === "inventory") return "/inventory-portal/forgot-password";
+    const getForgotPasswordUrl = () => {
+        if (forgotPasswordPath) return forgotPasswordPath;
+        if (role === "inventory") return "/inventory/forgot-password";
         return `/forgot-password${apiRole ? `?role=${encodeURIComponent(apiRole)}` : ""}`;
     };
 
-    const tabs: { label: string; value: AuthRole }[] = [
-        { label: "Admin",     value: "admin" },
-        { label: "Retailer",  value: "retailer" },
-        { label: "Finance",   value: "finance" },
-        { label: "Inventory", value: "inventory" },
-    ];
+    const getDefaultTitle = () => {
+        if (role === "admin") return "Admin Portal";
+        if (role === "finance") return "Insert Distributor Finance";
+        if (role === "inventory") return "Insert Distributor Inventory";
+        if (role === "retailer") return "Insert Distributor";
+        return "Welcome Back";
+    };
 
-    const noSignupRoles: AuthRole[] = ["retailer", "finance", "inventory"];
+    const getDefaultSubtitle = () => {
+        if (role === "admin") return "Sign in to your Admin account";
+        if (role === "finance") return "Sign in to Insert Distributor Finance";
+        if (role === "inventory") return "Sign in to Insert Distributor Inventory";
+        if (role === "retailer") return "Sign in to your Insert Distributor account";
+        return "Sign in to your account";
+    };
+
+    const resolvedTitle = title || getDefaultTitle();
+    const resolvedSubtitle = subtitle !== undefined ? subtitle : getDefaultSubtitle();
+
+    // Roles without signup by default
+    const noSignupRoles: AuthRole[] = ["finance", "inventory"];
+    const shouldDisplaySignup = showSignup !== undefined
+        ? showSignup
+        : !noSignupRoles.includes(role);
 
     return (
         <AuthLayout>
-            <div className="min-h-[560px] flex flex-col">
+            <div className="min-h-[500px] flex flex-col">
                 <div>
-                    <AuthHeader title={title || "Welcome Back"} />
-                    <div className="text-center mb-6">
-                        <p className="text-sm text-gray-600 mb-1">Sign in to your Ai Clearance account</p>
-                        <div className="mt-3 grid grid-cols-4 rounded-lg bg-gray-100 p-1 gap-0.5">
-                            {tabs.map((tab) => (
-                                <Button
-                                    key={tab.value}
-                                    type="button"
-                                    size="sm"
-                                    variant={role === tab.value ? "default" : "ghost"}
-                                    className="w-full text-xs px-1"
-                                    onClick={() => {
-                                        setRole(tab.value);
-                                        const next = new URLSearchParams(searchParams.toString());
-                                        next.set("role", tab.value);
-                                        router.replace(`/login?${next.toString()}`);
-                                    }}
-                                >
-                                    {tab.label}
-                                </Button>
-                            ))}
+                    <AuthHeader title={resolvedTitle} />
+                    {resolvedSubtitle && (
+                        <div className="text-center mb-6">
+                            <p className="text-sm text-gray-600 mb-1">{resolvedSubtitle}</p>
                         </div>
-                    </div>
+                    )}
 
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField
@@ -215,7 +231,7 @@ export function LoginScreen({
                                 type="button"
                                 variant="link"
                                 className="text-sm text-primary hover:text-primary/90 p-0 h-auto cursor-pointer"
-                                onClick={() => router.push(getForgotPasswordPath())}
+                                onClick={() => router.push(getForgotPasswordUrl())}
                             >
                                 Forgot Password?
                             </Button>
@@ -232,7 +248,7 @@ export function LoginScreen({
                 </div>
 
                 <div className="mt-auto pt-4">
-                    {showSignup && !noSignupRoles.includes(role) ? (
+                    {shouldDisplaySignup ? (
                         <div className="text-center">
                             <p className="text-sm text-gray-600">
                                 Don&apos;t have an account?{" "}

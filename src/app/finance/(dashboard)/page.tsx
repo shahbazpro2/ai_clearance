@@ -116,7 +116,7 @@ function FinancePortalContent() {
                                     <p className="text-sm text-gray-500 mt-0.5">
                                         {activeTab === "orders"
                                             ? "View orders and payment status across all authorized audiences and channels."
-                                            : "View orders grouped by payment date with paid/unpaid summaries."}
+                                            : "View and track orders by payment date."}
                                         {accountInfo?.account_name && (
                                             <>
                                                 {" "}Account:{" "}
@@ -184,7 +184,7 @@ export default function FinancePage() {
                 <div className="min-h-screen flex items-center justify-center bg-gray-50">
                     <div className="text-center">
                         <LoadingSpinner size="lg" />
-                        <p className="mt-4 text-muted-foreground">Loading Finance Portal...</p>
+                        <p className="mt-4 text-muted-foreground">Loading Insert Distributor Finance...</p>
                     </div>
                 </div>
             }

@@ -50,7 +50,7 @@ export default function RetailerPaymentsPage() {
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
                 <p className="text-sm text-gray-500 mt-1">
-                    View orders grouped by payment date across live audiences and channels.
+                    View and track orders by payment date.
                     {accountInfo.account_name && <> Account: <span className="font-medium text-gray-700">{accountInfo.account_name}</span></>}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">{audiences.length} audiences · {totalChannels} channels</p>

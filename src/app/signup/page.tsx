@@ -8,6 +8,12 @@ export default async function SignupPage({
 }) {
     const params = await searchParams;
     const role = params.role;
-    if (role !== "retailer") redirect("/login");
-    return <SignupScreen role="retailer" />;
+    if (role !== "retailer") redirect("/retailer/login");
+    return (
+        <SignupScreen
+            role="retailer"
+            title="Insert Distributor Signup"
+            loginPath="/retailer/login"
+        />
+    );
 }

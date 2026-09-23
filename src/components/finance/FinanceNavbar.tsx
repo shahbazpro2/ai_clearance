@@ -81,9 +81,10 @@ export function FinanceNavbar({
                         {/* Logo */}
                         <button
                             onClick={() => router.push("/finance")}
-                            className="text-lg font-bold text-gray-900 hover:text-primary transition-colors"
+                            className="flex flex-col text-left transition-colors group"
                         >
-                            Insert Media
+                            <span className="text-lg font-bold text-gray-900 group-hover:text-primary leading-tight">Insert Media</span>
+                            <span className="text-[11px] text-gray-500 font-normal">Insert Distributor Finance</span>
                         </button>
 
                         {/* Desktop nav links (tabs) */}
@@ -156,7 +157,7 @@ export function FinanceNavbar({
                     <div className="flex flex-col h-full">
                         <div className="px-5 py-4 border-b">
                             <p className="text-lg font-bold text-gray-900">Insert Media</p>
-                            <p className="text-xs text-gray-500">Finance Portal</p>
+                            <p className="text-xs text-gray-500">Insert Distributor Finance</p>
                         </div>
                         <nav className="flex-1 px-3 py-3 space-y-1">
                             {navItems.map((item) => {

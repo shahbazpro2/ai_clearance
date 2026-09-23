@@ -142,7 +142,7 @@ export default function RetailersManagementPage() {
     return (
       <main className="min-h-screen w-full px-6 py-8">
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <h1 className="text-3xl font-bold">Retailers Management</h1>
+          <h1 className="text-3xl font-bold">Insert Distributors Management</h1>
           <Button
             onClick={handleSyncAll}
             disabled={syncing}
@@ -167,7 +167,7 @@ export default function RetailersManagementPage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <h1 className="text-3xl font-bold">Retailers Management</h1>
+        <h1 className="text-3xl font-bold">Insert Distributors Management</h1>
         <Button
           onClick={handleSyncAll}
           disabled={syncing}
@@ -185,7 +185,7 @@ export default function RetailersManagementPage() {
         <nav className="-mb-px flex space-x-8">
           {(
             [
-              { key: "accounts", label: "Retailer Accounts" },
+              { key: "accounts", label: "Insert Distributor Accounts" },
               { key: "projections", label: "Monthly Projection Requests" },
             ] as { key: ActiveTab; label: string }[]
           ).map(({ key, label }) => (
@@ -269,7 +269,7 @@ export default function RetailersManagementPage() {
                       <td colSpan={6} className="py-10 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-sm text-gray-500">
                           <LoadingSpinner size="lg" />
-                          Fetching retailer accounts...
+                          Fetching insert distributor accounts...
                         </div>
                       </td>
                     </tr>
@@ -278,7 +278,7 @@ export default function RetailersManagementPage() {
                   {!loading && error && (
                     <tr>
                       <td colSpan={6} className="py-4 text-center text-red-600">
-                        Failed to load retailer accounts.
+                        Failed to load insert distributor accounts.
                       </td>
                     </tr>
                   )}
@@ -286,7 +286,7 @@ export default function RetailersManagementPage() {
                   {!loading && !error && accounts.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-10 text-center text-sm text-gray-500">
-                        No retailer accounts found.
+                        No insert distributor accounts found.
                       </td>
                     </tr>
                   )}

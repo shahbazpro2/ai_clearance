@@ -9,8 +9,8 @@ import MeWrapper from "@/components/utils/MeWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ai Clearance",
-  description: "AI-powered clearance and identification platform",
+  title: "Insert Media",
+  description: "Insert Media platform",
 };
 
 export default function RootLayout({

@@ -158,7 +158,7 @@ export function OtpVerificationScreen({
                 if (["admin", "super_admin"].includes(normalizedRole || "")) {
                     window.location.href = "/admin";
                 } else if (normalizedRole === "retailer") {
-                    window.location.href = "/retailer/block-categories";
+                    window.location.href = "/retailer/audiences/setup/step";
                 } else if (normalizedRole === "finance") {
                     window.location.href = "/finance";
                 } else {
@@ -169,7 +169,11 @@ export function OtpVerificationScreen({
                 if (["admin", "super_admin"].includes(normalizedRole || "")) {
                     window.location.href = "/admin/login";
                 } else if (normalizedRole === "finance") {
-                    window.location.href = "/login?role=finance";
+                    window.location.href = "/finance/login";
+                } else if (normalizedRole === "inventory") {
+                    window.location.href = "/inventory/login";
+                } else if (normalizedRole === "retailer" || normalizedRole === "setup_user") {
+                    window.location.href = "/retailer/login";
                 } else {
                     window.location.href = "/login";
                 }

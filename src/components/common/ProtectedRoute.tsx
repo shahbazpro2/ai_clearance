@@ -23,9 +23,14 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
 
             if (!authenticated) {
                 const currentPath = window.location.pathname;
-                // Send inventory users to the common login page
-                if (currentPath.startsWith("/inventory-portal")) {
-                    router.push(`/login?role=inventory&redirect=${encodeURIComponent(currentPath)}`);
+                if (currentPath.startsWith("/inventory")) {
+                    router.push(`/inventory/login?redirect=${encodeURIComponent(currentPath)}`);
+                } else if (currentPath.startsWith("/finance")) {
+                    router.push(`/finance/login?redirect=${encodeURIComponent(currentPath)}`);
+                } else if (currentPath.startsWith("/admin")) {
+                    router.push(`/admin/login?redirect=${encodeURIComponent(currentPath)}`);
+                } else if (currentPath.startsWith("/retailer")) {
+                    router.push(`/retailer/login?redirect=${encodeURIComponent(currentPath)}`);
                 } else {
                     router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
                 }
@@ -57,7 +62,7 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                     } else if (userRole === 'finance') {
                         router.push("/finance");
                     } else if (userRole === 'inventory') {
-                        router.push("/inventory-portal");
+                        router.push("/inventory");
                     } else {
                         router.push("/");
                     }

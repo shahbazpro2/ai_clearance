@@ -5,10 +5,19 @@ import { ROUTES } from "./lib/routes";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Backwards compatibility: redirect legacy /inventory-portal paths to /inventory
+  if (pathname === "/inventory-portal" || pathname.startsWith("/inventory-portal/")) {
+    const newPath = pathname.replace(/^\/inventory-portal/, "/inventory");
+    const redirectUrl = new URL(newPath, request.url);
+    request.nextUrl.searchParams.forEach((val, key) => redirectUrl.searchParams.set(key, val));
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
   const isFinancePath = pathname === "/finance" || pathname.startsWith("/finance/");
   const isRetailerPath = pathname === "/retailer" || pathname.startsWith("/retailer/");
-  const isInventoryPortalPath = pathname === "/inventory-portal" || pathname.startsWith("/inventory-portal/");
+  const isInventoryPath = pathname === "/inventory" || pathname.startsWith("/inventory/");
   const roleQuery = request.nextUrl.searchParams.get("role");
   const isAdminRoleQuery = roleQuery === "admin" || roleQuery === "super_admin";
   const isAdminContext = isAdminPath || isAdminRoleQuery;
@@ -21,36 +30,6 @@ export async function middleware(request: NextRequest) {
   console.log("🔑 Access token:", accessToken);
   console.log("🔑 Token status:", accessToken ? "Found" : "Not found");
 
-  // Check finance protected routes
-  const isFinanceProtectedRoute = ROUTES.FINANCE.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
-  // Check retailer protected routes
-  const isRetailerProtectedRoute = ROUTES.RETAILER.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
-  // Check admin protected routes
-  const isAdminProtectedRoute = ROUTES.ADMIN.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
-  // Check inventory portal protected routes
-  const isInventoryPortalProtectedRoute = ROUTES.INVENTORY_PORTAL.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
-  // Inventory portal auth pages are not protected
-  const isInventoryPortalAuthPage =
-    pathname === "/inventory-portal/forgot-password" ||
-    pathname.startsWith("/inventory-portal/forgot-password");
-
-  // Legacy inventory portal login route — show the common login page instead
-  if (pathname === "/inventory-portal/login") {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("role", "inventory");
-    const redirect = request.nextUrl.searchParams.get("redirect");
-    if (redirect) loginUrl.searchParams.set("redirect", redirect);
-    return NextResponse.redirect(loginUrl);
-  }
-
   const isPublicRoute = ROUTES.PUBLIC.includes(pathname as any);
 
   if (isPublicRoute) {
@@ -58,29 +37,62 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if current path is an auth route
+  // Check if current path is an auth route (login, signup, etc.)
   const isAuthRoute = ROUTES.AUTH.includes(pathname as any);
 
-  const anyProtected = isFinanceProtectedRoute || isRetailerProtectedRoute || isAdminProtectedRoute || (isInventoryPortalProtectedRoute && !isInventoryPortalAuthPage);
+  // Check protected routes - AUTH routes are never protected
+  const isFinanceProtectedRoute =
+    !isAuthRoute &&
+    ROUTES.FINANCE.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
+  const isRetailerProtectedRoute =
+    !isAuthRoute &&
+    ROUTES.RETAILER.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
+  const isAdminProtectedRoute =
+    !isAuthRoute &&
+    ROUTES.ADMIN.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
+  const isInventoryProtectedRoute =
+    !isAuthRoute &&
+    ROUTES.INVENTORY.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
 
-  // Redirect unauthenticated users from protected routes to login
+  const anyProtected =
+    isFinanceProtectedRoute ||
+    isRetailerProtectedRoute ||
+    isAdminProtectedRoute ||
+    isInventoryProtectedRoute;
+
+  // Redirect unauthenticated users from protected routes to respective login pages
   if (anyProtected && !accessToken) {
     console.log("🚫 Redirecting to login from protected route:", pathname);
-    if (isInventoryPortalProtectedRoute && !isInventoryPortalAuthPage) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("role", "inventory");
+    if (isInventoryProtectedRoute) {
+      const loginUrl = new URL("/inventory/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (isFinanceProtectedRoute) {
+      const loginUrl = new URL("/finance/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (isAdminProtectedRoute) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (isRetailerProtectedRoute) {
+      const loginUrl = new URL("/retailer/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
-    if (isFinanceProtectedRoute) {
-      loginUrl.searchParams.set("role", "finance");
-    } else if (isAdminProtectedRoute) {
-      loginUrl.searchParams.set("role", "admin");
-    } else if (isRetailerProtectedRoute) {
-      loginUrl.searchParams.set("role", "retailer");
-    }
     return NextResponse.redirect(loginUrl);
   }
 
@@ -89,24 +101,22 @@ export async function middleware(request: NextRequest) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
     const authRole = (await cookies()).get("auth_role")?.value?.toLowerCase();
     let redirectPath = "/retailer/audiences/setup/step";
-    if (isAdminContext) {
+    if (pathname === "/admin/login" || isAdminContext) {
       redirectPath = "/admin";
-    } else if (isFinancePath || roleQuery === "finance") {
+    } else if (pathname === "/finance/login" || isFinancePath || roleQuery === "finance") {
       redirectPath = "/finance";
-    } else if (isRetailerPath || roleQuery === "retailer") {
+    } else if (pathname === "/retailer/login" || isRetailerPath || roleQuery === "retailer") {
       redirectPath = "/retailer/audiences/setup/step";
-    } else if (isInventoryPortalPath || roleQuery === "inventory") {
-      redirectPath = "/inventory-portal";
+    } else if (pathname === "/inventory/login" || isInventoryPath || roleQuery === "inventory") {
+      redirectPath = "/inventory";
     } else if (authRole === "admin" || authRole === "super_admin") {
       redirectPath = "/admin";
     } else if (authRole === "finance") {
       redirectPath = "/finance";
     } else if (authRole === "inventory") {
-      redirectPath = "/inventory-portal";
+      redirectPath = "/inventory";
     } else if (authRole === "retailer" || authRole === "setup_user") {
-      redirectPath = authRole === "setup_user"
-        ? "/retailer/audiences/setup/step"
-        : "/retailer/audiences/setup/step";
+      redirectPath = "/retailer/audiences/setup/step";
     }
     return NextResponse.redirect(new URL(redirectPath, request.url));
   }

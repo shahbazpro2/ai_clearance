@@ -73,10 +73,12 @@ const TokenWrapper: React.FC = () => {
                             clearAuthTokens();
                             if (window.location.href.includes('admin')) {
                                 window.location.href = '/admin/login';
-                            } else if (window.location.href.includes('inventory-portal')) {
-                                window.location.href = '/login?role=inventory';
+                            } else if (window.location.href.includes('inventory')) {
+                                window.location.href = '/inventory/login';
+                            } else if (window.location.href.includes('finance')) {
+                                window.location.href = '/finance/login';
                             } else if (window.location.href.includes('retailer')) {
-                                window.location.href = '/login?role=retailer';
+                                window.location.href = '/retailer/login';
                             } else {
                                 window.location.href = '/login';
                             }

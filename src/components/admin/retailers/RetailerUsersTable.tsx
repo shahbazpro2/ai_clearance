@@ -106,7 +106,7 @@ export function RetailerUsersTable({
 
       {users.length === 0 ? (
         <div className="text-center py-6 text-sm text-gray-500">
-          No users found for this retailer
+          No users found for this insert distributor
         </div>
       ) : (
         <div className="overflow-x-auto border rounded-lg bg-white">

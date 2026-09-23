@@ -60,7 +60,7 @@ export function SignupScreen({
 
     const handleLogin = () => {
         const targetLoginPath =
-            loginPath || `/login?role=${encodeURIComponent(role)}`;
+            loginPath || (role === "admin" ? "/admin/login" : "/retailer/login");
         router.push(targetLoginPath);
     };
 

@@ -26,7 +26,7 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
         } else if (role === 'finance') {
             router.replace('/finance');
         } else if (role === 'inventory') {
-            router.replace('/inventory-portal');
+            router.replace('/inventory');
         }
     }, [meData, pathname, router]);
 

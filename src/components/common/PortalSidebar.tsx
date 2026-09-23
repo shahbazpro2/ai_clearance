@@ -80,8 +80,8 @@ function SidebarNav({ collapsed = false, items, onItemClick, pathname }: Sidebar
 
 function Brand({
     brandClickable = true,
-    brandMark = "AC",
-    brandTitle = "Ai Clearance",
+    brandMark = "IM",
+    brandTitle = "Insert Media",
     collapsed,
     homeHref,
     portalName,
@@ -223,7 +223,7 @@ export function PortalSidebar({
                 <Button variant="ghost" size="icon" onClick={() => onMobileOpenChange(true)} aria-label="Open navigation">
                     <Menu className="h-5 w-5" />
                 </Button>
-                <span className="text-lg font-bold text-gray-900">{brandTitle ?? "Ai Clearance"}</span>
+                <span className="text-lg font-bold text-gray-900">{brandTitle ?? "Insert Media"}</span>
                 {showPortalName && <span className="text-xs font-medium text-gray-500">{portalName}</span>}
             </div>
 

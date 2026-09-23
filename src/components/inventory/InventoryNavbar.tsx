@@ -57,11 +57,11 @@ export function InventoryNavbar() {
                         </Button>
 
                         <button
-                            onClick={() => router.push("/inventory-portal")}
+                            onClick={() => router.push("/inventory")}
                             className="flex items-center gap-2 text-lg font-bold text-gray-900 hover:text-primary transition-colors"
                         >
                             <Package className="h-5 w-5 text-primary" />
-                            Inventory Portal
+                            Insert Distributor Inventory
                         </button>
                     </div>
 
@@ -121,7 +121,7 @@ export function InventoryNavbar() {
                             <Package className="h-5 w-5 text-primary" />
                             <div>
                                 <p className="text-base font-bold text-gray-900">
-                                    Inventory Portal
+                                    Insert Distributor Inventory
                                 </p>
                                 <p className="text-xs text-gray-500">
                                     {getUserName()}

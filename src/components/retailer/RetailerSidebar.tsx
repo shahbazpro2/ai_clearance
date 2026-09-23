@@ -45,7 +45,7 @@ export function RetailerSidebar() {
             mobileOpen={mobileOpen}
             onCollapsedChange={setCollapsed}
             onMobileOpenChange={setMobileOpen}
-            portalName="Retailer Portal"
+            portalName="Insert Distributor"
             showPortalName={false}
             userProfile={{
                 avatarUrl: userData?.avatar || userData?.profile_picture,

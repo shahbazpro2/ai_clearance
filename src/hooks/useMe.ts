@@ -49,11 +49,11 @@ export const useMe = () => {
         if (ROUTES.ADMIN.some(r => path === r || path.startsWith(`${r}/`))) {
           window.location.href = "/admin/login";
         } else if (ROUTES.FINANCE.some(r => path === r || path.startsWith(`${r}/`))) {
-          window.location.href = "/login?role=finance";
+          window.location.href = "/finance/login";
         } else if (ROUTES.RETAILER.some(r => path === r || path.startsWith(`${r}/`))) {
-          window.location.href = "/login?role=retailer";
-        } else if (ROUTES.INVENTORY_PORTAL.some(r => path === r || path.startsWith(`${r}/`))) {
-          window.location.href = "/login?role=inventory";
+          window.location.href = "/retailer/login";
+        } else if (ROUTES.INVENTORY.some(r => path === r || path.startsWith(`${r}/`))) {
+          window.location.href = "/inventory/login";
         } else {
           window.location.href = "/login";
         }

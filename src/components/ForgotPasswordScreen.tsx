@@ -61,8 +61,14 @@ export function ForgotPasswordScreen() {
             new_password: data.password,
             ...(role ? { role } : {})
         }), () => {
-            setStep("success");
-            router.push(role ? `/login?role=${encodeURIComponent(role)}` : "/login");
+            const targetLoginPath = role === "admin"
+                ? "/admin/login"
+                : role === "finance"
+                    ? "/finance/login"
+                    : role === "retailer"
+                        ? "/retailer/login"
+                        : "/login";
+            router.push(targetLoginPath);
         });
     };
 
