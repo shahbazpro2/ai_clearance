@@ -30,6 +30,32 @@ export const setAdminUserStatusApi = (payload: {
   return responseApi("/admin/users/set/status", "post", payload);
 };
 
+// 2.3 Create Admin User
+export const createAdminUserApi = (payload: {
+  name: string;
+  email: string;
+  password?: string;
+}) => {
+  return responseApi("/admin/users/create", "post", payload);
+};
+
+// 2.4 Update Admin User
+export const updateAdminUserApi = (
+  userId: string,
+  payload: {
+    name: string;
+    email: string;
+    password?: string;
+  }
+) => {
+  return responseApi(`/admin/users/${userId}`, "patch", payload);
+};
+
+// 2.5 Delete Admin User
+export const deleteAdminUserApi = (userId: string) => {
+  return responseApi(`/admin/users/${userId}`, "delete", {});
+};
+
 // 10.1 GET Retailer-Account-Users
 export const fetchRetailerAccountsUsersApi = (params?: {
   status?: "active" | "inactive";

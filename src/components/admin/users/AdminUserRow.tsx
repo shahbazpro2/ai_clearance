@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useApi } from "use-hook-api";
 import { setAdminUserStatusApi } from "@/api/admin";
+import { Pencil, Trash2 } from "lucide-react";
 
 type AdminStatus = "active" | "pending" | "suspended" | "rejected";
 
@@ -15,16 +16,39 @@ interface AdminUser {
   email: string;
   role: string;
   admin_status?: AdminStatus;
+  [key: string]: any;
 }
 
 const STATUS_OPTIONS: AdminStatus[] = ["active", "pending", "suspended", "rejected"];
 
-export function AdminUserRow({ user }: { user: AdminUser }) {
+export function AdminUserRow({
+  user,
+  onStatusUpdated,
+  onEdit,
+  onDelete,
+  isCurrentUser = false,
+}: {
+  user: AdminUser;
+  onStatusUpdated?: (userId: string, newStatus: AdminStatus) => void;
+  onEdit?: (user: AdminUser) => void;
+  onDelete?: (user: AdminUser) => void;
+  isCurrentUser?: boolean;
+}) {
+  const [savedStatus, setSavedStatus] = useState<AdminStatus>(user.admin_status ?? "pending");
   const [localStatus, setLocalStatus] = useState<AdminStatus>(user.admin_status ?? "pending");
-  const currentStatus = useMemo<AdminStatus>(() => user.admin_status ?? "pending", [user.admin_status]);
-  const hasChange = localStatus !== currentStatus;
 
-  const [updateStatus, { loading: updating }] = useApi({ both: true, resSuccessMsg: "Status updated successfully", refetchApis: ['admin-users'] });
+  useEffect(() => {
+    const status = user.admin_status ?? "pending";
+    setSavedStatus(status);
+    setLocalStatus(status);
+  }, [user.admin_status]);
+
+  const hasChange = localStatus !== savedStatus;
+
+  const [updateStatus, { loading: updating }] = useApi({
+    both: true,
+    resSuccessMsg: "Status updated successfully",
+  });
 
   const getRowClass = (status: AdminStatus) => {
     const map: Record<AdminStatus, string> = {
@@ -36,10 +60,13 @@ export function AdminUserRow({ user }: { user: AdminUser }) {
     return map[status] || "";
   };
 
-
   const handleSubmit = () => {
     updateStatus(
-      setAdminUserStatusApi({ user_id: user.id, status: localStatus })
+      setAdminUserStatusApi({ user_id: user.id, status: localStatus }),
+      () => {
+        setSavedStatus(localStatus);
+        onStatusUpdated?.(user.id, localStatus);
+      }
     );
   };
 
@@ -73,13 +100,40 @@ export function AdminUserRow({ user }: { user: AdminUser }) {
         </Select>
       </td>
       <td className="px-4 py-3 align-top">
-        <Button
-          onClick={handleSubmit}
-          disabled={!hasChange || updating}
-        >
-          {updating && <LoadingSpinner size="sm" />}
-          <span className={updating ? "ml-2" : ""}>Update</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!hasChange || updating}
+            className="h-8 text-xs"
+          >
+            {updating && <LoadingSpinner size="sm" />}
+            <span className={updating ? "ml-1.5" : ""}>Update</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 px-2.5 text-xs text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+            onClick={() => onEdit?.(user)}
+            title="Edit user details"
+          >
+            <Pencil className="h-3.5 w-3.5 mr-1 text-gray-500" />
+            Edit
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 px-2.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 disabled:opacity-40"
+            onClick={() => onDelete?.(user)}
+            disabled={isCurrentUser}
+            title={isCurrentUser ? "You cannot delete your own account" : "Delete user"}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1 text-red-500" />
+            Delete
+          </Button>
+        </div>
       </td>
     </tr>
   );

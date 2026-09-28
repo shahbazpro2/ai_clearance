@@ -2,12 +2,18 @@
 
 import { fetchAdminUsersApi } from "@/api/admin";
 import { AdminUserRow } from "@/components/admin/users/AdminUserRow";
+import { AddAdminUserDialog } from "@/components/admin/users/AddAdminUserDialog";
+import { EditAdminUserDialog } from "@/components/admin/users/EditAdminUserDialog";
+import { DeleteAdminUserDialog } from "@/components/admin/users/DeleteAdminUserDialog";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
+import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMe } from "@/hooks/useMe";
 import { usePagination } from "@/hooks/usePagination";
 import { DEFAULT_PER_PAGE } from "@/lib/pagination";
+import { UserPlus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 
@@ -28,8 +34,12 @@ interface AdminUser {
 const STATUS_OPTIONS: AdminStatus[] = ["active", "pending", "suspended", "rejected"];
 
 export default function AdminUsersPage() {
+  const userData = useMe();
   const [statusFilter, setStatusFilter] = useState<AdminStatus | "all">("all");
-  const [getUsers, { data, fullRes, loading, error }] = useApi({ cache: "admin-users", fullRes: true });
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
+  const [getUsers, { data, fullRes, loading, error }] = useApi({ fullRes: true });
 
   const { page, currentPage, paginationBarProps } = usePagination({
     pagination: fullRes?.pagination ?? null,
@@ -37,20 +47,53 @@ export default function AdminUsersPage() {
     resetPageWhen: statusFilter,
   });
 
+  const [localUsers, setLocalUsers] = useState<AdminUser[]>([]);
+
+  useEffect(() => {
+    const raw = (data?.data as AdminUser[]) ?? (fullRes?.data as AdminUser[]) ?? (data as AdminUser[]) ?? [];
+    if (Array.isArray(raw)) {
+      setLocalUsers(raw);
+    }
+  }, [data, fullRes]);
+
   const getUsersRef = useRef(getUsers);
   getUsersRef.current = getUsers;
-  useEffect(() => {
+
+  const refetchUsers = () => {
     const params =
       statusFilter === "all"
         ? { page, per_page: DEFAULT_PER_PAGE }
         : { status: statusFilter, page, per_page: DEFAULT_PER_PAGE };
     getUsersRef.current(fetchAdminUsersApi(params));
-  }, [statusFilter, page]);
+  };
 
-  const users: AdminUser[] = useMemo(() => {
-    const raw = (data?.data as AdminUser[]) ?? (fullRes?.data as AdminUser[]) ?? (data as AdminUser[]) ?? [];
-    return Array.isArray(raw) ? raw : [];
-  }, [data, fullRes]);
+  useEffect(() => {
+    if (!userData || userData.role !== "super_admin") return;
+    const params =
+      statusFilter === "all"
+        ? { page, per_page: DEFAULT_PER_PAGE }
+        : { status: statusFilter, page, per_page: DEFAULT_PER_PAGE };
+    getUsersRef.current(fetchAdminUsersApi(params));
+  }, [statusFilter, page, userData]);
+
+  const handleStatusUpdated = (userId: string, newStatus: AdminStatus) => {
+    setLocalUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, admin_status: newStatus } : u))
+    );
+    refetchUsers();
+  };
+
+  const handleUserUpdated = (updatedUser: { id: string; name: string; email: string }) => {
+    setLocalUsers((prev) =>
+      prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u))
+    );
+    refetchUsers();
+  };
+
+  const handleUserDeleted = (deletedUserId: string) => {
+    setLocalUsers((prev) => prev.filter((u) => u.id !== deletedUserId));
+    refetchUsers();
+  };
 
 
   return (
@@ -75,6 +118,14 @@ export default function AdminUsersPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Button
+              onClick={() => setAddUserOpen(true)}
+              className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add New User
+            </Button>
           </div>
         </div>
 
@@ -110,7 +161,7 @@ export default function AdminUsersPage() {
                   </tr>
                 )}
 
-                {!loading && !error && users.length === 0 && (
+                {!loading && !error && localUsers.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-10 text-center text-sm text-gray-500">
                       No admin users found.
@@ -120,14 +171,41 @@ export default function AdminUsersPage() {
 
                 {!loading &&
                   !error &&
-                  users.map((user) => (
-                    <AdminUserRow key={user.id} user={user} />
+                  localUsers.map((user) => (
+                    <AdminUserRow
+                      key={user.id}
+                      user={user}
+                      onStatusUpdated={handleStatusUpdated}
+                      onEdit={(u) => setEditingUser(u)}
+                      onDelete={(u) => setDeletingUser(u)}
+                      isCurrentUser={userData?.id === user.id || userData?.email === user.email}
+                    />
                   ))}
               </tbody>
             </table>
           </div>
           <PaginationBar {...paginationBarProps} />
         </div>
+
+        <AddAdminUserDialog
+          open={addUserOpen}
+          onOpenChange={setAddUserOpen}
+          onSuccess={refetchUsers}
+        />
+
+        <EditAdminUserDialog
+          user={editingUser}
+          open={!!editingUser}
+          onOpenChange={(open) => !open && setEditingUser(null)}
+          onSuccess={handleUserUpdated}
+        />
+
+        <DeleteAdminUserDialog
+          user={deletingUser}
+          open={!!deletingUser}
+          onOpenChange={(open) => !open && setDeletingUser(null)}
+          onSuccess={handleUserDeleted}
+        />
       </main>
     </ProtectedRoute>
   );
