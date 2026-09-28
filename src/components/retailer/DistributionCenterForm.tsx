@@ -11,6 +11,7 @@ import {
   getDistributionCentersApi,
   getUSStateCodesApi,
   distributionCenterSetupApi,
+  saveInventoryContactUserApi,
 } from "@/api/retailer";
 import { retailerSetupContextAtom } from "@/store/retailerSetup";
 import { useMe } from "@/hooks/useMe";
@@ -115,6 +116,11 @@ export function DistributionCenterForm({
   const [callFetchDCs, { data: dcsData, loading: loadingDCs, error: dcError }] = useApi({ errMsg: true });
   const [callFetchStates, { data: statesData, loading: loadingStates, error: stateError }] = useApi({ errMsg: true });
   const [callSubmit, { loading: submitting }] = useApi({ errMsg: true, fullRes: true });
+  const [callSaveInventoryContact, { loading: savingInventoryContact }] = useApi({
+    both: true,
+    resSuccessMsg: "Inventory contact saved successfully.",
+    fullRes: true,
+  });
 
   const stateCodes = statesData?.state_codes ?? [];
 
@@ -354,15 +360,71 @@ export function DistributionCenterForm({
 
   const handleSaveCurrentDC = async () => {
     if (selectedDCId === null) return;
-    const validated = await trigger();
+
+    // Validate only required Inventory Contact fields
+    const validated = await trigger([
+      "inventory_contact.FirstName",
+      "inventory_contact.LastName",
+      "inventory_contact.Email",
+      "inventory_contact.Phone",
+    ]);
     if (!validated) return;
+
     const formData = getValues();
-    saveCurrentDCData(formData as DCFormData);
-    // Update snapshot after saving so Save button becomes disabled
-    savedSnapshotRef.current = formData as DCFormData;
-    setHasChanges(false);
-    // Mark this DC as saved for Save All gate
-    setSavedDCIds(prev => new Set(prev).add(selectedDCId));
+    const contact = formData.inventory_contact;
+
+    // Save action should only proceed when all required Inventory Contact fields are completed
+    if (
+      !contact?.FirstName?.trim() ||
+      !contact?.LastName?.trim() ||
+      !contact?.Email?.trim() ||
+      !contact?.Phone?.trim()
+    ) {
+      return;
+    }
+
+    const currentDC = distributionCentersMap[selectedDCId];
+    const dcSalesforceId =
+      currentDC?.distribution_center_salesforce_id ||
+      (!selectedDCId.startsWith("temp_") ? selectedDCId : "");
+
+    if (!dcSalesforceId) {
+      saveCurrentDCData(formData as DCFormData);
+      savedSnapshotRef.current = formData as DCFormData;
+      setHasChanges(false);
+      setSavedDCIds(prev => new Set(prev).add(selectedDCId));
+      return;
+    }
+
+    callSaveInventoryContact(
+      saveInventoryContactUserApi({
+        audience_id: audienceId,
+        current_step_name: "distribution_center",
+        form_data: {
+          is_draft: true,
+          distribution_center_salesforce_id: dcSalesforceId,
+          inventory_contact: {
+            Email: contact.Email.trim(),
+            FirstName: contact.FirstName.trim(),
+            LastName: contact.LastName.trim(),
+            Phone: contact.Phone.trim(),
+          },
+        },
+      }),
+      () => {
+        saveCurrentDCData(formData as DCFormData);
+        // Update snapshot after saving so Save button becomes disabled
+        savedSnapshotRef.current = formData as DCFormData;
+        setHasChanges(false);
+        // Mark this DC as saved for Save All gate
+        setSavedDCIds(prev => new Set(prev).add(selectedDCId));
+        setApiErrors({});
+      },
+      ({ fullRes }: any) => {
+        const validationErrors = fullRes?.validation_errors || {};
+        setApiErrors(validationErrors);
+      }
+    );
   };
 
   const canAddNew = selectedDCId === null ? true : isValid;
@@ -546,6 +608,7 @@ export function DistributionCenterForm({
                     stateCodes={stateCodes}
                     loadingStates={loadingStates}
                     submitting={submitting}
+                    savingContact={savingInventoryContact}
                     isAllocationValid={isAllocationValid}
                     onSave={handleSaveCurrentDC}
                     disableSave={!hasChanges}

@@ -33,6 +33,7 @@ interface DCFormFieldsProps {
   disableSave?: boolean;
   dcStatus?: "active" | "inactive";
   onStatusChange?: (status: "active" | "inactive") => void;
+  savingContact?: boolean;
 }
 
 function FieldError({ message }: { message?: any }) {
@@ -60,6 +61,7 @@ export const DCFormFields = memo(function DCFormFields({
   disableSave = true,
   dcStatus = "active",
   onStatusChange,
+  savingContact = false,
 }: DCFormFieldsProps) {
   return (
     <div className="space-y-5">
@@ -270,11 +272,18 @@ export const DCFormFields = memo(function DCFormFields({
         <Button
           type="button"
           onClick={onSave}
-          disabled={submitting || disableSave}
+          disabled={submitting || savingContact || disableSave}
           variant="default"
           className="w-full bg-blue-gradient text-white hover:bg-blue-gradient/90"
         >
-          Save
+          {savingContact ? (
+            <>
+              <LoadingSpinner size="sm" className="mr-2" />
+              Saving...
+            </>
+          ) : (
+            "Save"
+          )}
         </Button>
       </div>
     </div>

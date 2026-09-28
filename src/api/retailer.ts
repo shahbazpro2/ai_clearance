@@ -249,6 +249,28 @@ export const distributionCenterSetupApi = (payload: {
 };
 
 /**
+ * 7.6 Distribution Center Setup (Save Inventory Contact User)
+ * Endpoint: POST /retailer/audience/setup/step
+ */
+export const saveInventoryContactUserApi = (payload: {
+  audience_id: string;
+  current_step_name: "distribution_center";
+  form_data: {
+    is_draft: boolean;
+    distribution_center_salesforce_id: string;
+    inventory_contact: {
+      Email: string;
+      FirstName: string;
+      LastName: string;
+      Phone: string;
+    };
+  };
+}) => {
+  return responseApi("/retailer/audience/setup/step", "post", payload);
+};
+
+
+/**
  * 8.1 Verify Audience Setup Step
  * Endpoint: GET /retailer/audience/setup/step/verify
  */
