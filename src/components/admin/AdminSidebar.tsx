@@ -12,7 +12,7 @@ export function AdminSidebar() {
     const userData = useMe();
     const items: PortalSidebarItem[] = [
         ...(userData?.role === "admin" || userData?.role === "super_admin"
-            ? [{ title: "Insert Distributor Management", href: "/admin/retailers", icon: Store }]
+            ? [{ title: "Distributor Management", href: "/admin/retailers", icon: Store }]
             : []),
         ...(userData?.role === "super_admin"
             ? [{ title: "Admin Users", href: "/admin/users", icon: Users }]

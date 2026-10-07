@@ -66,7 +66,7 @@ export function RetailerAudiencesTable({
   if (audiences.length === 0) {
     return (
       <div className="text-center py-6 text-sm text-gray-500">
-        No audiences found for this retailer
+        No audiences found for this distributor
       </div>
     );
   }

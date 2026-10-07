@@ -142,7 +142,7 @@ export default function RetailersManagementPage() {
     return (
       <main className="min-h-screen w-full px-6 py-8">
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <h1 className="text-3xl font-bold">Insert Distributors Management</h1>
+          <h1 className="text-3xl font-bold">Distributors Management</h1>
           <Button
             onClick={handleSyncAll}
             disabled={syncing}
@@ -167,7 +167,7 @@ export default function RetailersManagementPage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <h1 className="text-3xl font-bold">Insert Distributors Management</h1>
+        <h1 className="text-3xl font-bold">Distributors Management</h1>
         <Button
           onClick={handleSyncAll}
           disabled={syncing}
@@ -185,7 +185,7 @@ export default function RetailersManagementPage() {
         <nav className="-mb-px flex space-x-8">
           {(
             [
-              { key: "accounts", label: "Insert Distributor Accounts" },
+              { key: "accounts", label: "Distributor Accounts" },
               { key: "projections", label: "Monthly Projection Requests" },
             ] as { key: ActiveTab; label: string }[]
           ).map(({ key, label }) => (

@@ -622,7 +622,7 @@ export function RetailerAccountDetailView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
         <button onClick={onBack} className="font-medium text-violet-600 hover:text-violet-700">
-          Insert Distributors Management
+          Distributors Management
         </button>
         <ChevronRight className="h-4 w-4" />
         <span>{account.account_name}</span>
