@@ -20,11 +20,14 @@ const universalApiWrapper = async (
   options?: UniversalApiOptions & { body?: any; token?: string }
 ) => {
   let token: string | null = null;
-  // Detect environment and get token accordingly
+  let retailerAccountId: string | null = null;
+
+  // Detect environment and get tokens accordingly
   if (typeof window === "undefined") {
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
     token = cookieStore.get("access_token")?.value || null;
+    retailerAccountId = cookieStore.get("retailer_view_account_id")?.value || null;
   } else {
     // Client-side: use document.cookie
     const cookies = document.cookie.split(";");
@@ -32,6 +35,11 @@ const universalApiWrapper = async (
       cookie.trim().startsWith("access_token=")
     );
     token = accessTokenCookie ? accessTokenCookie.split("=")[1] : null;
+
+    const retailerCookie = cookies.find((cookie) =>
+      cookie.trim().startsWith("retailer_view_account_id=")
+    );
+    retailerAccountId = retailerCookie ? decodeURIComponent(retailerCookie.split("=")[1]) : null;
   }
 
   // Prepare headers
@@ -45,6 +53,17 @@ const universalApiWrapper = async (
   } else if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
+
+  // Add X-Retailer-Account-Id header for retailer API requests if in retailer-view mode
+  if (retailerAccountId) {
+    const isRetailerReq =
+      url.includes("/retailer") ||
+      (typeof window !== "undefined" && window.location.pathname.startsWith("/retailer"));
+    if (isRetailerReq) {
+      headers["X-Retailer-Account-Id"] = retailerAccountId;
+    }
+  }
+
   // Call responseApi with the prepared headers
   const res = await responseApi(
     `${process.env.NEXT_PUBLIC_API_URL}${url}`,

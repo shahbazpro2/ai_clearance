@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
 import { useMe } from "@/hooks/useMe";
+import { isRetailerViewActive } from "@/lib/retailer-view";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -50,8 +51,15 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                 const allowedRoles = allowedRolesRaw.map(r => typeof r === "string" ? r.toLowerCase() : r);
                 const userRole = typeof userData.role === "string" ? userData.role.toLowerCase() : userData.role;
 
+                // Support admin viewing retailer portal as setup_user
+                const isRetailerViewAccess =
+                    typeof window !== "undefined" &&
+                    window.location.pathname.startsWith("/retailer") &&
+                    isRetailerViewActive() &&
+                    ["admin", "super_admin", "setup_user"].includes(userRole);
+
                 // Check role
-                if (!userRole || !allowedRoles.includes(userRole)) {
+                if (!userRole || (!allowedRoles.includes(userRole) && !isRetailerViewAccess)) {
                     // Redirect to appropriate home based on role
                     if (['admin', 'super_admin'].includes(userRole)) {
                         router.push("/admin");

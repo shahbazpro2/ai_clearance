@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useApi } from "use-hook-api";
 import { meApi } from "@/api/auth";
 import { usePathname } from "next/navigation";
 import { ROUTES } from "@/lib/routes";
 import { clearAuthTokens } from "@/lib/auth";
+import { isRetailerViewActive } from "@/lib/retailer-view";
 
 // Global flag to track if API call has been initiated (shared across all hook instances)
 let apiCallInitiated = false;
@@ -63,5 +64,25 @@ export const useMe = () => {
     });
   }, [data, pathname, callApi]);
 
-  return data;
+  // When an admin is in retailer-view mode inside the distributor portal,
+  // surface their role as setup_user so they receive the exact setup_user experience.
+  const resolvedUser = useMemo(() => {
+    if (!data) return data;
+    const isRetailerPath = pathname?.startsWith("/retailer");
+    const adminRoles = ["admin", "super_admin"];
+    const userRole = typeof data.role === "string" ? data.role.toLowerCase() : data.role;
+
+    if (isRetailerPath && isRetailerViewActive() && adminRoles.includes(userRole)) {
+      return {
+        ...data,
+        role: "setup_user",
+        original_role: data.role,
+        is_retailer_view: true,
+      };
+    }
+
+    return data;
+  }, [data, pathname]);
+
+  return resolvedUser;
 };

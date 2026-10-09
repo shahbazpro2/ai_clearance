@@ -18,9 +18,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { syncSpecificSalesforceRetailerApi } from "@/api/admin";
-import { ArrowLeft, Building2, ChevronRight, CircleDot, Store } from "lucide-react";
+import { ArrowLeft, Building2, ChevronRight, CircleDot, Store, ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApi } from "use-hook-api";
+import { setRetailerViewAccount } from "@/lib/retailer-view";
 import { RetailerUsersTable } from "./RetailerUsersTable";
 import {
   Audience,
@@ -218,6 +220,7 @@ export function RetailerAccountDetailView({
   onBack: () => void;
   onDeleted: () => void;
 }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "audiences">("audiences");
   const [selectedAudienceId, setSelectedAudienceId] = useState<string | null>(
     account.audiences[0]?.audience_id ?? null
@@ -649,9 +652,25 @@ export function RetailerAccountDetailView({
           <h1 className="text-3xl font-bold text-gray-900">{account.account_name}</h1>
         </div>
 
-        <Button onClick={handleSyncUsers} disabled={syncingUsers}>
-          {syncingUsers ? "Syncing..." : "Sync Record"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => {
+              setRetailerViewAccount({
+                account_id: account.account_id,
+                account_name: account.account_name,
+              });
+              router.push("/retailer/audiences/setup/step");
+            }}
+            className="bg-blue-gradient text-white hover:bg-blue-gradient/90 shadow-sm"
+          >
+            <ExternalLink className="h-4 w-4 mr-1.5" />
+            Open Distributor Portal
+          </Button>
+
+          <Button onClick={handleSyncUsers} disabled={syncingUsers} variant="outline">
+            {syncingUsers ? "Syncing..." : "Sync Record"}
+          </Button>
+        </div>
       </div>
 
       <Card className="gap-4 py-5">

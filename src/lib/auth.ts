@@ -1,4 +1,5 @@
 import { Axios } from "use-hook-api";
+import { clearRetailerView } from "./retailer-view";
 
 const AUTH_COOKIE_PATHS = ["/", "/admin", "/finance", "/retailer", "/inventory", "/inventory-portal"];
 
@@ -78,6 +79,7 @@ export function clearAuthTokens(): void {
   clearLegacyTokenCookies("refresh_token");
   delete Axios.defaults.headers.common.Authorization;
   clearAuthRole();
+  clearRetailerView();
 }
 
 // Check if user is authenticated

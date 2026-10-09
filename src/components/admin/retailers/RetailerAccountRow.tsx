@@ -3,10 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
-import { Trash2 } from "lucide-react";
+import { Trash2, ExternalLink } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApi } from "use-hook-api";
 import { syncSpecificSalesforceRetailerApi, deleteRetailerRecordApi } from "@/api/admin";
+import { setRetailerViewAccount } from "@/lib/retailer-view";
 import { RetailerAccount, RetailerStatus } from "./types";
 import {
   AlertDialog,
@@ -34,6 +36,7 @@ export function RetailerAccountRow({
   onDeleted: () => void;
   onSelect: (account: RetailerAccount) => void;
 }) {
+  const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [syncUsers, { loading: syncingUsers }] = useApi({
@@ -45,6 +48,15 @@ export function RetailerAccountRow({
     both: true,
     resSuccessMsg: "Account deleted successfully"
   });
+
+  const handleOpenDistributorPortal = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setRetailerViewAccount({
+      account_id: account.account_id,
+      account_name: account.account_name,
+    });
+    router.push("/retailer/audiences/setup/step");
+  };
 
   const handleSyncUsers = () => {
     syncUsers(
@@ -99,18 +111,30 @@ export function RetailerAccountRow({
         </td>
         <td className="px-4 py-3 align-top flex items-center gap-2">
           <Button
+            onClick={handleOpenDistributorPortal}
+            size="sm"
+            className="bg-blue-gradient text-white hover:bg-blue-gradient/90 whitespace-nowrap shadow-sm text-xs font-medium"
+            title={`Open Distributor Portal as ${account.account_name}'s setup user`}
+          >
+            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+            Open Distributor Portal
+          </Button>
+
+          <Button
             onClick={(event) => {
               event.stopPropagation();
               handleSyncUsers();
             }}
             disabled={syncingUsers}
             size="sm"
+            variant="outline"
           >
             {syncingUsers && <LoadingSpinner size="sm" />}
             <span className={syncingUsers ? "ml-2" : ""}>
               {syncingUsers ? "Syncing..." : "Sync Record"}
             </span>
           </Button>
+
           {account.status === "inactive" && (
             <button
               onClick={(event) => {
@@ -119,6 +143,7 @@ export function RetailerAccountRow({
               }}
               disabled={deletingAccount}
               className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+              title="Delete account"
             >
               <Trash2 size={16} />
             </button>
