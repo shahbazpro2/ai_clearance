@@ -36,6 +36,7 @@ interface PortalSidebarProps {
         initials: string;
         name: string;
     };
+    beforeLogout?: React.ReactNode | ((collapsed: boolean) => React.ReactNode);
 }
 
 interface SidebarNavProps {
@@ -173,6 +174,7 @@ export function PortalSidebar({
     secondaryItems = [],
     showPortalName = true,
     userProfile,
+    beforeLogout,
 }: PortalSidebarProps) {
     const pathname = usePathname();
 
@@ -216,7 +218,10 @@ export function PortalSidebar({
                     </div>
                 )}
 
-                <div className="border-t p-4"><LogoutButton collapsed={collapsed} /></div>
+                <div className="border-t p-4 flex flex-col gap-2">
+                    {typeof beforeLogout === "function" ? beforeLogout(collapsed) : beforeLogout}
+                    <LogoutButton collapsed={collapsed} />
+                </div>
             </aside>
 
             <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b bg-white px-4 md:hidden">
@@ -242,7 +247,10 @@ export function PortalSidebar({
                         {userProfile && (
                             <div className="border-t py-1"><UserProfile profile={userProfile} /></div>
                         )}
-                        <div className="border-t p-4"><LogoutButton /></div>
+                        <div className="border-t p-4 flex flex-col gap-2">
+                            {typeof beforeLogout === "function" ? beforeLogout(false) : beforeLogout}
+                            <LogoutButton />
+                        </div>
                     </div>
                 </SheetContent>
             </Sheet>
