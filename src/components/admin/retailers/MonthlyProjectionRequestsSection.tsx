@@ -68,7 +68,7 @@ interface FlatRow {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type RequestStatus = "pending" | "approved" | "rejected";
+type RequestStatus = "pending" | "approved" | "approved_with_edits" | "rejected";
 
 function formatDateTime(dateString?: string | null): string {
     if (!dateString) return "-";
@@ -83,8 +83,8 @@ function formatDateTime(dateString?: string | null): string {
     });
 }
 
-function formatNumber(value: number): string {
-    return value.toLocaleString("en-US");
+function formatNumber(value?: number | null): string {
+    return (value ?? 0).toLocaleString("en-US");
 }
 
 function getStatusBadgeStyle(status: string): React.CSSProperties {
@@ -792,6 +792,7 @@ export function MonthlyProjectionRequestsSection() {
                         <SelectItem value="all">All Statuses</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="approved_with_edits">Approved with Edits</SelectItem>
                         <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                 </Select>

@@ -128,7 +128,7 @@ export const deleteRetailerRecordApi = (
 
 // 11.1 Fetch Monthly Projection Change Requests
 export const fetchMonthlyProjectionRequestsApi = (params?: {
-  status?: "pending" | "approved" | "rejected";
+  status?: "pending" | "approved" | "approved_with_edits" | "rejected";
 }) => {
   const queryParams = new URLSearchParams();
   if (params?.status) {
