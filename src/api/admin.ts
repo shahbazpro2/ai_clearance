@@ -139,10 +139,21 @@ export const fetchMonthlyProjectionRequestsApi = (params?: {
   return universalApi(url, "get");
 };
 
-// 11.2 Update Monthly Shipment Projection Request Status
-export const updateProjectionRequestStatusApi = (payload: {
+export interface MonthEditPayload {
+  projection_month: string;
+  approved_projection: number;
+}
+
+export interface UpdateProjectionRequestStatusPayload {
   request_id: string;
-  status: number; // 1 = Approved, 0 = Rejected
-}) => {
+  status: number; // 1 = Approved, 0 = Rejected, 2 = Approved with edits
+  message?: string;
+  month_edits?: MonthEditPayload[];
+}
+
+// 11.2 Update Monthly Shipment Projection Request Status
+export const updateProjectionRequestStatusApi = (
+  payload: UpdateProjectionRequestStatusPayload
+) => {
   return responseApi("/admin/projection-requests/status", "patch", payload);
 };
