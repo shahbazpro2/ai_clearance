@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { usePagination } from "@/hooks/usePagination";
 import { DEFAULT_PER_PAGE } from "@/lib/pagination";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 
 interface SyncJobStats {
@@ -39,8 +40,26 @@ const USER_STATUS_OPTIONS: UserStatus[] = ["active", "inactive"];
 
 type ActiveTab = "accounts" | "projections";
 
-export default function RetailersManagementPage() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("accounts");
+function RetailersManagementContent() {
+  const searchParams = useSearchParams();
+  const requestIdParam = searchParams.get("request_id");
+  const openParam = searchParams.get("open");
+  const tabParam = searchParams.get("tab");
+
+  const shouldDefaultToProjections = Boolean(
+    requestIdParam || openParam === "true" || tabParam === "projections"
+  );
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(
+    shouldDefaultToProjections ? "projections" : "accounts"
+  );
+
+  useEffect(() => {
+    if (requestIdParam || openParam === "true" || tabParam === "projections") {
+      setActiveTab("projections");
+    }
+  }, [requestIdParam, openParam, tabParam]);
+
   const [accountStatusFilter, setAccountStatusFilter] = useState<RetailerStatus | "all">("all");
   const [userStatusFilter, setUserStatusFilter] = useState<UserStatus | "all">("all");
   const [syncJobId, setSyncJobId] = useState<string | null>(null);
@@ -310,7 +329,26 @@ export default function RetailersManagementPage() {
       )}
 
       {/* Monthly Projection Requests tab */}
-      {activeTab === "projections" && <MonthlyProjectionRequestsSection />}
+      {activeTab === "projections" && (
+        <MonthlyProjectionRequestsSection
+          targetRequestId={requestIdParam}
+          autoOpen={openParam === "true" || (Boolean(requestIdParam) && openParam !== "false")}
+        />
+      )}
     </main>
+  );
+}
+
+export default function RetailersManagementPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <LoadingSpinner size="lg" />
+        </div>
+      }
+    >
+      <RetailersManagementContent />
+    </Suspense>
   );
 }

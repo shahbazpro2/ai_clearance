@@ -71,34 +71,39 @@ export async function middleware(request: NextRequest) {
   // Redirect unauthenticated users from protected routes to respective login pages
   if (anyProtected && !accessToken) {
     console.log("🚫 Redirecting to login from protected route:", pathname);
+    const targetUrl = request.nextUrl.search ? `${pathname}${request.nextUrl.search}` : pathname;
     if (isInventoryProtectedRoute) {
       const loginUrl = new URL("/inventory/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", targetUrl);
       return NextResponse.redirect(loginUrl);
     }
     if (isFinanceProtectedRoute) {
       const loginUrl = new URL("/finance/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", targetUrl);
       return NextResponse.redirect(loginUrl);
     }
     if (isAdminProtectedRoute) {
       const loginUrl = new URL("/admin/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", targetUrl);
       return NextResponse.redirect(loginUrl);
     }
     if (isRetailerProtectedRoute) {
       const loginUrl = new URL("/retailer/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", targetUrl);
       return NextResponse.redirect(loginUrl);
     }
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("redirect", targetUrl);
     return NextResponse.redirect(loginUrl);
   }
 
   // Redirect authenticated users from auth routes to dashboard based on role context
   if (isAuthRoute && accessToken) {
     console.log("✅ Redirecting to dashboard from auth route:", pathname);
+    const requestedRedirect = request.nextUrl.searchParams.get("redirect");
+    if (requestedRedirect && requestedRedirect.startsWith("/")) {
+      return NextResponse.redirect(new URL(requestedRedirect, request.url));
+    }
     const authRole = (await cookies()).get("auth_role")?.value?.toLowerCase();
     let redirectPath = "/retailer/audiences/setup/step";
     if (pathname === "/admin/login" || isAdminContext) {

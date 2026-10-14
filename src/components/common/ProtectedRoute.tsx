@@ -23,7 +23,10 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
             const authenticated = isAuthenticated();
 
             if (!authenticated) {
-                const currentPath = window.location.pathname;
+                const currentPath =
+                    typeof window !== "undefined"
+                        ? window.location.pathname + window.location.search
+                        : "/";
                 if (currentPath.startsWith("/inventory")) {
                     router.push(`/inventory/login?redirect=${encodeURIComponent(currentPath)}`);
                 } else if (currentPath.startsWith("/finance")) {

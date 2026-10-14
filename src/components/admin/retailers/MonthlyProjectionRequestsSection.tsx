@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     fetchMonthlyProjectionRequestsApi,
     updateProjectionRequestStatusApi,
@@ -132,6 +133,22 @@ function flattenAudiences(audiences: ProjectionAudience[]): FlatRow[] {
     return rows;
 }
 
+const validateProjectionValue = (val: string | undefined): string | null => {
+    if (val === undefined || val === null || val.trim() === "") {
+        return "Value must be a multiple of 25,000";
+    }
+    const num = Number(val);
+    if (
+        Number.isNaN(num) ||
+        num < 0 ||
+        !Number.isInteger(num) ||
+        num % 25000 !== 0
+    ) {
+        return "Value must be a multiple of 25,000";
+    }
+    return null;
+};
+
 // ─── Detail Drawer ────────────────────────────────────────────────────────────
 
 function ProjectionRequestDrawer({
@@ -196,6 +213,10 @@ function ProjectionRequestDrawer({
 
     const hasEdits = modifiedMonths.length > 0;
 
+    const hasAnyInvalidInput = useMemo(() => {
+        return Object.keys(inputErrors).length > 0;
+    }, [inputErrors]);
+
     if (!row) return null;
 
     const isPending = row.status.toLowerCase() === "pending";
@@ -208,9 +229,9 @@ function ProjectionRequestDrawer({
                 const m = change.projection_month;
                 const raw = editedProjections[m];
                 if (raw !== undefined) {
-                    const num = Number(raw);
-                    if (raw.trim() === "" || Number.isNaN(num) || num < 0) {
-                        errors[m] = "Enter a valid non-negative number";
+                    const err = validateProjectionValue(raw);
+                    if (err) {
+                        errors[m] = err;
                     }
                 }
             }
@@ -225,12 +246,19 @@ function ProjectionRequestDrawer({
 
         // Enable editing for all months in the table
         const nextProjections: Record<string, string> = { ...editedProjections };
+        const errors: Record<string, string> = {};
         for (const change of row.changes) {
             if (nextProjections[change.projection_month] === undefined) {
                 nextProjections[change.projection_month] = String(change.requested_projection);
             }
+            const val = nextProjections[change.projection_month];
+            const err = validateProjectionValue(val);
+            if (err) {
+                errors[change.projection_month] = err;
+            }
         }
         setEditedProjections(nextProjections);
+        setInputErrors(errors);
         setIsEditing(true);
         if (isRejecting) {
             setIsRejecting(false);
@@ -247,15 +275,16 @@ function ProjectionRequestDrawer({
         for (const change of row.changes) {
             const raw = editedProjections[change.projection_month];
             if (raw !== undefined) {
-                if (raw.trim() === "" || Number.isNaN(Number(raw)) || Number(raw) < 0) {
-                    errors[change.projection_month] = "Enter a valid non-negative number";
+                const err = validateProjectionValue(raw);
+                if (err) {
+                    errors[change.projection_month] = err;
                 }
             }
         }
 
         if (Object.keys(errors).length > 0) {
             setInputErrors(errors);
-            toast.error("Please enter valid projection values before approving.");
+            toast.error("Value must be a multiple of 25,000");
             return;
         }
 
@@ -431,20 +460,24 @@ function ProjectionRequestDrawer({
                                                                     <Input
                                                                         type="number"
                                                                         min="0"
-                                                                        step="1"
+                                                                        step="25000"
                                                                         value={rawVal ?? change.requested_projection}
                                                                         onChange={(e) => {
+                                                                            const val = e.target.value;
                                                                             setEditedProjections((prev) => ({
                                                                                 ...prev,
-                                                                                [month]: e.target.value,
+                                                                                [month]: val,
                                                                             }));
-                                                                            if (inputErrors[month]) {
-                                                                                setInputErrors((prev) => {
-                                                                                    const next = { ...prev };
+                                                                            const err = validateProjectionValue(val);
+                                                                            setInputErrors((prev) => {
+                                                                                const next = { ...prev };
+                                                                                if (err) {
+                                                                                    next[month] = err;
+                                                                                } else {
                                                                                     delete next[month];
-                                                                                    return next;
-                                                                                });
-                                                                            }
+                                                                                }
+                                                                                return next;
+                                                                            });
                                                                         }}
                                                                         className={`h-8 w-36 px-2 py-1 text-sm font-semibold bg-white ${
                                                                             inputError ? "border-red-500 focus-visible:ring-red-400" : ""
@@ -458,12 +491,23 @@ function ProjectionRequestDrawer({
                                                                             variant="ghost"
                                                                             className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100 shrink-0"
                                                                             title="Reset to requested value"
-                                                                            onClick={() =>
+                                                                            onClick={() => {
+                                                                                const resetVal = String(change.requested_projection);
                                                                                 setEditedProjections((prev) => ({
                                                                                     ...prev,
-                                                                                    [month]: String(change.requested_projection),
-                                                                                }))
-                                                                            }
+                                                                                    [month]: resetVal,
+                                                                                }));
+                                                                                const err = validateProjectionValue(resetVal);
+                                                                                setInputErrors((prev) => {
+                                                                                    const next = { ...prev };
+                                                                                    if (err) {
+                                                                                        next[month] = err;
+                                                                                    } else {
+                                                                                        delete next[month];
+                                                                                    }
+                                                                                    return next;
+                                                                                });
+                                                                            }}
                                                                         >
                                                                             <RotateCcw className="h-3.5 w-3.5" />
                                                                         </Button>
@@ -620,7 +664,7 @@ function ProjectionRequestDrawer({
                                     <div className="flex flex-wrap items-center gap-3">
                                         <Button
                                             className="bg-green-600 hover:bg-green-700 text-white"
-                                            disabled={updating}
+                                            disabled={updating || hasAnyInvalidInput}
                                             onClick={handleApproveSubmit}
                                         >
                                             {updating && <LoadingSpinner size="sm" />}
@@ -632,7 +676,7 @@ function ProjectionRequestDrawer({
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            disabled={updating}
+                                            disabled={updating || (isEditing && hasAnyInvalidInput)}
                                             onClick={handleToggleGlobalEdit}
                                             className={
                                                 isEditing
@@ -720,11 +764,30 @@ function DetailField({
 
 // ─── Main Section ─────────────────────────────────────────────────────────────
 
-export function MonthlyProjectionRequestsSection() {
+export interface MonthlyProjectionRequestsSectionProps {
+    targetRequestId?: string | null;
+    autoOpen?: boolean;
+}
+
+export function MonthlyProjectionRequestsSection({
+    targetRequestId: propTargetRequestId,
+    autoOpen: propAutoOpen,
+}: MonthlyProjectionRequestsSectionProps = {}) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const targetRequestId = propTargetRequestId ?? searchParams.get("request_id");
+    const autoOpen =
+        propAutoOpen ??
+        (searchParams.get("open") === "true" ||
+            (Boolean(targetRequestId) && searchParams.get("open") !== "false"));
+
     const [mounted, setMounted] = useState(false);
     const [statusFilter, setStatusFilter] = useState<RequestStatus | "all">("all");
     const [selectedRow, setSelectedRow] = useState<FlatRow | null>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const autoOpenedIdRef = useRef<string | null>(null);
+    const notFoundToastShownRef = useRef<string | null>(null);
 
     const [getRequests, { data, loading, apiLoading, error, onClearCaches }] = useApi({
         cache: "monthly-projection-requests",
@@ -749,13 +812,43 @@ export function MonthlyProjectionRequestsSection() {
         fetchData();
     }, [fetchData, mounted]);
 
-    if (!mounted) return null;
+    const audiences: ProjectionAudience[] = useMemo(() => {
+        return Array.isArray(data?.audiences) ? data.audiences : [];
+    }, [data?.audiences]);
 
-    const audiences: ProjectionAudience[] = Array.isArray(data?.audiences)
-        ? data.audiences
-        : [];
+    const rows = useMemo(() => {
+        return flattenAudiences(audiences);
+    }, [audiences]);
 
-    const rows = flattenAudiences(audiences);
+    useEffect(() => {
+        if (!targetRequestId) {
+            autoOpenedIdRef.current = null;
+        }
+    }, [targetRequestId]);
+
+    useEffect(() => {
+        if (!targetRequestId || !autoOpen || loading) return;
+        if (autoOpenedIdRef.current === targetRequestId) return;
+
+        const match = rows.find((r) => r.request_id === targetRequestId);
+        if (match) {
+            autoOpenedIdRef.current = targetRequestId;
+            setSelectedRow(match);
+            setDrawerOpen(true);
+        }
+    }, [rows, loading, targetRequestId, autoOpen]);
+
+    useEffect(() => {
+        if (!targetRequestId || loading || !data) return;
+        if (autoOpenedIdRef.current === targetRequestId) return;
+        if (notFoundToastShownRef.current === targetRequestId) return;
+
+        const match = rows.find((r) => r.request_id === targetRequestId);
+        if (!match && rows.length > 0) {
+            notFoundToastShownRef.current = targetRequestId;
+            toast.info(`Projection request "${targetRequestId}" not found.`);
+        }
+    }, [rows, loading, data, targetRequestId]);
 
     const handleViewDetails = (row: FlatRow) => {
         setSelectedRow(row);
@@ -765,12 +858,26 @@ export function MonthlyProjectionRequestsSection() {
     const handleCloseDrawer = () => {
         setDrawerOpen(false);
         setSelectedRow(null);
+
+        // Reset the URL by removing request_id and open query parameters
+        if (typeof window !== "undefined") {
+            const currentParams = new URLSearchParams(window.location.search);
+            if (currentParams.has("request_id") || currentParams.has("open")) {
+                currentParams.delete("request_id");
+                currentParams.delete("open");
+                const remaining = currentParams.toString();
+                const newPath = remaining ? `${pathname}?${remaining}` : pathname;
+                router.replace(newPath, { scroll: false });
+            }
+        }
     };
 
     const handleStatusUpdated = () => {
         onClearCaches?.(["monthly-projection-requests"]);
         fetchData();
     };
+
+    if (!mounted) return null;
 
     return (
         <section className="space-y-4">
