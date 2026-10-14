@@ -4,6 +4,7 @@ import { fetchRetailerAccountsUsersApi, syncAllSalesforceRetailingApi, fetchSync
 import { RetailerAccountDetailView } from "@/components/admin/retailers/RetailerAccountDetailView";
 import { RetailerAccountRow } from "@/components/admin/retailers/RetailerAccountRow";
 import { MonthlyProjectionRequestsSection } from "@/components/admin/retailers/MonthlyProjectionRequestsSection";
+import { DistributorSetupStatusSection } from "@/components/admin/retailers/DistributorSetupStatusSection";
 import { SyncStatusDashboard } from "@/components/admin/retailers/SyncStatusDashboard";
 import { RetailerAccount, RetailerStatus, UserStatus } from "@/components/admin/retailers/types";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -38,7 +39,7 @@ interface SyncJobStats {
 const STATUS_OPTIONS: RetailerStatus[] = ["active", "inactive"];
 const USER_STATUS_OPTIONS: UserStatus[] = ["active", "inactive"];
 
-type ActiveTab = "accounts" | "projections";
+type ActiveTab = "accounts" | "projections" | "setup_status";
 
 function RetailersManagementContent() {
   const searchParams = useSearchParams();
@@ -49,14 +50,21 @@ function RetailersManagementContent() {
   const shouldDefaultToProjections = Boolean(
     requestIdParam || openParam === "true" || tabParam === "projections"
   );
+  const shouldDefaultToSetupStatus = Boolean(tabParam === "setup_status");
 
   const [activeTab, setActiveTab] = useState<ActiveTab>(
-    shouldDefaultToProjections ? "projections" : "accounts"
+    shouldDefaultToProjections
+      ? "projections"
+      : shouldDefaultToSetupStatus
+      ? "setup_status"
+      : "accounts"
   );
 
   useEffect(() => {
     if (requestIdParam || openParam === "true" || tabParam === "projections") {
       setActiveTab("projections");
+    } else if (tabParam === "setup_status") {
+      setActiveTab("setup_status");
     }
   }, [requestIdParam, openParam, tabParam]);
 
@@ -206,6 +214,7 @@ function RetailersManagementContent() {
             [
               { key: "accounts", label: "Distributor Accounts" },
               { key: "projections", label: "Monthly Projection Requests" },
+              { key: "setup_status", label: "Distributor Setup Status" },
             ] as { key: ActiveTab; label: string }[]
           ).map(({ key, label }) => (
             <button
@@ -335,6 +344,9 @@ function RetailersManagementContent() {
           autoOpen={openParam === "true" || (Boolean(requestIdParam) && openParam !== "false")}
         />
       )}
+
+      {/* Distributor Setup Status tab */}
+      {activeTab === "setup_status" && <DistributorSetupStatusSection />}
     </main>
   );
 }

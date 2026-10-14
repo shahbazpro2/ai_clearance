@@ -157,3 +157,15 @@ export const updateProjectionRequestStatusApi = (
 ) => {
   return responseApi("/admin/projection-requests/status", "patch", payload);
 };
+
+export interface UpdateChannelPlatformLivePayload {
+  channel_id: string;
+  platform_live: boolean;
+}
+
+// 12.1 Update Channel Platform Live Status
+export const updateChannelPlatformLiveStatusApi = (
+  payload: UpdateChannelPlatformLivePayload
+) => {
+  return responseApi("/admin/channels/platform-live", "patch", payload);
+};

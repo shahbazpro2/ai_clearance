@@ -50,8 +50,14 @@ export interface DistributionCenter {
 export interface Channel {
   channel_id: string;
   name: string;
+  channel_type?: string;
   status: RetailerStatus;
   is_completed: boolean;
+  brand_approval_completed?: boolean;
+  is_dc_setup_completed?: boolean;
+  monthly_projections_completed?: boolean;
+  oms_feed_received?: boolean;
+  platform_live?: boolean;
   created_at: string;
   updated_at: string;
   distribution_centers?: DistributionCenter[];
