@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAtom } from "jotai";
 import { useApi } from "use-hook-api";
 import { getDistributorStatsApi } from "@/api/retailer";
@@ -16,12 +15,18 @@ export interface AudienceChannel {
   channel_type: string;
   status: string;
   is_completed?: boolean;
+  salesforce_channel_id?: string;
+  channel_salesforce_id?: string;
 }
 
 export interface Audience {
   audience_id: string;
   name: string;
   channels: AudienceChannel[];
+}
+
+export interface UseAudienceChannelOptions {
+  targetChannelId?: string | null;
 }
 
 export interface UseAudienceChannelReturn {
@@ -39,6 +44,7 @@ export interface UseAudienceChannelReturn {
 
 export function useAudienceChannel(
   scope: RetailerAudienceChannelSelectionScope,
+  options?: UseAudienceChannelOptions,
 ): UseAudienceChannelReturn {
   const [audiences, setAudiences] = useState<Audience[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -48,10 +54,19 @@ export function useAudienceChannel(
   const selectedAudienceId = selection.audienceId;
   const selectedChannelId = selection.channelId;
 
+  const targetChannelId = options?.targetChannelId;
+  const appliedTargetChannelIdRef = useRef<string | null>(null);
+
   const [callFetch, { apiLoading: loading, data: audienceData, error }] = useApi({
     errMsg: true,
     cache: "audience_channel",
   });
+
+  useEffect(() => {
+    if (!targetChannelId) {
+      appliedTargetChannelIdRef.current = null;
+    }
+  }, [targetChannelId]);
 
   useEffect(() => {
     if (!audienceData) {
@@ -64,6 +79,41 @@ export function useAudienceChannel(
     if (audienceList.length === 0) {
       setSelection({ audienceId: null, channelId: null });
       return;
+    }
+
+    // 1. If targetChannelId is provided and hasn't been applied yet, prioritize finding matching audience and channel
+    if (targetChannelId && appliedTargetChannelIdRef.current !== targetChannelId) {
+      const tid = targetChannelId.trim().toLowerCase();
+      let matchedAudience: Audience | null = null;
+      let matchedChannel: AudienceChannel | null = null;
+
+      for (const aud of audienceList) {
+        const found = aud.channels.find(
+          (c) =>
+            c.channel_id?.toLowerCase() === tid ||
+            (c as any).salesforce_channel_id?.toLowerCase() === tid ||
+            (c as any).channel_salesforce_id?.toLowerCase() === tid ||
+            (c as any).salesforce_id?.toLowerCase() === tid ||
+            c.name?.toLowerCase() === tid ||
+            c.channel_type?.toLowerCase() === tid
+        );
+        if (found) {
+          matchedAudience = aud;
+          matchedChannel = found;
+          break;
+        }
+      }
+
+      if (matchedAudience && matchedChannel) {
+        appliedTargetChannelIdRef.current = targetChannelId;
+        setSelection({
+          audienceId: matchedAudience.audience_id,
+          channelId: matchedChannel.channel_id,
+        });
+        return;
+      } else {
+        appliedTargetChannelIdRef.current = targetChannelId;
+      }
     }
 
     const nextAudience =
@@ -87,7 +137,7 @@ export function useAudienceChannel(
       audienceId: nextAudience.audience_id,
       channelId: nextChannelId,
     });
-  }, [audienceData, selectedAudienceId, selectedChannelId, setSelection]);
+  }, [audienceData, selectedAudienceId, selectedChannelId, targetChannelId, setSelection]);
 
   const fetchAudiences = () => {
     callFetch(getDistributorStatsApi(true));

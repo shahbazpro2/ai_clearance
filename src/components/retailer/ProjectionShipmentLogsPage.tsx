@@ -5,8 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useApi } from "use-hook-api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSetAtom } from "jotai";
+import { toast } from "react-toastify";
 import {
     downloadOmsDcDetailsPdfApi,
     getProjectionShipmentLogsByChannelApi,
@@ -595,6 +596,12 @@ function ShipmentLogsSection({ data, onDistributionCenterClick }: ShipmentLogsSe
 
 export function ProjectionShipmentLogsPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const targetChannelId =
+        searchParams.get("channel_id") ||
+        searchParams.get("channelId") ||
+        searchParams.get("channel");
+
     const setDCSelection = useSetAtom(
         retailerAudienceChannelSelectionAtomFamily("distribution-centers"),
     );
@@ -610,7 +617,34 @@ export function ProjectionShipmentLogsPage() {
         setSelectedChannelId,
         handleAudienceChange,
         refresh,
-    } = useAudienceChannel("projection-shipment-logs");
+    } = useAudienceChannel("projection-shipment-logs", {
+        targetChannelId,
+    });
+
+    const notFoundToastShownRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!targetChannelId || loadingStats || audiences.length === 0) return;
+        if (notFoundToastShownRef.current === targetChannelId) return;
+
+        const tid = targetChannelId.trim().toLowerCase();
+        const found = audiences.some((aud) =>
+            aud.channels.some(
+                (c) =>
+                    c.channel_id?.toLowerCase() === tid ||
+                    (c as any).salesforce_channel_id?.toLowerCase() === tid ||
+                    (c as any).channel_salesforce_id?.toLowerCase() === tid ||
+                    (c as any).salesforce_id?.toLowerCase() === tid ||
+                    c.name?.toLowerCase() === tid ||
+                    c.channel_type?.toLowerCase() === tid,
+            ),
+        );
+
+        if (!found) {
+            notFoundToastShownRef.current = targetChannelId;
+            toast.info(`Channel "${targetChannelId}" was not found in your account.`);
+        }
+    }, [audiences, loadingStats, targetChannelId]);
 
     const [projectionData, setProjectionData] = useState<ProjectionData | null>(null);
     const [callFetch, { loading: loadingData, error: fetchError }] = useApi({ errMsg: true });
