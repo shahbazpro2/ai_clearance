@@ -169,3 +169,114 @@ export const updateChannelPlatformLiveStatusApi = (
 ) => {
   return responseApi("/admin/channels/platform-live", "patch", payload);
 };
+
+export type NotificationPriority = "LOW" | "MID" | "HIGH";
+export type NotificationCategory = "SYSTEM_ERROR" | "ACTION_REQUIRED" | "INFORMATIONAL" | string;
+export type NotificationStatus = "OPEN" | "REVIEWED" | "RESOLVED";
+
+export interface NotificationErrorDetails {
+  status_code?: number;
+  statusCode?: number;
+  smtp_code?: number;
+  exception_type?: string;
+  source?: string;
+  [key: string]: any;
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  priority: NotificationPriority;
+  category: NotificationCategory;
+  status: NotificationStatus;
+  created_at?: string;
+  time?: string;
+  action_url?: string | null;
+  error_details?: NotificationErrorDetails | null;
+  technical_info?: { raw_json?: Record<string, any> } | null;
+  type?: string | null;
+  is_seen?: boolean;
+}
+
+export interface NotificationSummary {
+  unread_count: number;
+  pending_count?: number;
+  total?: number;
+  OPEN?: number;
+  REVIEWED?: number;
+  RESOLVED?: number;
+  [key: string]: any;
+}
+
+export interface NotificationListResponse {
+  notifications?: NotificationItem[];
+  items?: NotificationItem[];
+  data?: NotificationItem[] | {
+    notifications?: NotificationItem[];
+    items?: NotificationItem[];
+    summary?: NotificationSummary;
+    total_pages?: number;
+    has_more?: boolean;
+    page?: number;
+    page_size?: number;
+    total?: number;
+  };
+  summary?: NotificationSummary;
+  total_pages?: number;
+  has_more?: boolean;
+  page?: number;
+  page_size?: number;
+  total?: number;
+}
+
+// 13.1 Get Notifications API
+export const fetchNotificationsApi = (params?: {
+  page?: number;
+  page_size?: number;
+  status?: NotificationStatus;
+  category?: NotificationCategory;
+  priority?: NotificationPriority;
+  type?: string;
+  search?: string;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (params?.page != null) {
+    queryParams.append("page", String(params.page));
+  }
+  if (params?.page_size != null) {
+    queryParams.append("page_size", String(params.page_size));
+  }
+  if (params?.status) {
+    queryParams.append("status", params.status);
+  }
+  if (params?.category) {
+    queryParams.append("category", params.category);
+  }
+  if (params?.priority) {
+    queryParams.append("priority", params.priority);
+  }
+  if (params?.type) {
+    queryParams.append("type", params.type);
+  }
+  if (params?.search) {
+    queryParams.append("search", params.search);
+  }
+  const queryString = queryParams.toString();
+  const url = `/admin/notifications${queryString ? `?${queryString}` : ""}`;
+  return universalApi(url, "get");
+};
+
+// 13.2 Get Notification Details API
+export const fetchNotificationDetailsApi = (notificationId: string) => {
+  return universalApi(`/admin/notifications/${notificationId}`, "get");
+};
+
+// 13.3 Update Notification Status API
+export const updateNotificationStatusApi = (
+  notificationId: string,
+  payload: { status: NotificationStatus }
+) => {
+  return responseApi(`/admin/notifications/${notificationId}`, "patch", payload);
+};
+

@@ -4,6 +4,8 @@ import { useAtomValue } from "jotai";
 import { sidebarCollapsedAtom } from "@/store/ui";
 import { cn } from "@/lib/utils";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminNotificationDetailsDrawer } from "@/components/admin/notifications/AdminNotificationDetailsDrawer";
 
 export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
     const collapsed = useAtomValue(sidebarCollapsedAtom);
@@ -20,10 +22,14 @@ export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) 
                     collapsed ? "md:ml-20" : "md:ml-64"
                 )}
             >
+                <AdminHeader />
                 <div className="flex-1">
                     {children}
                 </div>
             </div>
+
+            {/* Notification Drawer (Rendered once globally for the Admin Portal) */}
+            <AdminNotificationDetailsDrawer />
         </div>
     );
 }

@@ -5,6 +5,7 @@ import { useAtom } from "jotai";
 import { PortalSidebar, type PortalSidebarItem } from "@/components/common/PortalSidebar";
 import { useMe } from "@/hooks/useMe";
 import { mobileSidebarOpenAtom, sidebarCollapsedAtom } from "@/store/ui";
+import { AdminNotificationsBell } from "@/components/admin/notifications/AdminNotificationsBell";
 
 export function AdminSidebar() {
     const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom);
@@ -28,6 +29,7 @@ export function AdminSidebar() {
             onCollapsedChange={setCollapsed}
             onMobileOpenChange={setMobileOpen}
             portalName="Admin Portal"
+            headerRight={<AdminNotificationsBell />}
         />
     );
 }

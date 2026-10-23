@@ -37,6 +37,7 @@ interface PortalSidebarProps {
         name: string;
     };
     beforeLogout?: React.ReactNode | ((collapsed: boolean) => React.ReactNode);
+    headerRight?: React.ReactNode;
 }
 
 interface SidebarNavProps {
@@ -175,6 +176,7 @@ export function PortalSidebar({
     showPortalName = true,
     userProfile,
     beforeLogout,
+    headerRight,
 }: PortalSidebarProps) {
     const pathname = usePathname();
 
@@ -224,12 +226,15 @@ export function PortalSidebar({
                 </div>
             </aside>
 
-            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b bg-white px-4 md:hidden">
-                <Button variant="ghost" size="icon" onClick={() => onMobileOpenChange(true)} aria-label="Open navigation">
-                    <Menu className="h-5 w-5" />
-                </Button>
-                <span className="text-lg font-bold text-gray-900">{brandTitle ?? "Insert Media"}</span>
-                {showPortalName && <span className="text-xs font-medium text-gray-500">{portalName}</span>}
+            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b bg-white px-4 md:hidden">
+                <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" onClick={() => onMobileOpenChange(true)} aria-label="Open navigation">
+                        <Menu className="h-5 w-5" />
+                    </Button>
+                    <span className="text-lg font-bold text-gray-900">{brandTitle ?? "Insert Media"}</span>
+                    {showPortalName && <span className="text-xs font-medium text-gray-500">{portalName}</span>}
+                </div>
+                {headerRight && <div className="flex items-center">{headerRight}</div>}
             </div>
 
             <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
