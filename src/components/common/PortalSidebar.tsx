@@ -31,6 +31,7 @@ interface PortalSidebarProps {
     portalName: string;
     secondaryItems?: readonly PortalSidebarItem[];
     showPortalName?: boolean;
+    showLogout?: boolean;
     userProfile?: {
         avatarUrl?: string;
         initials: string;
@@ -174,6 +175,7 @@ export function PortalSidebar({
     portalName,
     secondaryItems = [],
     showPortalName = true,
+    showLogout = true,
     userProfile,
     beforeLogout,
     headerRight,
@@ -220,10 +222,12 @@ export function PortalSidebar({
                     </div>
                 )}
 
-                <div className="border-t p-4 flex flex-col gap-2">
-                    {typeof beforeLogout === "function" ? beforeLogout(collapsed) : beforeLogout}
-                    <LogoutButton collapsed={collapsed} />
-                </div>
+                {(showLogout || beforeLogout) && (
+                    <div className="border-t p-4 flex flex-col gap-2">
+                        {typeof beforeLogout === "function" ? beforeLogout(collapsed) : beforeLogout}
+                        {showLogout && <LogoutButton collapsed={collapsed} />}
+                    </div>
+                )}
             </aside>
 
             <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b bg-white px-4 md:hidden">
@@ -252,10 +256,12 @@ export function PortalSidebar({
                         {userProfile && (
                             <div className="border-t py-1"><UserProfile profile={userProfile} /></div>
                         )}
-                        <div className="border-t p-4 flex flex-col gap-2">
-                            {typeof beforeLogout === "function" ? beforeLogout(false) : beforeLogout}
-                            <LogoutButton />
-                        </div>
+                        {(showLogout || beforeLogout) && (
+                            <div className="border-t p-4 flex flex-col gap-2">
+                                {typeof beforeLogout === "function" ? beforeLogout(false) : beforeLogout}
+                                {showLogout && <LogoutButton />}
+                            </div>
+                        )}
                     </div>
                 </SheetContent>
             </Sheet>

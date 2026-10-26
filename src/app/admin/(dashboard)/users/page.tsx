@@ -1,9 +1,9 @@
 "use client";
 
 import { fetchAdminUsersApi } from "@/api/admin";
-import { AdminUserRow } from "@/components/admin/users/AdminUserRow";
+import { AdminUserRow, type AdminStatus } from "@/components/admin/users/AdminUserRow";
 import { AddAdminUserDialog } from "@/components/admin/users/AddAdminUserDialog";
-import { EditAdminUserDialog } from "@/components/admin/users/EditAdminUserDialog";
+import { ManageAdminUserDrawer } from "@/components/admin/users/ManageAdminUserDrawer";
 import { DeleteAdminUserDialog } from "@/components/admin/users/DeleteAdminUserDialog";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { Button } from "@/components/ui/button";
@@ -17,14 +17,13 @@ import { UserPlus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "use-hook-api";
 
-type AdminStatus = "active" | "pending" | "suspended" | "rejected";
-
 interface AdminUser {
   id: string;
   name?: string;
   email: string;
   role: string;
   admin_status?: AdminStatus;
+  status?: AdminStatus;
   is_verified?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -37,7 +36,7 @@ export default function AdminUsersPage() {
   const userData = useMe();
   const [statusFilter, setStatusFilter] = useState<AdminStatus | "all">("all");
   const [addUserOpen, setAddUserOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [managingUser, setManagingUser] = useState<AdminUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
   const [getUsers, { data, fullRes, loading, error }] = useApi({ fullRes: true });
 
@@ -176,8 +175,7 @@ export default function AdminUsersPage() {
                       key={user.id}
                       user={user}
                       onStatusUpdated={handleStatusUpdated}
-                      onEdit={(u) => setEditingUser(u)}
-                      onDelete={(u) => setDeletingUser(u)}
+                      onManage={(u) => setManagingUser(u)}
                       isCurrentUser={userData?.id === user.id || userData?.email === user.email}
                     />
                   ))}
@@ -193,11 +191,17 @@ export default function AdminUsersPage() {
           onSuccess={refetchUsers}
         />
 
-        <EditAdminUserDialog
-          user={editingUser}
-          open={!!editingUser}
-          onOpenChange={(open) => !open && setEditingUser(null)}
+        <ManageAdminUserDrawer
+          user={managingUser}
+          open={!!managingUser}
+          onOpenChange={(open) => !open && setManagingUser(null)}
           onSuccess={handleUserUpdated}
+          onUserRestored={refetchUsers}
+          onDelete={(u) => {
+            setManagingUser(null);
+            setDeletingUser(u);
+          }}
+          isCurrentUser={userData?.id === managingUser?.id || userData?.email === managingUser?.email}
         />
 
         <DeleteAdminUserDialog

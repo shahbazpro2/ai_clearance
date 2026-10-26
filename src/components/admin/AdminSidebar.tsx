@@ -6,6 +6,7 @@ import { PortalSidebar, type PortalSidebarItem } from "@/components/common/Porta
 import { useMe } from "@/hooks/useMe";
 import { mobileSidebarOpenAtom, sidebarCollapsedAtom } from "@/store/ui";
 import { AdminNotificationsBell } from "@/components/admin/notifications/AdminNotificationsBell";
+import { AdminProfileMenu } from "@/components/admin/AdminProfileMenu";
 
 export function AdminSidebar() {
     const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom);
@@ -29,7 +30,13 @@ export function AdminSidebar() {
             onCollapsedChange={setCollapsed}
             onMobileOpenChange={setMobileOpen}
             portalName="Admin Portal"
-            headerRight={<AdminNotificationsBell />}
+            showLogout={false}
+            headerRight={
+                <div className="flex items-center gap-2">
+                    <AdminNotificationsBell />
+                    <AdminProfileMenu />
+                </div>
+            }
         />
     );
 }

@@ -204,16 +204,30 @@ export function EditAdminUserDialog({
 
           {/* Email */}
           <div>
-            <Label className="text-sm font-medium mb-1.5 block">
-              Email <span className="text-red-500">*</span>
-            </Label>
+            <div className="flex items-center justify-between mb-1.5">
+              <Label className="text-sm font-medium block">
+                Email <span className="text-red-500">*</span>
+              </Label>
+              {user?.is_verified && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  <Check className="h-3 w-3 text-emerald-600" />
+                  Verified & Locked
+                </span>
+              )}
+            </div>
             <Input
               type="email"
               placeholder="e.g. example@gmail.com"
               {...register("email")}
               aria-invalid={!!errors.email}
-              disabled={updatingUser}
+              disabled={updatingUser || user?.is_verified}
+              className={user?.is_verified ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
             />
+            {user?.is_verified && (
+              <p className="text-xs text-amber-700 mt-1">
+                Email is locked after account verification.
+              </p>
+            )}
             <FieldError message={errors.email?.message} />
           </div>
 
@@ -227,7 +241,7 @@ export function EditAdminUserDialog({
                 type="button"
                 onClick={handleGeneratePassword}
                 disabled={updatingUser}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-medium transition-colors disabled:opacity-50"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Generate Password

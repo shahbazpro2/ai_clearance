@@ -3,7 +3,7 @@ import { responseApi } from "use-hook-api";
 
 // 2.1 Get All Admin Users
 export const fetchAdminUsersApi = (params?: {
-  status?: "active" | "pending" | "suspended" | "rejected";
+  status?: "active" | "pending" | "suspended" | "rejected" | "inactive";
   page?: number;
   per_page?: number;
 }) => {
@@ -43,9 +43,11 @@ export const createAdminUserApi = (payload: {
 export const updateAdminUserApi = (
   userId: string,
   payload: {
-    name: string;
-    email: string;
+    name?: string;
+    email?: string;
     password?: string;
+    status?: string;
+    admin_status?: string;
   }
 ) => {
   return responseApi(`/admin/users/${userId}`, "patch", payload);
