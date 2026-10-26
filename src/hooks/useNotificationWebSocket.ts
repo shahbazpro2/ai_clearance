@@ -51,7 +51,11 @@ function connectWebSocket() {
   const token = getAccessToken();
   if (!token) return;
 
-  if (activeSocket && (activeSocket.readyState === WebSocket.OPEN || activeSocket.readyState === WebSocket.CONNECTING)) {
+  if (
+    activeSocket &&
+    (activeSocket.readyState === WebSocket.OPEN ||
+      activeSocket.readyState === WebSocket.CONNECTING)
+  ) {
     return;
   }
 
@@ -67,11 +71,13 @@ function connectWebSocket() {
 
     ws.onmessage = (event) => {
       try {
-        const raw = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        const raw =
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         const eventType = raw?.event || raw?.type || raw?.event_type;
 
         if (eventType === "NOTIFICATION_CREATED" || raw?.title) {
-          const notification: NotificationItem = raw?.data || raw?.notification || raw?.payload || raw;
+          const notification: NotificationItem =
+            raw?.data || raw?.notification || raw?.payload || raw;
           if (notification && (notification.id || notification.title)) {
             notifyListeners(notification);
           }
@@ -86,7 +92,9 @@ function connectWebSocket() {
 
       // 1008 Policy Violation indicates authentication failed
       if (event.code === 1008) {
-        console.warn("WebSocket closed: 1008 Policy Violation (Invalid Token). Reconnection halted.");
+        console.warn(
+          "WebSocket closed: 1008 Policy Violation (Invalid Token). Reconnection halted.",
+        );
         return;
       }
 
@@ -105,10 +113,16 @@ function connectWebSocket() {
 
     ws.onerror = (error) => {
       // Browser WebSocket errors don't provide details; fallback to REST smoothly
-      console.warn("WebSocket error encountered (falling back to REST API):", error);
+      console.warn(
+        "WebSocket error encountered (falling back to REST API):",
+        error,
+      );
     };
   } catch (err) {
-    console.warn("Failed to instantiate WebSocket (falling back to REST API):", err);
+    console.warn(
+      "Failed to instantiate WebSocket (falling back to REST API):",
+      err,
+    );
   }
 }
 
@@ -157,11 +171,6 @@ export function useNotificationWebSocket(options?: {
         }
         return [notification, ...prev];
       });
-
-      // Optional Toast notification
-      if (notification.title) {
-        toast.info(`New Notification: ${notification.title}`);
-      }
 
       optionsRef.current?.onNotificationCreated?.(notification);
     };

@@ -65,7 +65,8 @@ export function OtpVerificationScreen({
                 },
                 () => {
                     setIsResending(false);
-                }
+                },
+                { successMsg: false }
             );
         }
     }, [shouldResendOtp, email, role, hasRequestedOtp]);

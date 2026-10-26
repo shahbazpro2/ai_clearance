@@ -13,6 +13,7 @@ import { Axios, useApi } from "use-hook-api";
 import { loginApi } from "@/api/auth";
 import { clearAuthTokens, setAccessToken, setAuthRole, setRefreshToken } from "@/lib/auth";
 import { universalApi } from "@/lib/universal-api";
+import { toast } from "react-toastify";
 
 // Define the login form schema using Zod
 const loginSchema = z.object({
@@ -83,7 +84,11 @@ export function LoginScreen({
         mode: "onChange"
     });
 
-    const [callApi, { loading: isLoading, onClearCaches }] = useApi({ both: true, resSuccessMsg: 'Login successful' });
+    const [callApi, { loading: isLoading, onClearCaches }] = useApi({
+        both: false,
+        errMsg: false,
+        successMsg: false
+    });
 
     const onSubmit = async (data: LoginFormData) => {
         const payload = apiRole ? { ...data, role: apiRole } : data;
@@ -137,17 +142,52 @@ export function LoginScreen({
                 }
             },
             (errorData: any) => {
-                const errorMessage = errorData?.message || errorData?.error || errorData?.data?.message || '';
+                const getErrorMessageText = (data: any): string => {
+                    if (!data) return "";
+                    if (typeof data === "string") return data;
+                    if (Array.isArray(data)) return data.map(getErrorMessageText).join(" ");
+                    if (typeof data === "object") {
+                        const parts = [
+                            data.message,
+                            data.error,
+                            data.data?.message,
+                            data.detail,
+                        ];
+                        return parts.map(getErrorMessageText).filter(Boolean).join(" ");
+                    }
+                    return String(data);
+                };
 
-                if (
-                    errorMessage.includes('Your email has not been verified yet. Please verify it to continue.') ||
-                    errorMessage.includes('email has not been verified') ||
-                    errorMessage.includes('not been verified')
-                ) {
+                const normalizedError = getErrorMessageText(errorData).toLowerCase();
+
+                const isUnverifiedEmail =
+                    normalizedError.includes("not been verified") ||
+                    normalizedError.includes("not verified") ||
+                    normalizedError.includes("verify your email") ||
+                    normalizedError.includes("unverified") ||
+                    normalizedError.includes("verify it to continue");
+
+                if (isUnverifiedEmail) {
                     const roleQuery = apiRole ? `&role=${encodeURIComponent(apiRole)}` : "";
                     router.push(
                         `/verify-otp?email=${encodeURIComponent(data.email)}&resend=true${roleQuery}`
                     );
+                    return;
+                }
+
+                // Only show error if have other issue
+                if (Array.isArray(errorData?.message)) {
+                    errorData.message.forEach((msg: any) => {
+                        if (msg) toast.error(String(msg));
+                    });
+                } else if (typeof errorData?.message === "string" && errorData.message) {
+                    toast.error(errorData.message);
+                } else if (typeof errorData?.error === "string" && errorData.error) {
+                    toast.error(errorData.error);
+                } else if (typeof errorData?.data?.message === "string" && errorData.data.message) {
+                    toast.error(errorData.data.message);
+                } else {
+                    toast.error("Invalid credentials or an unexpected error occurred.");
                 }
             }
         );
