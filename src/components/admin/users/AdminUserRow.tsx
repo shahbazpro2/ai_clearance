@@ -74,9 +74,9 @@ export function AdminUserRow({
   }, [user.admin_status, user.status]);
 
   const [callUpdateStatus, { loading: updatingStatus }] = useApi({
-    both: true,
-    resSuccessMsg: "User status updated successfully.",
+    successMsg: true,
     errMsg: false,
+    resSuccessMsg: "User status updated successfully.",
   });
 
   const handleStatusChange = (newStatus: string) => {
@@ -99,7 +99,8 @@ export function AdminUserRow({
           err?.message ??
           "Failed to update user status.";
         toast.error(errMsg);
-      }
+      },
+      { errMsg: false }
     );
   };
 

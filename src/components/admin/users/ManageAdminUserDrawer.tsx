@@ -135,9 +135,9 @@ export function ManageAdminUserDrawer({
   const isVerified = Boolean(user?.is_verified);
 
   const [callUpdateUser, { loading: updatingUser }] = useApi({
-    both: true,
+    successMsg: true,
+    errMsg: false,
     resSuccessMsg: "Admin user updated successfully.",
-    errMsg: false, // Custom handling for 409 DELETED_ADMIN_EMAIL conflict
     refetchApis: ["admin-users"],
   });
 
@@ -232,39 +232,52 @@ export function ManageAdminUserDrawer({
         });
       },
       (errorData: any) => {
-        const status = errorData?.status ?? errorData?.response?.status;
+        const status =
+          errorData?.status ??
+          errorData?.response?.status ??
+          errorData?.fullRes?.status;
+
         const errorCode =
           errorData?.code ??
+          errorData?.fullRes?.code ??
+          errorData?.fullRes?.data?.code ??
           errorData?.data?.code ??
           errorData?.response?.data?.code ??
           errorData?.error?.code;
+
         const errorMsg =
           errorData?.message ??
+          errorData?.fullRes?.message ??
           errorData?.data?.message ??
           errorData?.response?.data?.message ??
           errorData?.error;
 
         const isDeletedAdminEmail =
-          status === 409 &&
-          (errorCode === "DELETED_ADMIN_EMAIL" ||
-            String(errorMsg).includes("DELETED_ADMIN_EMAIL") ||
-            String(errorCode).includes("DELETED_ADMIN"));
+          errorCode === "DELETED_ADMIN_EMAIL" ||
+          errorData?.fullRes?.code === "DELETED_ADMIN_EMAIL" ||
+          ((status === 409 || Number(status) === 409) &&
+            (String(errorCode).toLowerCase().includes("deleted_admin") ||
+              String(errorMsg).toLowerCase().includes("deleted_admin")));
 
         if (isDeletedAdminEmail) {
           const conflictEmail =
+            errorData?.fullRes?.data?.email ??
+            errorData?.fullRes?.email ??
             errorData?.email ??
             errorData?.data?.email ??
             errorData?.data?.data?.email ??
-            errorData?.response?.data?.email ??
             errorData?.response?.data?.data?.email ??
+            errorData?.response?.data?.email ??
             trimmedEmail;
 
           const conflictName =
+            errorData?.fullRes?.data?.name ??
+            errorData?.fullRes?.name ??
             errorData?.name ??
             errorData?.data?.name ??
             errorData?.data?.data?.name ??
-            errorData?.response?.data?.name ??
             errorData?.response?.data?.data?.name ??
+            errorData?.response?.data?.name ??
             "";
 
           setDeletedConflictData({
@@ -281,7 +294,8 @@ export function ManageAdminUserDrawer({
               : "Failed to update admin user.";
           toast.error(displayMsg);
         }
-      }
+      },
+      { errMsg: false }
     );
   };
 
