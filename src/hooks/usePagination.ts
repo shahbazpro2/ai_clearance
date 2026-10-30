@@ -76,12 +76,25 @@ export function usePagination(options: UsePaginationOptions) {
     setPageState(1);
   }, []);
 
-  const hasNext = pagination?.has_next ?? false;
-  const hasPrev = pagination?.has_prev ?? false;
-  const totalItems = pagination?.total_items ?? 0;
-  const totalPages = pagination?.total_pages ?? 1;
   const serverPage = pagination?.page ?? 1;
   const currentPage = loading ? page : serverPage;
+  const totalPages = pagination?.total_pages ?? 1;
+  const totalItems =
+    pagination?.total_items ??
+    pagination?.total_accounts ??
+    pagination?.total_count ??
+    pagination?.total ??
+    0;
+
+  const hasNext =
+    pagination?.has_next !== undefined
+      ? Boolean(pagination.has_next)
+      : currentPage < totalPages;
+
+  const hasPrev =
+    pagination?.has_prev !== undefined
+      ? Boolean(pagination.has_prev)
+      : currentPage > 1;
 
   const paginationBarProps: PaginationBarProps = {
     currentPage,

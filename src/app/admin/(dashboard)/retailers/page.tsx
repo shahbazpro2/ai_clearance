@@ -74,7 +74,6 @@ function RetailersManagementContent() {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   const [getAccounts, { data, fullRes, loading, error }] = useApi({
-    cache: "retailer-accounts",
     fullRes: true,
   });
 
@@ -86,14 +85,13 @@ function RetailersManagementContent() {
   const [getSyncStats, { loading: refreshingStats, data: syncStatsData }] = useApi({ cache: "sync-stats" });
 
   const { page, paginationBarProps } = usePagination({
-    pagination: fullRes?.pagination ?? null,
+    pagination: fullRes?.pagination ?? data?.pagination ?? null,
     loading,
     resetPageWhen: `${accountStatusFilter}-${userStatusFilter}`,
   });
 
   const getAccountsRef = useRef(getAccounts);
   const getSyncStatsRef = useRef(getSyncStats);
-  const shouldFetchRef = useRef(true);
 
   useEffect(() => {
     getAccountsRef.current = getAccounts;
@@ -104,8 +102,6 @@ function RetailersManagementContent() {
   }, [getSyncStats]);
 
   useEffect(() => {
-    if (!shouldFetchRef.current) return;
-
     const params: any = { page, per_page: DEFAULT_PER_PAGE };
     if (accountStatusFilter !== "all") {
       params.status = accountStatusFilter;
@@ -114,7 +110,6 @@ function RetailersManagementContent() {
       params.user_status = userStatusFilter;
     }
     getAccountsRef.current(fetchRetailerAccountsUsersApi(params));
-    shouldFetchRef.current = false;
   }, [accountStatusFilter, userStatusFilter, page]);
 
   const accounts: RetailerAccount[] = useMemo(() => {

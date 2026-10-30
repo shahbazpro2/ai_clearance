@@ -58,6 +58,14 @@ export interface Channel {
   monthly_projections_completed?: boolean;
   oms_feed_received?: boolean;
   platform_live?: boolean;
+  setup_status?: {
+    platform_live?: boolean;
+    brand_approval_completed?: boolean;
+    monthly_projections_completed?: boolean;
+    oms_feed_received?: boolean;
+    is_dc_setup_completed?: boolean;
+    [key: string]: any;
+  };
   created_at: string;
   updated_at: string;
   distribution_centers?: DistributionCenter[];

@@ -3,12 +3,15 @@
  * Use this type when your API returns pagination in the response body.
  */
 export type PaginationMeta = {
-  has_next: boolean;
-  has_prev: boolean;
-  page: number;
-  per_page: number;
-  total_items: number;
-  total_pages: number;
+  has_next?: boolean;
+  has_prev?: boolean;
+  page?: number;
+  per_page?: number;
+  total_items?: number;
+  total_accounts?: number;
+  total_count?: number;
+  total?: number;
+  total_pages?: number;
 } | null;
 
 export const DEFAULT_PER_PAGE = 25;

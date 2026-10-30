@@ -64,6 +64,7 @@ export const fetchRetailerAccountsUsersApi = (params?: {
   user_status?: "active" | "inactive";
   page?: number;
   per_page?: number;
+  include_channel_status?: boolean;
 }) => {
   const queryParams = new URLSearchParams();
   if (params?.status) {
@@ -77,6 +78,9 @@ export const fetchRetailerAccountsUsersApi = (params?: {
   }
   if (params?.per_page != null) {
     queryParams.append("per_page", String(params.per_page));
+  }
+  if (params?.include_channel_status != null) {
+    queryParams.append("include_channel_status", String(params.include_channel_status));
   }
   const queryString = queryParams.toString();
   const url = `/admin/retailers-info${queryString ? `?${queryString}` : ""}`;

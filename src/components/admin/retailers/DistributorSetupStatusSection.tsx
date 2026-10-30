@@ -15,10 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { PaginationBar } from "@/components/ui/pagination-bar";
+import { usePagination } from "@/hooks/usePagination";
 import { CheckCircle2, RefreshCw, Search, ShieldCheck, Activity, Layers, AlertCircle } from "lucide-react";
 import { useApi } from "use-hook-api";
 import { toast } from "react-toastify";
 import { cn } from "@/lib/utils";
+
+const PER_PAGE_DEFAULT = 20;
 
 interface FlattenedChannelRow {
   account_id: string;
@@ -31,30 +35,33 @@ interface FlattenedChannelRow {
   channel_type: string;
   channel_status: RetailerStatus;
   is_completed: boolean;
+  platform_live: boolean;
   brand_approval_completed: boolean;
-  is_dc_setup_completed: boolean;
   monthly_projections_completed: boolean;
   oms_feed_received: boolean;
-  platform_live: boolean;
+  is_dc_setup_completed: boolean;
   completed_steps: number;
   remaining_steps: number;
 }
 
-function StepStatusBadge({ completed }: { completed: boolean }) {
+function SetupStepStatusBadge({ completed }: { completed: boolean }) {
   if (completed) {
     return (
       <span
-        className="inline-flex items-center text-green-600"
-        aria-label="Completed"
-        title="Completed"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs"
+        title="Complete"
       >
-        <CheckCircle2 className="h-5 w-5" />
+        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+        Complete
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+    <span
+      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200/80"
+      title="Incomplete"
+    >
       Incomplete
     </span>
   );
@@ -68,8 +75,7 @@ export function DistributorSetupStatusSection() {
   const [updatingChannelId, setUpdatingChannelId] = useState<string | null>(null);
   const [liveOverrides, setLiveOverrides] = useState<Record<string, boolean>>({});
 
-  const [getAccounts, { data, fullRes, loading, error, onClearCaches }] = useApi({
-    cache: "distributor-setup-status-accounts",
+  const [getAccounts, { data, fullRes, loading, error }] = useApi({
     fullRes: true,
   });
 
@@ -77,19 +83,24 @@ export function DistributorSetupStatusSection() {
     errMsg: true,
   });
 
+  const { page, paginationBarProps } = usePagination({
+    pagination: fullRes?.pagination ?? data?.pagination ?? null,
+    loading,
+    resetPageWhen: `${searchQuery}-${liveFilter}-${progressFilter}`,
+  });
+
   const getAccountsRef = useRef(getAccounts);
   getAccountsRef.current = getAccounts;
 
   const fetchData = useCallback(() => {
-    onClearCaches?.(["distributor-setup-status-accounts"]);
-    // Fetch accounts without small pagination limits so all distributor channels are available
     getAccountsRef.current(
       fetchRetailerAccountsUsersApi({
-        page: 1,
-        per_page: 100,
+        include_channel_status: true,
+        page,
+        per_page: PER_PAGE_DEFAULT,
       })
     );
-  }, [onClearCaches]);
+  }, [page]);
 
   useEffect(() => {
     setMounted(true);
@@ -116,12 +127,43 @@ export function DistributorSetupStatusSection() {
     for (const account of accounts) {
       for (const audience of account.audiences || []) {
         for (const channel of audience.channels || []) {
-          const brandApproval = Boolean(channel.brand_approval_completed);
-          const dcSetup = Boolean(channel.is_dc_setup_completed);
-          const projections = Boolean(channel.monthly_projections_completed);
-          const shipmentLogs = Boolean(channel.oms_feed_received);
+          const statusObj = (channel as any).setup_status || {};
 
-          let completedCount = [brandApproval, dcSetup, projections, shipmentLogs].filter(
+          const platformLiveRaw =
+            channel.platform_live !== undefined
+              ? channel.platform_live
+              : statusObj.platform_live;
+          const basePlatformLive = Boolean(platformLiveRaw);
+          const effectivePlatformLive =
+            liveOverrides[channel.channel_id] !== undefined
+              ? liveOverrides[channel.channel_id]
+              : basePlatformLive;
+
+          const brandApproval = Boolean(
+            channel.brand_approval_completed !== undefined
+              ? channel.brand_approval_completed
+              : statusObj.brand_approval_completed
+          );
+
+          const monthlyProjections = Boolean(
+            channel.monthly_projections_completed !== undefined
+              ? channel.monthly_projections_completed
+              : statusObj.monthly_projections_completed
+          );
+
+          const shipmentLogs = Boolean(
+            channel.oms_feed_received !== undefined
+              ? channel.oms_feed_received
+              : statusObj.oms_feed_received
+          );
+
+          const dcSetup = Boolean(
+            channel.is_dc_setup_completed !== undefined
+              ? channel.is_dc_setup_completed
+              : statusObj.is_dc_setup_completed
+          );
+
+          let completedCount = [brandApproval, dcSetup, monthlyProjections, shipmentLogs].filter(
             Boolean
           ).length;
 
@@ -131,11 +173,6 @@ export function DistributorSetupStatusSection() {
           }
 
           const remainingCount = Math.max(0, 4 - completedCount);
-          const basePlatformLive = Boolean(channel.platform_live);
-          const effectivePlatformLive =
-            liveOverrides[channel.channel_id] !== undefined
-              ? liveOverrides[channel.channel_id]
-              : basePlatformLive;
 
           list.push({
             account_id: account.account_id,
@@ -148,11 +185,11 @@ export function DistributorSetupStatusSection() {
             channel_type: channel.channel_type || channel.name || "Channel",
             channel_status: channel.status || "active",
             is_completed: Boolean(channel.is_completed),
-            brand_approval_completed: brandApproval,
-            is_dc_setup_completed: dcSetup,
-            monthly_projections_completed: projections,
-            oms_feed_received: shipmentLogs,
             platform_live: effectivePlatformLive,
+            brand_approval_completed: brandApproval,
+            monthly_projections_completed: monthlyProjections,
+            oms_feed_received: shipmentLogs,
+            is_dc_setup_completed: dcSetup,
             completed_steps: completedCount,
             remaining_steps: remainingCount,
           });
@@ -202,7 +239,7 @@ export function DistributorSetupStatusSection() {
         platform_live: newValue,
       }),
       () => {
-        toast.success(`Platform Live set to ${newValue ? "Live" : "Not Live"}`);
+        toast.success(`Platform Live set to ${newValue ? "On" : "Off"}`);
         setUpdatingChannelId(null);
         fetchData();
       },
@@ -264,7 +301,7 @@ export function DistributorSetupStatusSection() {
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-green-700">
             <Activity className="h-4 w-4 text-green-600" />
-            Platform Live
+            Platform Live (On)
           </div>
           <div className="mt-2 text-2xl font-bold text-green-600">{liveChannels}</div>
         </div>
@@ -307,8 +344,8 @@ export function DistributorSetupStatusSection() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Platform Statuses</SelectItem>
-            <SelectItem value="live">Platform Live</SelectItem>
-            <SelectItem value="not_live">Platform Not Live</SelectItem>
+            <SelectItem value="live">Platform Live (On)</SelectItem>
+            <SelectItem value="not_live">Platform Not Live (Off)</SelectItem>
           </SelectContent>
         </Select>
 
@@ -336,12 +373,12 @@ export function DistributorSetupStatusSection() {
                 <th className="px-4 py-3">Distributor</th>
                 <th className="px-4 py-3">Audience Name</th>
                 <th className="px-4 py-3">Channel Name</th>
+                <th className="px-4 py-3 text-center">Platform Live</th>
                 <th className="px-4 py-3 text-center">Brand Approval</th>
-                <th className="px-4 py-3 text-center">Distribution Centers</th>
                 <th className="px-4 py-3 text-center">Monthly Projections</th>
                 <th className="px-4 py-3 text-center">Shipment Logs</th>
+                <th className="px-4 py-3 text-center">Distribution Centers</th>
                 <th className="px-4 py-3">Setup Progress</th>
-                <th className="px-4 py-3">Platform Live</th>
               </tr>
             </thead>
             <tbody>
@@ -407,38 +444,64 @@ export function DistributorSetupStatusSection() {
                         {row.channel_type}
                       </td>
 
+                      {/* Platform Live */}
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2">
+                          <Switch
+                            checked={row.platform_live}
+                            disabled={isUpdating}
+                            onCheckedChange={(checked) =>
+                              handleTogglePlatformLive(row.channel_id, checked)
+                            }
+                            aria-label={`Toggle Platform Live for ${row.channel_name}`}
+                          />
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-xs font-semibold px-2 py-0.5 min-w-[36px] justify-center",
+                              row.platform_live
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-gray-100 text-gray-600 border-gray-200"
+                            )}
+                          >
+                            {row.platform_live ? "On" : "Off"}
+                          </Badge>
+                          {isUpdating && <LoadingSpinner size="sm" />}
+                        </div>
+                      </td>
+
                       {/* Step 1: Brand Approval */}
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <div className="flex justify-center">
-                          <StepStatusBadge completed={row.brand_approval_completed} />
+                          <SetupStepStatusBadge completed={row.brand_approval_completed} />
                         </div>
                       </td>
 
-                      {/* Step 2: Distribution Centers */}
+                      {/* Step 2: Monthly Projections */}
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <div className="flex justify-center">
-                          <StepStatusBadge completed={row.is_dc_setup_completed} />
+                          <SetupStepStatusBadge completed={row.monthly_projections_completed} />
                         </div>
                       </td>
 
-                      {/* Step 3: Monthly Projections */}
+                      {/* Step 3: Shipment Logs */}
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <div className="flex justify-center">
-                          <StepStatusBadge completed={row.monthly_projections_completed} />
+                          <SetupStepStatusBadge completed={row.oms_feed_received} />
                         </div>
                       </td>
 
-                      {/* Step 4: Shipment Logs */}
+                      {/* Step 4: Distribution Centers */}
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <div className="flex justify-center">
-                          <StepStatusBadge completed={row.oms_feed_received} />
+                          <SetupStepStatusBadge completed={row.is_dc_setup_completed} />
                         </div>
                       </td>
 
                       {/* Setup Progress */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         {row.completed_steps === 4 ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             4/4 Completed (0 remaining)
                           </span>
@@ -464,38 +527,13 @@ export function DistributorSetupStatusSection() {
                           </div>
                         )}
                       </td>
-
-                      {/* Platform Live Column */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <Switch
-                            checked={row.platform_live}
-                            disabled={isUpdating}
-                            onCheckedChange={(checked) =>
-                              handleTogglePlatformLive(row.channel_id, checked)
-                            }
-                            aria-label={`Toggle Platform Live for ${row.channel_type}`}
-                          />
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs font-medium px-2 py-0.5",
-                              row.platform_live
-                                ? "bg-green-50 text-green-700 border-green-200"
-                                : "bg-gray-100 text-gray-600 border-gray-200"
-                            )}
-                          >
-                            {row.platform_live ? "Live" : "Not Live"}
-                          </Badge>
-                          {isUpdating && <LoadingSpinner size="sm" />}
-                        </div>
-                      </td>
                     </tr>
                   );
                 })}
             </tbody>
           </table>
         </div>
+        <PaginationBar {...paginationBarProps} />
       </div>
     </section>
   );
