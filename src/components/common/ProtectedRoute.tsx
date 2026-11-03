@@ -69,7 +69,7 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                     if (['admin', 'super_admin'].includes(userRole)) {
                         router.push("/admin");
                     } else if (['media_buyer_admin', 'media_buyer_standard'].includes(userRole)) {
-                        router.push("/media-buyer/users");
+                        router.push("/media-buyer/brands");
                     } else if (userRole === 'retailer') {
                         router.push("/retailer/audiences/setup/step");
                     } else if (userRole === 'setup_user') {

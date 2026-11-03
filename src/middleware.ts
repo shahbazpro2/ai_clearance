@@ -123,7 +123,7 @@ export async function middleware(request: NextRequest) {
     if (pathname === "/admin/login" || isAdminContext) {
       redirectPath = "/admin";
     } else if (pathname === "/media-buyer/login" || isMediaBuyerContext) {
-      redirectPath = "/media-buyer/users";
+      redirectPath = "/media-buyer/brands";
     } else if (pathname === "/finance/login" || isFinancePath || roleQuery === "finance") {
       redirectPath = "/finance";
     } else if (pathname === "/retailer/login" || isRetailerPath || roleQuery === "retailer") {
@@ -133,7 +133,7 @@ export async function middleware(request: NextRequest) {
     } else if (authRole === "admin" || authRole === "super_admin") {
       redirectPath = "/admin";
     } else if (authRole === "media_buyer_admin" || authRole === "media_buyer_standard") {
-      redirectPath = "/media-buyer/users";
+      redirectPath = "/media-buyer/brands";
     } else if (authRole === "finance") {
       redirectPath = "/finance";
     } else if (authRole === "inventory") {

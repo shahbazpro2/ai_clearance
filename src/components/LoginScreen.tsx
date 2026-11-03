@@ -71,7 +71,7 @@ export function LoginScreen({
         if (defaultRedirectTo) return defaultRedirectTo;
 
         if (role === "admin") return "/admin";
-        if (role === "media_buyer_admin" || role === "media_buyer_standard") return "/media-buyer/users";
+        if (role === "media_buyer_admin" || role === "media_buyer_standard") return "/media-buyer/brands";
         if (role === "retailer") return "/retailer/audiences/setup/step";
         if (role === "finance") return "/finance";
         if (role === "inventory") return "/inventory";
@@ -130,7 +130,7 @@ export function LoginScreen({
                     } else if (userRole === 'admin' || userRole === 'super_admin') {
                         window.location.href = '/admin';
                     } else if (userRole === 'media_buyer_admin' || userRole === 'media_buyer_standard') {
-                        window.location.href = '/media-buyer/users';
+                        window.location.href = '/media-buyer/brands';
                     } else if (userRole === 'finance') {
                         window.location.href = '/finance';
                     } else if (userRole === 'inventory') {

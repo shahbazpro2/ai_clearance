@@ -30,11 +30,10 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
-  Sparkles,
+  KeyRound,
   Copy,
   Check,
   Lock,
-  UserCog,
   BadgeCheck,
   Trash2,
 } from "lucide-react";
@@ -308,19 +307,12 @@ export function ManageMediaBuyerUserDrawer({
           {/* Drawer Header */}
           <div className="px-6 py-5 border-b border-gray-200 bg-gray-50/70">
             <SheetHeader className="p-0 text-left">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700 shadow-2xs">
-                  <UserCog className="h-5 w-5" />
-                </div>
-                <div>
-                  <SheetTitle className="text-lg font-bold text-gray-900 leading-tight">
-                    Manage Media Buyer User
-                  </SheetTitle>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Update profile details and account credentials
-                  </p>
-                </div>
-              </div>
+              <SheetTitle className="text-lg font-bold text-gray-900 leading-tight">
+                Manage Media Buyer User
+              </SheetTitle>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Update profile details and account credentials
+              </p>
             </SheetHeader>
           </div>
 
@@ -350,7 +342,7 @@ export function ManageMediaBuyerUserDrawer({
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-full border border-amber-200 shadow-2xs">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
                         Pending Verification
                       </span>
                     )}
@@ -439,7 +431,7 @@ export function ManageMediaBuyerUserDrawer({
                   onClick={handleGeneratePassword}
                   className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                 >
-                  <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-500" />
+                  <KeyRound className="h-3.5 w-3.5 mr-1 text-blue-500" />
                   Generate
                 </Button>
               </div>

@@ -65,6 +65,24 @@ export const deleteMediaBuyerUserApi = (userId: string) => {
   return responseApi(`/media-buyer/users/${userId}`, "delete", {});
 };
 
+export type BrandStatus =
+  | "Ready for Campaign Creation"
+  | "Pending"
+  | "Rejected"
+  | string;
+
+export interface BrandSubmission {
+  brand_submission_id: string;
+  domain: string;
+  status: BrandStatus;
+  brand_id?: string | null;
+  request_id?: string | null;
+  admin_message?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
+
 // 3.1 Submit Brand Websites
 export const submitBrandWebsitesApi = (payload: { websites: string[] }) => {
   return responseApi("/media-buyer/brands", "post", payload);
@@ -75,7 +93,15 @@ export const fetchSubmittedBrandsApi = () => {
   return universalApi("/media-buyer/brands", "get");
 };
 
-// 3.3 Delete Brand Submission
+// 3.3 Edit Pending Brand Submission
+export const editPendingBrandSubmissionApi = (
+  brandSubmissionId: string,
+  payload: { website: string }
+) => {
+  return responseApi(`/media-buyer/brands/${brandSubmissionId}`, "patch", payload);
+};
+
+// 3.4 Delete Brand Submission
 export const deleteBrandSubmissionApi = (brandSubmissionId: string) => {
   return responseApi(`/media-buyer/brands/${brandSubmissionId}`, "delete", {});
 };

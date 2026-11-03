@@ -159,7 +159,7 @@ export function OtpVerificationScreen({
                 if (["admin", "super_admin"].includes(normalizedRole || "")) {
                     window.location.href = "/admin";
                 } else if (["media_buyer_admin", "media_buyer_standard"].includes(normalizedRole || "")) {
-                    window.location.href = "/media-buyer/users";
+                    window.location.href = "/media-buyer/brands";
                 } else if (normalizedRole === "retailer") {
                     window.location.href = "/retailer/audiences/setup/step";
                 } else if (normalizedRole === "finance") {

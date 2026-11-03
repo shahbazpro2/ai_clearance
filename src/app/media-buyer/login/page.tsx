@@ -8,7 +8,7 @@ export default function MediaBuyerLoginPage() {
                 role="media_buyer_admin"
                 title="Media Buyer Portal"
                 subtitle="Sign in to your Media Buyer account"
-                defaultRedirectTo="/media-buyer/users"
+                defaultRedirectTo="/media-buyer/brands"
                 showSignup={false}
                 forgotPasswordPath="/media-buyer/forgot-password"
             />

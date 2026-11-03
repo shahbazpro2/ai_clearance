@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { AlertCircle, Eye, EyeOff, Sparkles, Copy, Check, Lock, RotateCcw } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, KeyRound, Copy, Check, Lock } from "lucide-react";
 
 function generateRandomPassword(length = 14): string {
   const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -175,19 +175,12 @@ export function RestoreMediaBuyerUserDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700 shadow-2xs">
-              <RotateCcw className="h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-lg font-semibold text-gray-900">
-                Restore Media Buyer User
-              </DialogTitle>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Re-create this previously deleted account with updated name and password.
-              </p>
-            </div>
-          </div>
+          <DialogTitle className="text-lg font-semibold text-gray-900">
+            Restore Media Buyer User
+          </DialogTitle>
+          <p className="text-xs text-gray-500">
+            Re-create this previously deleted account with updated name and password.
+          </p>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
@@ -243,7 +236,7 @@ export function RestoreMediaBuyerUserDialog({
                 onClick={handleGeneratePassword}
                 className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
               >
-                <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-500" />
+                <KeyRound className="h-3.5 w-3.5 mr-1 text-blue-500" />
                 Generate
               </Button>
             </div>

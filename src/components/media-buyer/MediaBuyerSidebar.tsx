@@ -1,6 +1,6 @@
 "use client";
 
-import { Users } from "lucide-react";
+import { Globe, Users } from "lucide-react";
 import { useAtom } from "jotai";
 import { PortalSidebar, type PortalSidebarItem } from "@/components/common/PortalSidebar";
 import { useMe } from "@/hooks/useMe";
@@ -18,6 +18,11 @@ export function MediaBuyerSidebar() {
   const isMediaBuyerAdmin = userData?.role === "media_buyer_admin";
 
   const items: PortalSidebarItem[] = [
+    {
+      title: "Brand Setup",
+      href: "/media-buyer/brands",
+      icon: Globe,
+    },
     ...(isMediaBuyerAdmin
       ? [
           {
@@ -45,7 +50,7 @@ export function MediaBuyerSidebar() {
   return (
     <PortalSidebar
       collapsed={collapsed}
-      homeHref="/media-buyer/users"
+      homeHref="/media-buyer/brands"
       items={items}
       mobileOpen={mobileOpen}
       onCollapsedChange={setCollapsed}
