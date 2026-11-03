@@ -188,8 +188,7 @@ function RetailersManagementContent() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <h1 className="text-3xl font-bold">Distributors Management</h1>
+      <div className="flex justify-end mb-6">
         <Button
           onClick={handleSyncAll}
           disabled={syncing}

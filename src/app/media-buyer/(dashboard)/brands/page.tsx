@@ -12,8 +12,6 @@ import { AddBrandSection } from "@/components/media-buyer/brands/AddBrandSection
 import { BrandListTable } from "@/components/media-buyer/brands/BrandListTable";
 import { EditBrandModal } from "@/components/media-buyer/brands/EditBrandModal";
 import { DeleteBrandDialog } from "@/components/media-buyer/brands/DeleteBrandDialog";
-import { Button } from "@/components/ui/button";
-import { RotateCw } from "lucide-react";
 
 export default function MediaBuyerBrandsPage() {
   const [brands, setBrands] = useState<BrandSubmission[]>([]);
@@ -100,26 +98,6 @@ export default function MediaBuyerBrandsPage() {
   return (
     <ProtectedRoute requiredRole={["media_buyer_admin", "media_buyer_standard"]}>
       <main className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Brand Setup</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Add and manage the brands you want to use for campaign creation.
-            </p>
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={loadBrands}
-            disabled={loading}
-            className="flex items-center gap-2 self-start sm:self-auto"
-          >
-            <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-
         {/* Add Brand Section */}
         <AddBrandSection onBrandsAdded={handleBrandsAdded} />
 

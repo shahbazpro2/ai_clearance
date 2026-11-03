@@ -98,34 +98,31 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute requiredRole="super_admin">
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-          <h1 className="text-2xl font-bold">Admin Users</h1>
-          <div className="flex items-center gap-3">
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as AdminStatus | "all")}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                {STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end mb-6 gap-3">
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as AdminStatus | "all")}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {STATUS_OPTIONS.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <Button
-              onClick={() => setAddUserOpen(true)}
-              className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add New User
-            </Button>
-          </div>
+          <Button
+            onClick={() => setAddUserOpen(true)}
+            className="bg-blue-gradient text-white hover:bg-blue-gradient/90"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add New User
+          </Button>
         </div>
 
         <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
