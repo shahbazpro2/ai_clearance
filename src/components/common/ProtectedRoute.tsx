@@ -29,6 +29,8 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                         : "/";
                 if (currentPath.startsWith("/inventory")) {
                     router.push(`/inventory/login?redirect=${encodeURIComponent(currentPath)}`);
+                } else if (currentPath.startsWith("/media-buyer")) {
+                    router.push(`/media-buyer/login?redirect=${encodeURIComponent(currentPath)}`);
                 } else if (currentPath.startsWith("/finance")) {
                     router.push(`/finance/login?redirect=${encodeURIComponent(currentPath)}`);
                 } else if (currentPath.startsWith("/admin")) {
@@ -66,6 +68,8 @@ export function ProtectedRoute({ children, fallback, requiredRole }: ProtectedRo
                     // Redirect to appropriate home based on role
                     if (['admin', 'super_admin'].includes(userRole)) {
                         router.push("/admin");
+                    } else if (['media_buyer_admin', 'media_buyer_standard'].includes(userRole)) {
+                        router.push("/media-buyer/users");
                     } else if (userRole === 'retailer') {
                         router.push("/retailer/audiences/setup/step");
                     } else if (userRole === 'setup_user') {

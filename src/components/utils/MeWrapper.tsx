@@ -19,6 +19,8 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
         const role = typeof meData.role === "string" ? meData.role.toLowerCase() : meData.role;
         if (['admin', 'super_admin'].includes(role)) {
             router.replace('/admin');
+        } else if (['media_buyer_admin', 'media_buyer_standard'].includes(role)) {
+            router.replace('/media-buyer/users');
         } else if (role === 'retailer') {
             router.replace('/retailer/audiences/setup/step');
         } else if (role === 'setup_user') {
@@ -38,7 +40,7 @@ const MeWrapper = ({ children }: { children: React.ReactNode }) => {
     const shouldRedirectAdminFromRoot =
         pathname === '/' &&
         !!meData?.role &&
-        ['admin', 'super_admin', 'retailer', 'setup_user', 'finance', 'inventory'].includes(
+        ['admin', 'super_admin', 'media_buyer_admin', 'media_buyer_standard', 'retailer', 'setup_user', 'finance', 'inventory'].includes(
             typeof meData.role === "string" ? meData.role.toLowerCase() : meData.role
         );
 

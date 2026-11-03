@@ -21,6 +21,9 @@ export const ROUTES = {
     "/inventory",
     "/inventory-portal",
   ],
+  MEDIA_BUYER: [
+    "/media-buyer",
+  ],
 
   // Routes that should redirect authenticated users to dashboard
   AUTH: [
@@ -30,12 +33,14 @@ export const ROUTES = {
     "/finance/login",
     "/inventory/login",
     "/inventory-portal/login",
+    "/media-buyer/login",
     "/signup",
     "/admin/signup",
     "/verify-otp",
     "/forgot-password",
     "/inventory/forgot-password",
     "/inventory-portal/forgot-password",
+    "/media-buyer/forgot-password",
   ],
   PUBLIC: [] as readonly string[],
 } as const;

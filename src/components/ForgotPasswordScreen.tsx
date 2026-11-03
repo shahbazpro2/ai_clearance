@@ -18,11 +18,15 @@ import {
     type OtpAndPasswordResetFormData,
 } from "./forgot-password";
 
-export function ForgotPasswordScreen() {
+interface ForgotPasswordScreenProps {
+    defaultRole?: string;
+}
+
+export function ForgotPasswordScreen({ defaultRole }: ForgotPasswordScreenProps = {}) {
     const router = useRouter();
     const searchParams = useSearchParams()
-    const roleParam = searchParams.get("role") || (searchParams.get("admin") === "true" ? "admin" : "");
-    const role = roleParam === "admin" || roleParam === "retailer" || roleParam === "finance" ? roleParam : "";
+    const roleParam = searchParams.get("role") || (searchParams.get("admin") === "true" ? "admin" : "") || defaultRole;
+    const role = roleParam === "admin" || roleParam === "retailer" || roleParam === "finance" || roleParam === "media_buyer_admin" || roleParam === "media_buyer_standard" ? roleParam : "";
     const [step, setStep] = useState<"email" | "otp" | "success">("email");
     const [email, setEmail] = useState("");
 
@@ -63,11 +67,13 @@ export function ForgotPasswordScreen() {
         }), () => {
             const targetLoginPath = role === "admin"
                 ? "/admin/login"
-                : role === "finance"
-                    ? "/finance/login"
-                    : role === "retailer"
-                        ? "/retailer/login"
-                        : "/login";
+                : role === "media_buyer_admin" || role === "media_buyer_standard"
+                    ? "/media-buyer/login"
+                    : role === "finance"
+                        ? "/finance/login"
+                        : role === "retailer"
+                            ? "/retailer/login"
+                            : "/login";
             router.push(targetLoginPath);
         });
     };

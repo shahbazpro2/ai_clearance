@@ -49,6 +49,8 @@ export const useMe = () => {
         const path = pathname || "";
         if (ROUTES.ADMIN.some(r => path === r || path.startsWith(`${r}/`))) {
           window.location.href = "/admin/login";
+        } else if (ROUTES.MEDIA_BUYER.some(r => path === r || path.startsWith(`${r}/`))) {
+          window.location.href = "/media-buyer/login";
         } else if (ROUTES.FINANCE.some(r => path === r || path.startsWith(`${r}/`))) {
           window.location.href = "/finance/login";
         } else if (ROUTES.RETAILER.some(r => path === r || path.startsWith(`${r}/`))) {

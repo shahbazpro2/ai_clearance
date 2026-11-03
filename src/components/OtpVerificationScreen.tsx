@@ -158,6 +158,8 @@ export function OtpVerificationScreen({
                 const normalizedRole = typeof role === "string" ? role.toLowerCase() : role;
                 if (["admin", "super_admin"].includes(normalizedRole || "")) {
                     window.location.href = "/admin";
+                } else if (["media_buyer_admin", "media_buyer_standard"].includes(normalizedRole || "")) {
+                    window.location.href = "/media-buyer/users";
                 } else if (normalizedRole === "retailer") {
                     window.location.href = "/retailer/audiences/setup/step";
                 } else if (normalizedRole === "finance") {
@@ -169,6 +171,8 @@ export function OtpVerificationScreen({
                 const normalizedRole = typeof role === "string" ? role.toLowerCase() : role;
                 if (["admin", "super_admin"].includes(normalizedRole || "")) {
                     window.location.href = "/admin/login";
+                } else if (["media_buyer_admin", "media_buyer_standard"].includes(normalizedRole || "")) {
+                    window.location.href = "/media-buyer/login";
                 } else if (normalizedRole === "finance") {
                     window.location.href = "/finance/login";
                 } else if (normalizedRole === "inventory") {

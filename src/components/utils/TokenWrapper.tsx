@@ -58,7 +58,9 @@ const TokenWrapper: React.FC = () => {
                                 "grant_type": "refresh_token",
                                 refresh_token: refresh,
                                 ...(getAuthRole() === "retailer" ? { role: "retailer" } :
-                                    getAuthRole() === "inventory" ? { role: "inventory" } : {}),
+                                    getAuthRole() === "inventory" ? { role: "inventory" } :
+                                    getAuthRole() === "media_buyer_admin" ? { role: "media_buyer_admin" } :
+                                    getAuthRole() === "media_buyer_standard" ? { role: "media_buyer_standard" } : {}),
                             },
                         )();
 
@@ -71,7 +73,9 @@ const TokenWrapper: React.FC = () => {
                         }
                         else {
                             clearAuthTokens();
-                            if (window.location.href.includes('admin')) {
+                            if (window.location.href.includes('media-buyer')) {
+                                window.location.href = '/media-buyer/login';
+                            } else if (window.location.href.includes('admin')) {
                                 window.location.href = '/admin/login';
                             } else if (window.location.href.includes('inventory')) {
                                 window.location.href = '/inventory/login';

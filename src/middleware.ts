@@ -18,9 +18,12 @@ export async function middleware(request: NextRequest) {
   const isFinancePath = pathname === "/finance" || pathname.startsWith("/finance/");
   const isRetailerPath = pathname === "/retailer" || pathname.startsWith("/retailer/");
   const isInventoryPath = pathname === "/inventory" || pathname.startsWith("/inventory/");
+  const isMediaBuyerPath = pathname === "/media-buyer" || pathname.startsWith("/media-buyer/");
   const roleQuery = request.nextUrl.searchParams.get("role");
   const isAdminRoleQuery = roleQuery === "admin" || roleQuery === "super_admin";
+  const isMediaBuyerRoleQuery = roleQuery === "media_buyer_admin" || roleQuery === "media_buyer_standard";
   const isAdminContext = isAdminPath || isAdminRoleQuery;
+  const isMediaBuyerContext = isMediaBuyerPath || isMediaBuyerRoleQuery;
 
   // Debug logging
   console.log("🔍 Middleware executing for:", pathname);
@@ -61,12 +64,18 @@ export async function middleware(request: NextRequest) {
     ROUTES.INVENTORY.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`),
     );
+  const isMediaBuyerProtectedRoute =
+    !isAuthRoute &&
+    ROUTES.MEDIA_BUYER.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
 
   const anyProtected =
     isFinanceProtectedRoute ||
     isRetailerProtectedRoute ||
     isAdminProtectedRoute ||
-    isInventoryProtectedRoute;
+    isInventoryProtectedRoute ||
+    isMediaBuyerProtectedRoute;
 
   // Redirect unauthenticated users from protected routes to respective login pages
   if (anyProtected && !accessToken) {
@@ -74,6 +83,11 @@ export async function middleware(request: NextRequest) {
     const targetUrl = request.nextUrl.search ? `${pathname}${request.nextUrl.search}` : pathname;
     if (isInventoryProtectedRoute) {
       const loginUrl = new URL("/inventory/login", request.url);
+      loginUrl.searchParams.set("redirect", targetUrl);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (isMediaBuyerProtectedRoute) {
+      const loginUrl = new URL("/media-buyer/login", request.url);
       loginUrl.searchParams.set("redirect", targetUrl);
       return NextResponse.redirect(loginUrl);
     }
@@ -108,6 +122,8 @@ export async function middleware(request: NextRequest) {
     let redirectPath = "/retailer/audiences/setup/step";
     if (pathname === "/admin/login" || isAdminContext) {
       redirectPath = "/admin";
+    } else if (pathname === "/media-buyer/login" || isMediaBuyerContext) {
+      redirectPath = "/media-buyer/users";
     } else if (pathname === "/finance/login" || isFinancePath || roleQuery === "finance") {
       redirectPath = "/finance";
     } else if (pathname === "/retailer/login" || isRetailerPath || roleQuery === "retailer") {
@@ -116,6 +132,8 @@ export async function middleware(request: NextRequest) {
       redirectPath = "/inventory";
     } else if (authRole === "admin" || authRole === "super_admin") {
       redirectPath = "/admin";
+    } else if (authRole === "media_buyer_admin" || authRole === "media_buyer_standard") {
+      redirectPath = "/media-buyer/users";
     } else if (authRole === "finance") {
       redirectPath = "/finance";
     } else if (authRole === "inventory") {

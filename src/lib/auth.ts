@@ -1,7 +1,7 @@
 import { Axios } from "use-hook-api";
 import { clearRetailerView } from "./retailer-view";
 
-const AUTH_COOKIE_PATHS = ["/", "/admin", "/finance", "/retailer", "/inventory", "/inventory-portal"];
+const AUTH_COOKIE_PATHS = ["/", "/admin", "/finance", "/retailer", "/inventory", "/inventory-portal", "/media-buyer"];
 
 function expireCookie(name: string, path: string): void {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path};`;
@@ -97,6 +97,8 @@ export function logout(): void {
       const pathname = window.location.pathname;
       if (pathname.startsWith("/inventory") || normalizedRole === "inventory") {
         window.location.href = "/inventory/login";
+      } else if (pathname.startsWith("/media-buyer") || normalizedRole === "media_buyer_admin" || normalizedRole === "media_buyer_standard") {
+        window.location.href = "/media-buyer/login";
       } else if (pathname.startsWith("/admin") || normalizedRole === "admin" || normalizedRole === "super_admin") {
         window.location.href = "/admin/login";
       } else if (pathname.startsWith("/finance") || normalizedRole === "finance") {

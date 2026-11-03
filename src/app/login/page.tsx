@@ -13,6 +13,8 @@ export default async function LoginPage({
 
     if (role === "admin" || role === "super_admin") {
         redirect(`/admin/login${redirectParam}`);
+    } else if (role === "media_buyer_admin" || role === "media_buyer_standard") {
+        redirect(`/media-buyer/login${redirectParam}`);
     } else if (role === "finance") {
         redirect(`/finance/login${redirectParam}`);
     } else if (role === "inventory") {

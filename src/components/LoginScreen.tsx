@@ -23,7 +23,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export type AuthRole = "admin" | "retailer" | "setup_user" | "finance" | "inventory";
+export type AuthRole = "admin" | "retailer" | "setup_user" | "finance" | "inventory" | "media_buyer_admin" | "media_buyer_standard";
 
 interface LoginScreenProps {
     role?: AuthRole;
@@ -71,6 +71,7 @@ export function LoginScreen({
         if (defaultRedirectTo) return defaultRedirectTo;
 
         if (role === "admin") return "/admin";
+        if (role === "media_buyer_admin" || role === "media_buyer_standard") return "/media-buyer/users";
         if (role === "retailer") return "/retailer/audiences/setup/step";
         if (role === "finance") return "/finance";
         if (role === "inventory") return "/inventory";
@@ -128,6 +129,8 @@ export function LoginScreen({
                         window.location.href = '/retailer/audiences/setup/step';
                     } else if (userRole === 'admin' || userRole === 'super_admin') {
                         window.location.href = '/admin';
+                    } else if (userRole === 'media_buyer_admin' || userRole === 'media_buyer_standard') {
+                        window.location.href = '/media-buyer/users';
                     } else if (userRole === 'finance') {
                         window.location.href = '/finance';
                     } else if (userRole === 'inventory') {
@@ -209,11 +212,13 @@ export function LoginScreen({
     const getForgotPasswordUrl = () => {
         if (forgotPasswordPath) return forgotPasswordPath;
         if (role === "inventory") return "/inventory/forgot-password";
+        if (role === "media_buyer_admin" || role === "media_buyer_standard") return "/media-buyer/forgot-password";
         return `/forgot-password${apiRole ? `?role=${encodeURIComponent(apiRole)}` : ""}`;
     };
 
     const getDefaultTitle = () => {
         if (role === "admin") return "Admin Portal";
+        if (role === "media_buyer_admin" || role === "media_buyer_standard") return "Media Buyer Portal";
         if (role === "finance") return "Insert Distributor Finance";
         if (role === "inventory") return "Insert Distributor Inventory";
         if (role === "retailer") return "Insert Distributor";
@@ -222,6 +227,7 @@ export function LoginScreen({
 
     const getDefaultSubtitle = () => {
         if (role === "admin") return "Sign in to your Admin account";
+        if (role === "media_buyer_admin" || role === "media_buyer_standard") return "Sign in to your Media Buyer account";
         if (role === "finance") return "Sign in to Insert Distributor Finance";
         if (role === "inventory") return "Sign in to Insert Distributor Inventory";
         if (role === "retailer") return "Sign in to your Insert Distributor account";
@@ -232,7 +238,7 @@ export function LoginScreen({
     const resolvedSubtitle = subtitle !== undefined ? subtitle : getDefaultSubtitle();
 
     // Roles without signup by default
-    const noSignupRoles: AuthRole[] = ["finance", "inventory"];
+    const noSignupRoles: AuthRole[] = ["finance", "inventory", "media_buyer_admin", "media_buyer_standard"];
     const shouldDisplaySignup = showSignup !== undefined
         ? showSignup
         : !noSignupRoles.includes(role);
