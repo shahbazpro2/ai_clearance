@@ -150,7 +150,7 @@ export function InsertVersionsTable({
                 return (
                   <tr
                     key={item.id}
-                    className="border-t hover:bg-blue-50/40 transition-colors"
+                    className="border-t hover:bg-gray-50/60 transition-colors"
                   >
                     {/* Version Name */}
                     <td className="px-4 py-3 align-middle font-medium text-gray-900 whitespace-nowrap">
@@ -204,7 +204,7 @@ export function InsertVersionsTable({
                           size="sm"
                           variant="outline"
                           onClick={() => onEditVersion(item)}
-                          className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 border-gray-300 whitespace-nowrap transition-colors"
+                          className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
                           title="Edit version name & inkjet setting"
                         >
                           <Pencil className="h-3.5 w-3.5 mr-1 text-gray-500" />
@@ -217,7 +217,7 @@ export function InsertVersionsTable({
                             size="sm"
                             variant="outline"
                             onClick={() => onUploadArtwork(item)}
-                            className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 border-gray-300 whitespace-nowrap transition-colors"
+                            className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
                             title="Upload artwork PDF file"
                           >
                             <Upload className="h-3.5 w-3.5 mr-1 text-gray-500" />
@@ -228,7 +228,7 @@ export function InsertVersionsTable({
                             size="sm"
                             variant="outline"
                             onClick={() => (onViewArtwork ? onViewArtwork(item) : onUploadArtwork(item))}
-                            className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 border-gray-300 whitespace-nowrap transition-colors"
+                            className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
                             title="View artwork details"
                           >
                             <Eye className="h-3.5 w-3.5 mr-1 text-gray-500" />
@@ -243,7 +243,7 @@ export function InsertVersionsTable({
                               size="sm"
                               variant="outline"
                               onClick={() => onUploadInkjetCsv(item)}
-                              className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 border-gray-300 whitespace-nowrap transition-colors"
+                              className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
                               title="Manage or replace CSV codes"
                             >
                               <FileSpreadsheet className="h-3.5 w-3.5 mr-1 text-emerald-600" />
@@ -254,7 +254,7 @@ export function InsertVersionsTable({
                               size="sm"
                               variant="outline"
                               onClick={() => onUploadInkjetCsv(item)}
-                              className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 border-gray-300 whitespace-nowrap transition-colors"
+                              className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
                               title="Upload inkjet single-use codes CSV"
                             >
                               <Upload className="h-3.5 w-3.5 mr-1 text-gray-500" />

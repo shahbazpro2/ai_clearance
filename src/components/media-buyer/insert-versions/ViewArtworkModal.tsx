@@ -93,7 +93,7 @@ export function ViewArtworkModal({
                 onOpenChange(false);
                 onReupload();
               }}
-              className="h-8 px-3 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 border-gray-300 whitespace-nowrap transition-colors"
+              className="h-8 px-3 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
             >
               <Upload className="h-3.5 w-3.5 mr-1 text-gray-500" />
               Replace Artwork

@@ -56,7 +56,7 @@ export function SamplePreviewModal({
             </div>
           ) : (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center space-y-3">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/20">
                 {format.slug.includes("hang-tag") ? (
                   <Tag className="h-7 w-7" />
                 ) : format.slug.includes("card") ? (
@@ -67,7 +67,7 @@ export function SamplePreviewModal({
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 text-base">{format.name}</h3>
-                <span className="inline-block mt-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="inline-block mt-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                   {format.price_range}
                 </span>
               </div>

@@ -75,12 +75,12 @@ export function InsertFormatCards({
           {formats.map((format) => (
             <div
               key={format.id}
-              className="group flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-blue-300 hover:shadow-sm"
+              className="group flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-primary/40 hover:shadow-sm"
             >
               {/* Card Header & Spec Details */}
               <div>
                 {/* Icon */}
-                <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
+                <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
                   {getFormatIcon(format.slug)}
                 </div>
 
@@ -91,7 +91,7 @@ export function InsertFormatCards({
 
                 {/* Price Range Badge */}
                 <div className="mt-2 mb-3.5">
-                  <span className="inline-block rounded-md bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-800 border border-blue-200/80">
+                  <span className="inline-block rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary border border-primary/20">
                     {format.price_range}
                   </span>
                 </div>
@@ -123,15 +123,15 @@ export function InsertFormatCards({
                   <button
                     type="button"
                     onClick={() => handleViewSample(format)}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
                   >
-                    <Play className="h-3.5 w-3.5 fill-blue-600 text-blue-600" />
+                    <Play className="h-3.5 w-3.5 fill-current" />
                     View Sample
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDownloadTemplate(format)}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
                   >
                     <Download className="h-3.5 w-3.5" />
                     Download Design Template
