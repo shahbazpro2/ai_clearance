@@ -74,7 +74,7 @@ export function AdminProfileMenu() {
         className="w-64 p-2 shadow-lg border border-gray-200 bg-white"
       >
         {/* User Details Section */}
-        <div className="flex items-center gap-3 p-2">
+        <div className="flex gap-3 p-2">
           <Avatar className="h-10 w-10 border border-gray-200 shrink-0 shadow-2xs">
             <AvatarImage src={avatarUrl} alt={displayName} />
             <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary border border-violet-100">

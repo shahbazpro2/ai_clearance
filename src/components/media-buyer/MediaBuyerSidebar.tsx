@@ -34,19 +34,6 @@ export function MediaBuyerSidebar() {
       : []),
   ];
 
-  const userName =
-    userData?.name ||
-    userData?.username ||
-    userData?.email?.split("@")[0] ||
-    "Media Buyer";
-
-  const userInitials = userName
-    .split(" ")
-    .map((part: string) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   return (
     <PortalSidebar
       collapsed={collapsed}
@@ -57,11 +44,6 @@ export function MediaBuyerSidebar() {
       onMobileOpenChange={setMobileOpen}
       portalName="Media Buyer Portal"
       showLogout={false}
-      userProfile={{
-        avatarUrl: userData?.avatar || userData?.profile_picture,
-        initials: userInitials || "MB",
-        name: userName,
-      }}
       headerRight={
         <div className="flex items-center gap-2">
           <MediaBuyerProfileMenu />

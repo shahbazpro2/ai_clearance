@@ -16,7 +16,6 @@ import {
   Clock,
   XCircle,
   Pencil,
-  Trash2,
   Search,
   MessageSquare,
 } from "lucide-react";
@@ -31,14 +30,13 @@ interface BrandListTableProps {
   brands: BrandSubmission[];
   loading: boolean;
   onEditBrand: (brand: BrandSubmission) => void;
-  onDeleteBrand: (brand: BrandSubmission) => void;
+  onDeleteBrand?: (brand: BrandSubmission) => void;
 }
 
 export function BrandListTable({
   brands,
   loading,
   onEditBrand,
-  onDeleteBrand,
 }: BrandListTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -247,18 +245,6 @@ export function BrandListTable({
                             </Tooltip>
                           </TooltipProvider>
                         )}
-
-                        {/* Delete Action */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onDeleteBrand(brand)}
-                          className="h-8 px-2.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 border-gray-300"
-                          title="Remove brand submission"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                          <span className="sr-only sm:not-sr-only sm:ml-1">Remove</span>
-                        </Button>
                       </div>
                     </td>
                   </tr>
