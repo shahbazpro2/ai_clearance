@@ -105,3 +105,91 @@ export const editPendingBrandSubmissionApi = (
 export const deleteBrandSubmissionApi = (brandSubmissionId: string) => {
   return responseApi(`/media-buyer/brands/${brandSubmissionId}`, "delete", {});
 };
+
+// 4. Insert Version Types & Endpoints
+
+export interface InsertFormat {
+  id: string;
+  slug: string;
+  name: string;
+  price_range: string;
+  size_and_paper?: string | null;
+  carrier?: string | null;
+  card?: string | null;
+  sample_video_reference?: string | null;
+  design_template_reference?: string | null;
+  [key: string]: any;
+}
+
+export interface InsertVersion {
+  id: string;
+  version_name: string;
+  format: InsertFormat;
+  inkjet_enabled: boolean;
+  artwork_uploaded: boolean;
+  created_at: string;
+  updated_at: string;
+  inkjet_csv_uploaded?: boolean;
+  csv_original_filename?: string | null;
+  csv_row_count?: number | null;
+  csv_uploaded_at?: string | null;
+  [key: string]: any;
+}
+
+// 4.1 Get Insert Formats
+export const fetchInsertFormatsApi = () => {
+  return universalApi("/media-buyer/insert-formats", "get");
+};
+
+// 4.2 Create Insert Version
+export const createInsertVersionApi = (payload: {
+  insert_format_id: string;
+  version_name: string;
+  inkjet_enabled?: boolean;
+}) => {
+  return responseApi("/media-buyer/insert-versions", "post", payload);
+};
+
+// 4.3 Get Insert Versions
+export const fetchInsertVersionsApi = () => {
+  return universalApi("/media-buyer/insert-versions", "get");
+};
+
+// 4.4 Update Insert Version
+export const updateInsertVersionApi = (
+  insertVersionId: string,
+  payload: {
+    version_name?: string;
+    inkjet_enabled?: boolean;
+  }
+) => {
+  return responseApi(
+    `/media-buyer/insert-versions/${insertVersionId}`,
+    "patch",
+    payload
+  );
+};
+
+// 4.5 Upload Insert Artwork
+export const uploadInsertArtworkApi = (
+  insertVersionId: string,
+  formData: FormData
+) => {
+  return responseApi(
+    `/media-buyer/insert-versions/${insertVersionId}/artwork`,
+    "post",
+    formData
+  );
+};
+
+// 4.6 Upload Inkjet CSV
+export const uploadInkjetCsvApi = (
+  insertVersionId: string,
+  formData: FormData
+) => {
+  return responseApi(
+    `/media-buyer/insert-versions/${insertVersionId}/inkjet-csv`,
+    "post",
+    formData
+  );
+};

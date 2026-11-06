@@ -8,6 +8,12 @@ function getPageTitle(pathname: string): string {
     return "Media Buyer Users";
   }
   if (
+    pathname.startsWith("/media-buyer/insert-versions") ||
+    pathname.startsWith("/media-buyer/insert-version-setup")
+  ) {
+    return "Insert Version Setup";
+  }
+  if (
     pathname.startsWith("/media-buyer/brands") ||
     pathname.startsWith("/media-buyer/brand-setup")
   ) {
