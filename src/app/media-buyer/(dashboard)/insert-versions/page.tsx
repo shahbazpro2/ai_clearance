@@ -15,7 +15,6 @@ import { InsertVersionsTable } from "@/components/media-buyer/insert-versions/In
 import { CreateInsertVersionModal } from "@/components/media-buyer/insert-versions/CreateInsertVersionModal";
 import { EditInsertVersionModal } from "@/components/media-buyer/insert-versions/EditInsertVersionModal";
 import { UploadArtworkModal } from "@/components/media-buyer/insert-versions/UploadArtworkModal";
-import { UploadInkjetCsvModal } from "@/components/media-buyer/insert-versions/UploadInkjetCsvModal";
 import { ViewArtworkModal } from "@/components/media-buyer/insert-versions/ViewArtworkModal";
 import { extractErrorMessage } from "@/lib/apiError";
 
@@ -28,7 +27,6 @@ export default function MediaBuyerInsertVersionsPage() {
   const [selectedFormat, setSelectedFormat] = useState<InsertFormat | null>(null);
   const [editingVersion, setEditingVersion] = useState<InsertVersion | null>(null);
   const [artworkVersion, setArtworkVersion] = useState<InsertVersion | null>(null);
-  const [inkjetVersion, setInkjetVersion] = useState<InsertVersion | null>(null);
   const [viewArtworkVersion, setViewArtworkVersion] = useState<InsertVersion | null>(null);
 
   // APIs
@@ -111,21 +109,6 @@ export default function MediaBuyerInsertVersionsPage() {
     loadVersions();
   };
 
-  const handleInkjetUploaded = (updated: InsertVersion) => {
-    setVersions((prev) =>
-      prev.map((v) =>
-        v.id === updated.id
-          ? {
-              ...v,
-              ...updated,
-              inkjet_csv_uploaded: true,
-            }
-          : v
-      )
-    );
-    loadVersions();
-  };
-
   return (
     <ProtectedRoute requiredRole={["media_buyer_admin", "media_buyer_standard"]}>
       <main className="container mx-auto px-4 py-8 space-y-6">
@@ -143,7 +126,6 @@ export default function MediaBuyerInsertVersionsPage() {
           onOpenCreate={() => handleOpenCreate(null)}
           onEditVersion={(v) => setEditingVersion(v)}
           onUploadArtwork={(v) => setArtworkVersion(v)}
-          onUploadInkjetCsv={(v) => setInkjetVersion(v)}
           onViewArtwork={(v) => setViewArtworkVersion(v)}
         />
 
@@ -182,14 +164,6 @@ export default function MediaBuyerInsertVersionsPage() {
             setViewArtworkVersion(null);
             setArtworkVersion(v);
           }}
-        />
-
-        {/* Upload Inkjet CSV Modal */}
-        <UploadInkjetCsvModal
-          version={inkjetVersion}
-          open={!!inkjetVersion}
-          onOpenChange={(open) => !open && setInkjetVersion(null)}
-          onSuccess={handleInkjetUploaded}
         />
       </main>
     </ProtectedRoute>

@@ -12,7 +12,6 @@ import {
   XCircle,
   Search,
   Plus,
-  FileSpreadsheet,
   Layers,
   Eye,
 } from "lucide-react";
@@ -23,7 +22,7 @@ interface InsertVersionsTableProps {
   onOpenCreate: () => void;
   onEditVersion: (version: InsertVersion) => void;
   onUploadArtwork: (version: InsertVersion) => void;
-  onUploadInkjetCsv: (version: InsertVersion) => void;
+  onUploadInkjetCsv?: (version: InsertVersion) => void;
   onViewArtwork?: (version: InsertVersion) => void;
 }
 
@@ -33,7 +32,6 @@ export function InsertVersionsTable({
   onOpenCreate,
   onEditVersion,
   onUploadArtwork,
-  onUploadInkjetCsv,
   onViewArtwork,
 }: InsertVersionsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -145,7 +143,6 @@ export function InsertVersionsTable({
               filteredVersions.map((item) => {
                 const isInkjet = Boolean(item.inkjet_enabled);
                 const isArtwork = Boolean(item.artwork_uploaded);
-                const isCsvUploaded = Boolean(item.inkjet_csv_uploaded);
 
                 return (
                   <tr
@@ -235,32 +232,6 @@ export function InsertVersionsTable({
                             View Artwork
                           </Button>
                         )}
-
-                        {/* Inkjet CSV Action (Only when inkjet_enabled === true) */}
-                        {isInkjet &&
-                          (isCsvUploaded ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => onUploadInkjetCsv(item)}
-                              className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
-                              title="Manage or replace CSV codes"
-                            >
-                              <FileSpreadsheet className="h-3.5 w-3.5 mr-1 text-emerald-600" />
-                              CSV Uploaded{item.csv_row_count != null ? ` (${item.csv_row_count})` : ""}
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => onUploadInkjetCsv(item)}
-                              className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
-                              title="Upload inkjet single-use codes CSV"
-                            >
-                              <Upload className="h-3.5 w-3.5 mr-1 text-gray-500" />
-                              Upload CSV Codes
-                            </Button>
-                          ))}
                       </div>
                     </td>
                   </tr>
