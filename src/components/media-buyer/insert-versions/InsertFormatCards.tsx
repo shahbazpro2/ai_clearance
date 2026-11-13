@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import type { InsertFormat } from "@/api/mediaBuyer";
 import { Button } from "@/components/ui/button";
-import { SamplePreviewModal } from "@/components/media-buyer/insert-versions/SamplePreviewModal";
 import { FileText, Tag, CreditCard, Play, Download, Plus } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -18,8 +16,6 @@ export function InsertFormatCards({
   loading,
   onCreateVersion,
 }: InsertFormatCardsProps) {
-  const [previewFormat, setPreviewFormat] = useState<InsertFormat | null>(null);
-
   const getFormatIcon = (slug: string) => {
     if (slug.includes("hang-tag")) {
       return <Tag className="h-5 w-5" />;
@@ -41,7 +37,15 @@ export function InsertFormatCards({
   };
 
   const handleViewSample = (format: InsertFormat) => {
-    setPreviewFormat(format);
+    const videoUrl =
+      typeof format.sample_video_reference === "string"
+        ? format.sample_video_reference.trim()
+        : "";
+    if (videoUrl) {
+      window.open(videoUrl, "_blank", "noopener,noreferrer");
+    } else {
+      window.open("about:blank", "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
@@ -153,13 +157,6 @@ export function InsertFormatCards({
           ))}
         </div>
       )}
-
-      {/* Sample Preview Modal */}
-      <SamplePreviewModal
-        format={previewFormat}
-        open={!!previewFormat}
-        onOpenChange={(open) => !open && setPreviewFormat(null)}
-      />
     </div>
   );
 }

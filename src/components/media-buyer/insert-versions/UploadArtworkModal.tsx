@@ -109,6 +109,10 @@ export function UploadArtworkModal({
           ...version,
           artwork_uploaded: true,
           ...(returnedData?.id ? returnedData : {}),
+          artwork_public_url:
+            returnedData?.artwork_public_url ??
+            returnedData?.artwork_url ??
+            version.artwork_public_url,
         };
 
         toast.success(

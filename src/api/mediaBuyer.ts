@@ -127,6 +127,7 @@ export interface InsertVersion {
   format: InsertFormat;
   inkjet_enabled: boolean;
   artwork_uploaded: boolean;
+  artwork_public_url?: string | null;
   created_at: string;
   updated_at: string;
   inkjet_csv_uploaded?: boolean;

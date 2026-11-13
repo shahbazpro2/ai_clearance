@@ -5,6 +5,7 @@ import type { InsertVersion } from "@/api/mediaBuyer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { cn } from "@/lib/utils";
 import {
   Pencil,
   Upload,
@@ -98,7 +99,7 @@ export function InsertVersionsTable({
 
       {/* Table Body */}
       <div className="overflow-x-auto w-full">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[840px] text-sm">
           <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-4 py-3 whitespace-nowrap">Version Name</th>
@@ -143,6 +144,11 @@ export function InsertVersionsTable({
               filteredVersions.map((item) => {
                 const isInkjet = Boolean(item.inkjet_enabled);
                 const isArtwork = Boolean(item.artwork_uploaded);
+                const canViewArtwork = Boolean(
+                  item.artwork_uploaded &&
+                    typeof item.artwork_public_url === "string" &&
+                    item.artwork_public_url.trim().length > 0
+                );
 
                 return (
                   <tr
@@ -208,30 +214,54 @@ export function InsertVersionsTable({
                           Edit
                         </Button>
 
-                        {/* Artwork Action Button */}
-                        {!isArtwork ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onUploadArtwork(item)}
-                            className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
-                            title="Upload artwork PDF file"
-                          >
-                            <Upload className="h-3.5 w-3.5 mr-1 text-gray-500" />
-                            Upload Artwork
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => (onViewArtwork ? onViewArtwork(item) : onUploadArtwork(item))}
-                            className="h-8 px-2.5 text-xs font-medium text-gray-700 hover:text-primary hover:bg-gray-50 border-gray-300 whitespace-nowrap transition-colors"
-                            title="View artwork details"
-                          >
-                            <Eye className="h-3.5 w-3.5 mr-1 text-gray-500" />
-                            View Artwork
-                          </Button>
-                        )}
+                        {/* View Artwork Button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!canViewArtwork}
+                          onClick={() => {
+                            if (item.artwork_public_url) {
+                              window.open(item.artwork_public_url, "_blank", "noopener,noreferrer");
+                            }
+                            onViewArtwork?.(item);
+                          }}
+                          className={cn(
+                            "h-8 px-2.5 text-xs font-medium border-gray-300 whitespace-nowrap transition-colors",
+                            canViewArtwork
+                              ? "text-gray-700 hover:text-primary hover:bg-gray-50 cursor-pointer"
+                              : "text-gray-400 bg-gray-50 cursor-not-allowed opacity-50"
+                          )}
+                          title={
+                            canViewArtwork
+                              ? "View uploaded artwork in a new tab"
+                              : "Artwork not uploaded or URL unavailable"
+                          }
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1 text-gray-500" />
+                          View Artwork
+                        </Button>
+
+                        {/* Upload Artwork Button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={canViewArtwork}
+                          onClick={() => onUploadArtwork(item)}
+                          className={cn(
+                            "h-8 px-2.5 text-xs font-medium border-gray-300 whitespace-nowrap transition-colors",
+                            !canViewArtwork
+                              ? "text-gray-700 hover:text-primary hover:bg-gray-50 cursor-pointer"
+                              : "text-gray-400 bg-gray-50 cursor-not-allowed opacity-50"
+                          )}
+                          title={
+                            !canViewArtwork
+                              ? "Upload artwork PDF file"
+                              : "Artwork already uploaded"
+                          }
+                        >
+                          <Upload className="h-3.5 w-3.5 mr-1 text-gray-500" />
+                          Upload Artwork
+                        </Button>
                       </div>
                     </td>
                   </tr>

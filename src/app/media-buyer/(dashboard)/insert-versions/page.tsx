@@ -15,7 +15,6 @@ import { InsertVersionsTable } from "@/components/media-buyer/insert-versions/In
 import { CreateInsertVersionModal } from "@/components/media-buyer/insert-versions/CreateInsertVersionModal";
 import { EditInsertVersionModal } from "@/components/media-buyer/insert-versions/EditInsertVersionModal";
 import { UploadArtworkModal } from "@/components/media-buyer/insert-versions/UploadArtworkModal";
-import { ViewArtworkModal } from "@/components/media-buyer/insert-versions/ViewArtworkModal";
 import { extractErrorMessage } from "@/lib/apiError";
 
 export default function MediaBuyerInsertVersionsPage() {
@@ -27,7 +26,6 @@ export default function MediaBuyerInsertVersionsPage() {
   const [selectedFormat, setSelectedFormat] = useState<InsertFormat | null>(null);
   const [editingVersion, setEditingVersion] = useState<InsertVersion | null>(null);
   const [artworkVersion, setArtworkVersion] = useState<InsertVersion | null>(null);
-  const [viewArtworkVersion, setViewArtworkVersion] = useState<InsertVersion | null>(null);
 
   // APIs
   const [callGetFormats, { loading: loadingFormats }] = useApi({
@@ -103,7 +101,14 @@ export default function MediaBuyerInsertVersionsPage() {
   const handleArtworkUploaded = (updated: InsertVersion) => {
     setVersions((prev) =>
       prev.map((v) =>
-        v.id === updated.id ? { ...v, ...updated, artwork_uploaded: true } : v
+        v.id === updated.id
+          ? {
+              ...v,
+              ...updated,
+              artwork_uploaded: true,
+              artwork_public_url: updated.artwork_public_url ?? v.artwork_public_url,
+            }
+          : v
       )
     );
     loadVersions();
@@ -112,6 +117,16 @@ export default function MediaBuyerInsertVersionsPage() {
   return (
     <ProtectedRoute requiredRole={["media_buyer_admin", "media_buyer_standard"]}>
       <main className="container mx-auto px-4 py-8 space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+            Insert Version Setup
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1.5 leading-relaxed max-w-4xl">
+            Create insert versions for campaign estimates and bookings. Multiple versions can be used in each campaign. The price range referenced below, is based on the total quantity produced for each version.
+          </p>
+        </div>
+
         {/* Insert Formats Cards Grid */}
         <InsertFormatCards
           formats={formats}
@@ -126,7 +141,6 @@ export default function MediaBuyerInsertVersionsPage() {
           onOpenCreate={() => handleOpenCreate(null)}
           onEditVersion={(v) => setEditingVersion(v)}
           onUploadArtwork={(v) => setArtworkVersion(v)}
-          onViewArtwork={(v) => setViewArtworkVersion(v)}
         />
 
         {/* Create Modal */}
@@ -152,18 +166,6 @@ export default function MediaBuyerInsertVersionsPage() {
           open={!!artworkVersion}
           onOpenChange={(open) => !open && setArtworkVersion(null)}
           onSuccess={handleArtworkUploaded}
-        />
-
-        {/* View Artwork Modal */}
-        <ViewArtworkModal
-          version={viewArtworkVersion}
-          open={!!viewArtworkVersion}
-          onOpenChange={(open) => !open && setViewArtworkVersion(null)}
-          onReupload={() => {
-            const v = viewArtworkVersion;
-            setViewArtworkVersion(null);
-            setArtworkVersion(v);
-          }}
         />
       </main>
     </ProtectedRoute>
