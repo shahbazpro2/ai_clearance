@@ -194,3 +194,106 @@ export const uploadInkjetCsvApi = (
     formData
   );
 };
+
+// 5. Campaign Types & Endpoints
+
+export interface EligibleBrand {
+  brand_id: string;
+  name: string;
+  domain: string;
+  [key: string]: any;
+}
+
+export interface CampaignRecord {
+  id: string;
+  name: string;
+  brand_id: string;
+  brand_name?: string;
+  brand_domain?: string;
+  status?: string;
+  selected_programs?: string[];
+  step?: number;
+  created_at: string;
+  updated_at: string;
+  [key: string]: any;
+}
+
+export interface CampaignProgram {
+  channel_id: string;
+  channel_name?: string;
+  salesforce_channel_id?: string;
+  audience_name: string;
+  program_type: "Instant" | "Manual" | string;
+  attribution_distinction: string;
+  media_cpm: number;
+  category: string;
+  website: string;
+  annual_reach: number;
+  female_percentage: number;
+  male_percentage: number;
+  avg_order_value: number;
+  [key: string]: any;
+}
+
+// 5.1 Get Eligible Campaign Brands
+export const fetchEligibleBrandsApi = () => {
+  return universalApi("/media-buyer/campaigns/eligible-brands", "get");
+};
+
+// 5.2 Create Campaign
+export const createCampaignApi = (payload: { brand_id: string; name: string }) => {
+  return responseApi("/media-buyer/campaigns/create", "post", payload);
+};
+
+// 5.3 List User Campaigns
+export const fetchUserCampaignsApi = (params?: { page?: number; per_page?: number }) => {
+  const queryParams = new URLSearchParams();
+  if (params?.page != null) queryParams.append("page", String(params.page));
+  if (params?.per_page != null) queryParams.append("per_page", String(params.per_page));
+  const queryString = queryParams.toString();
+  return universalApi(`/media-buyer/campaigns/list${queryString ? `?${queryString}` : ""}`, "get");
+};
+
+// 5.4 Get Campaign Programs
+export interface FetchCampaignProgramsParams {
+  campaign_id: string;
+  page?: number;
+  per_page?: number;
+  search?: string;
+  category?: string;
+  instant_only?: boolean;
+  attribution_enabled?: boolean;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+
+export const fetchCampaignProgramsApi = (params: FetchCampaignProgramsParams) => {
+  const queryParams = new URLSearchParams();
+  if (params.page != null) queryParams.append("page", String(params.page));
+  if (params.per_page != null) queryParams.append("per_page", String(params.per_page));
+  if (params.search?.trim()) queryParams.append("search", params.search.trim());
+  if (params.category && params.category !== "ALL") queryParams.append("category", params.category);
+  if (params.instant_only) queryParams.append("instant_only", "true");
+  if (params.attribution_enabled) queryParams.append("attribution_enabled", "true");
+  if (params.sort_by) queryParams.append("sort_by", params.sort_by);
+  if (params.sort_order) queryParams.append("sort_order", params.sort_order);
+  const queryString = queryParams.toString();
+  return universalApi(
+    `/media-buyer/campaigns/${encodeURIComponent(params.campaign_id)}/programs${
+      queryString ? `?${queryString}` : ""
+    }`,
+    "get"
+  );
+};
+
+// 5.5 Save Campaign Programs Selection
+export const saveCampaignProgramsSelectionApi = (
+  campaign_id: string,
+  payload: { channel_ids: string[] }
+) => {
+  return responseApi(
+    `/media-buyer/campaigns/${encodeURIComponent(campaign_id)}/programs/selection`,
+    "put",
+    payload
+  );
+};

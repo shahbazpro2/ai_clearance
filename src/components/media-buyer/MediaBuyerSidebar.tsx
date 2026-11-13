@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe, Users, Layers } from "lucide-react";
+import { Globe, Users, Layers, Megaphone } from "lucide-react";
 import { useAtom } from "jotai";
 import { PortalSidebar, type PortalSidebarItem } from "@/components/common/PortalSidebar";
 import { useMe } from "@/hooks/useMe";
@@ -27,6 +27,11 @@ export function MediaBuyerSidebar() {
       title: "Insert Version Setup",
       href: "/media-buyer/insert-versions",
       icon: Layers,
+    },
+    {
+      title: "Campaigns",
+      href: "/media-buyer/campaigns",
+      icon: Megaphone,
     },
     ...(isMediaBuyerAdmin
       ? [

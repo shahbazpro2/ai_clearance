@@ -13,6 +13,9 @@ function getPageTitle(pathname: string): string {
   ) {
     return "Insert Version Setup";
   }
+  if (pathname.startsWith("/media-buyer/campaigns")) {
+    return "Campaigns";
+  }
   if (
     pathname.startsWith("/media-buyer/brands") ||
     pathname.startsWith("/media-buyer/brand-setup")
